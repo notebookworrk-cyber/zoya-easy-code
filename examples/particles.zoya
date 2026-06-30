@@ -22,7 +22,7 @@ fn update_particles() {
 
 fn spawn_particles(x, y, count) {
     loop count {
-        p = game.circle(x, y, rnd.randint(2, 6), (255, rnd.randint(100, 255), 0))
+        p = game.circle(x, y, rnd.randint(2, 6), [255, rnd.randint(100, 255), 0])
         p["vx"] = rnd.random(-3, 3)
         p["vy"] = rnd.random(-5, 2)
         p["life"] = rnd.randint(20, 60)

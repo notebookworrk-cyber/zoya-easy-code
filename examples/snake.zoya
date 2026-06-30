@@ -1,49 +1,100 @@
 import "game" as game
+import "random" as rng
 
-game.window("Zoya Snake", 600, 600)
+grid_size = 20
+cell_size = 25
+width = 600
+height = 400
+cols = width / grid_size
+rows = height / grid_size
 
-cell_size = 20
-snake = [(5, 5)]
-food = (10, 10)
-direction = (1, 0)
+game.window("Snake", width, height)
+
+snake = [[5, 5]]
+food = [rng.randint(0, cols - 1), rng.randint(0, rows - 1)]
+dx = 1
+dy = 0
 score = 0
+game_over = false
 
 fn move_snake() {
-    head = snake[0]
-    new_head = (head[0] + direction[0], head[1] + direction[1])
+    head = snake[len(snake) - 1]
+    new_head = [head[0] + dx, head[1] + dy]
 
-    if new_head[0] < 0 or new_head[0] > 29 { game.quit(); return }
-    if new_head[1] < 0 or new_head[1] > 29 { game.quit(); return }
+    if new_head[0] < 0 or new_head[0] >= cols or new_head[1] < 0 or new_head[1] >= rows {
+        game_over = true
+        return
+    }
 
-    snake.insert(0, new_head)
+    for i = 0; i < len(snake); i = i + 1 {
+        seg = snake[i]
+        if seg[0] == new_head[0] and seg[1] == new_head[1] {
+            game_over = true
+            return
+        }
+    }
+
+    snake.append(new_head)
 
     if new_head[0] == food[0] and new_head[1] == food[1] {
         score = score + 1
-        food = (random(0, 29), random(0, 29))
+        food[0] = rng.randint(0, cols - 1)
+        food[1] = rng.randint(0, rows - 1)
     } else {
-        snake.pop()
+        snake = snake[1:len(snake)]
     }
 }
 
 while game.update(10) {
     game.fill(0, 0, 0)
 
-    if game.key_down("up") { direction = (0, -1) }
-    if game.key_down("down") { direction = (0, 1) }
-    if game.key_down("left") { direction = (-1, 0) }
-    if game.key_down("right") { direction = (1, 0) }
-
-    move_snake()
-
-    for segment in snake {
-        x = segment[0] * cell_size
-        y = segment[1] * cell_size
-        draw_rect(x, y, cell_size - 2, cell_size - 2, (0, 255, 0))
+    if game.key_down("up") and dy == 0 {
+        dx = 0
+        dy = -1
+    }
+    if game.key_down("down") and dy == 0 {
+        dx = 0
+        dy = 1
+    }
+    if game.key_down("left") and dx == 0 {
+        dx = -1
+        dy = 0
+    }
+    if game.key_down("right") and dx == 0 {
+        dx = 1
+        dy = 0
     }
 
-    fx = food[0] * cell_size
-    fy = food[1] * cell_size
-    draw_rect(fx, fy, cell_size - 2, cell_size - 2, (255, 0, 0))
+    if not game_over {
+        move_snake()
 
-    draw_text(f"Score: {score}", 10, 10, 24, (255, 255, 255))
+        for i = 0; i < len(snake); i = i + 1 {
+            seg = snake[i]
+            g = 255 - (i * 10)
+            if g < 50 {
+                g = 50
+            }
+            block = game.rect(seg[0] * grid_size, seg[1] * grid_size, cell_size, cell_size, [0, g, 0])
+            game.draw(block)
+        }
+
+        f = game.rect(food[0] * grid_size, food[1] * grid_size, cell_size, cell_size, [255, 0, 0])
+        game.draw(f)
+
+        score_text = game.text("Score: " + score, 10, 10, 24, [255, 255, 255])
+        game.draw(score_text)
+    } else {
+        go_text = game.text("GAME OVER - Score: " + score, width / 2 - 120, height / 2 - 20, 36, [255, 100, 100])
+        game.draw(go_text)
+        restart_text = game.text("Press SPACE to restart", width / 2 - 100, height / 2 + 20, 24, [200, 200, 200])
+        game.draw(restart_text)
+        if game.key_down("space") {
+            snake = [[5, 5]]
+            food = [rng.randint(0, cols - 1), rng.randint(0, rows - 1)]
+            dx = 1
+            dy = 0
+            score = 0
+            game_over = false
+        }
+    }
 }

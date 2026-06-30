@@ -52,8 +52,8 @@ while game.update(60) {
     if ball_x < 0 { p2_score = p2_score + 1; reset_ball() }
     if ball_x > 800 { p1_score = p1_score + 1; reset_ball() }
 
-    draw_rect(p1_x, p1_y, paddle_w, paddle_h, (255, 255, 255))
-    draw_rect(p2_x, p2_y, paddle_w, paddle_h, (255, 255, 255))
-    draw_rect(ball_x, ball_y, ball_size, ball_size, (255, 255, 255))
-    draw_text(f"{p1_score} - {p2_score}", 380, 20, 32, (255, 255, 255))
+    game.draw(game.rect(p1_x, p1_y, paddle_w, paddle_h, [255, 255, 255]))
+    game.draw(game.rect(p2_x, p2_y, paddle_w, paddle_h, [255, 255, 255]))
+    game.draw(game.rect(ball_x, ball_y, ball_size, ball_size, [255, 255, 255]))
+    game.draw(game.text(f"{p1_score} - {p2_score}", 380, 20, 32, [255, 255, 255]))
 }

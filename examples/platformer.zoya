@@ -1,11 +1,11 @@
 import "game" as game
 
 game.window("Platformer", 800, 600)
-player = game.rect(100, 300, 32, 32, (0, 255, 0))
+player = game.rect(100, 300, 32, 32, [0, 255, 0])
 platforms = [
-    game.rect(0, 500, 800, 20, (100, 100, 100)),
-    game.rect(200, 400, 150, 20, (100, 100, 100)),
-    game.rect(500, 350, 150, 20, (100, 100, 100)),
+    game.rect(0, 500, 800, 20, [100, 100, 100]),
+    game.rect(200, 400, 150, 20, [100, 100, 100]),
+    game.rect(500, 350, 150, 20, [100, 100, 100]),
 ]
 
 velocity_x = 0

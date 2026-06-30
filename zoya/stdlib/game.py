@@ -16,6 +16,11 @@ def load_module(interpreter: Any) -> Any:
     _mouse_y = 0
     _mouse_buttons = (False, False, False)
 
+    def _to_color(c: Any) -> tuple[int, int, int]:
+        if isinstance(c, (list, tuple)):
+            return (int(c[0]), int(c[1]), int(c[2]))
+        return (255, 255, 255)
+
     def _init() -> None:
         nonlocal _pygame
         if _pygame is None:
@@ -55,36 +60,39 @@ def load_module(interpreter: Any) -> Any:
         _sprites.append(sprite_data)
         return sprite_data
 
-    def rect(x: float, y: float, w: float, h: float, color: tuple[int, int, int] = (255, 255, 255)) -> dict[str, Any]:
+    def rect(x: float, y: float, w: float, h: float, color: Any = (255, 255, 255)) -> dict[str, Any]:
+        c = _to_color(color)
         sprite_data = {
             "type": "rect",
             "x": x,
             "y": y,
             "width": w,
             "height": h,
-            "color": color,
+            "color": c,
             "rotation": 0,
             "visible": True,
         }
         _sprites.append(sprite_data)
         return sprite_data
 
-    def circle(x: float, y: float, radius: float, color: tuple[int, int, int] = (255, 255, 255)) -> dict[str, Any]:
+    def circle(x: float, y: float, radius: float, color: Any = (255, 255, 255)) -> dict[str, Any]:
+        c = _to_color(color)
         sprite_data = {
             "type": "circle",
             "x": x,
             "y": y,
             "radius": radius,
-            "color": color,
+            "color": c,
             "visible": True,
         }
         _sprites.append(sprite_data)
         return sprite_data
 
-    def text(content: str, x: float, y: float, size: int = 24, color: tuple[int, int, int] = (255, 255, 255)) -> dict[str, Any]:
+    def text(content: str, x: float, y: float, size: int = 24, color: Any = (255, 255, 255)) -> dict[str, Any]:
         _init()
+        c = _to_color(color)
         font = _pygame.font.Font(None, size) if _pygame else None
-        text_surf = font.render(content, True, color) if font else None
+        text_surf = font.render(content, True, c) if font else None
         sprite_data = {
             "type": "text",
             "surface": text_surf,
@@ -92,7 +100,7 @@ def load_module(interpreter: Any) -> Any:
             "y": y,
             "content": content,
             "size": size,
-            "color": color,
+            "color": c,
             "visible": True,
         }
         _sprites.append(sprite_data)

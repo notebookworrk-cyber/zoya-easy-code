@@ -709,6 +709,8 @@ class Parser:
                 while self.check("COMMA"):
                     self.consume("COMMA")
                     self.skip_newlines()
+                    if self.peek().kind == "RBRACKET":
+                        break
                     elements.append(self.parse_expr())
                     self.skip_newlines()
             self.consume("RBRACKET")
@@ -728,6 +730,8 @@ class Parser:
                 while self.check("COMMA"):
                     self.consume("COMMA")
                     self.skip_newlines()
+                    if self.peek().kind == "RBRACE":
+                        break
                     key = self.parse_expr()
                     self.skip_newlines()
                     self.consume("COLON")
