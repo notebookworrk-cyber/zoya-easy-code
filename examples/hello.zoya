@@ -1,0 +1,10 @@
+print "Hello, World!"
+print "Welcome to Zoya!"
+
+name = "Zoya"
+print f"Hello from {name}!"
+
+x = 10
+y = 20
+print f"Sum: {x + y}"
+print f"Product: {x * y}"

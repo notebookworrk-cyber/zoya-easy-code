@@ -1,0 +1,28 @@
+print "=== While Loop ==="
+x = 0
+while x < 5 {
+    print x
+    x = x + 1
+}
+
+print ""
+print "=== Loop (repeat) ==="
+loop 3 {
+    print "Hello from Zoya!"
+}
+
+print ""
+print "=== Loop with Break ==="
+loop 10 {
+    print "Counting..."
+    break
+}
+
+print ""
+print "=== For Loop Style (using while) ==="
+items = ["apple", "banana", "cherry"]
+index = 0
+while index < len(items) {
+    print items[index]
+    index = index + 1
+}

@@ -1,0 +1,14 @@
+// Zoya 3D Demo - Run with: zoya examples/3d_cube.zoya
+// Requires: pip install ursina  (or Panda3D)
+
+import "game3d" as g3d
+
+g3d.scene("Zoya 3D Cube")
+
+my_cube = g3d.cube(0, 0, 0, "orange")
+g3d.light("ambient", 0.6)
+
+g3d.camera(0, 0, -5)
+
+// The render call starts the 3D engine loop
+g3d.render()

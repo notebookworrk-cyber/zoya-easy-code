@@ -1,0 +1,13 @@
+print "=== Zoya Calculator ==="
+print "Enter two numbers:"
+
+a = input("First number: ")
+b = input("Second number: ")
+
+a_num = int(a)
+b_num = int(b)
+
+print f"Sum: {a_num + b_num}"
+print f"Difference: {a_num - b_num}"
+print f"Product: {a_num * b_num}"
+print f"Quotient: {a_num / b_num}"

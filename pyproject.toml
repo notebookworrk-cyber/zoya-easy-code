@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zoya-lang"
+version = "1.0.0"
+description = "Zoya - A beginner-friendly programming language for AI, automation, and game development"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [
+    {name = "Zoya Team", email = "zoya@example.com"},
+]
+keywords = ["programming-language", "education", "game-development", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Education",
+]
+
+[project.urls]
+Homepage = "https://github.com/notebookworrk-cyber/zoya-easy-code"
+Repository = "https://github.com/notebookworrk-cyber/zoya-easy-code"
+Documentation = "https://github.com/notebookworrk-cyber/zoya-easy-code"
+
+[project.optional-dependencies]
+game = ["pygame-ce>=2.6"]
+game3d = ["ursina>=7.0"]
+ai = ["google-generativeai>=0.8", "openai>=1.0"]
+all = [
+    "pygame-ce>=2.6",
+    "ursina>=7.0",
+    "google-generativeai>=0.8",
+    "openai>=1.0",
+]
+
+[project.scripts]
+zoya = "zoya.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["zoya*"]
+
+[tool.setuptools.package-data]
+"zoya" = ["**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,24 @@
+import "ai" as ai
+
+print "=== Zoya AI Chat ==="
+print "Available providers: gemini, openai, ollama, lmstudio"
+print ""
+
+provider_name = input("Choose provider (gemini): ")
+if provider_name == "" { provider_name = "gemini" }
+
+api_key = input("API key (leave blank if not needed): ")
+bot = ai.model(provider_name, api_key)
+
+print ""
+print f"Connected to {provider_name}. Type ':quit' to exit."
+print ""
+
+while true {
+    user_input = input("You: ")
+    if user_input == ":quit" { break }
+
+    response = bot.ask(user_input)
+    print f"AI: {response}"
+    print ""
+}

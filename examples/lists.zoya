@@ -1,0 +1,27 @@
+// List operations in Zoya
+
+numbers = [3, 1, 4, 1, 5, 9, 2, 6]
+print "Original: " + numbers
+
+numbers.sort()
+print "Sorted: " + numbers
+
+numbers.append(7)
+print "After append: " + numbers
+
+numbers.reverse()
+print "Reversed: " + numbers
+
+print "Length: " + numbers.length()
+print "First: " + numbers[0]
+print "Last: " + numbers[-1]
+
+// Slice
+print "Slice [1:4]: " + numbers[1:4]
+
+// Iterate
+index = 0
+while index < len(numbers) {
+    print f"Element {index}: {numbers[index]}"
+    index = index + 1
+}

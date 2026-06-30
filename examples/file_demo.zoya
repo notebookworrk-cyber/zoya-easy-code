@@ -1,0 +1,30 @@
+import "file" as file
+import "json" as json
+
+print "=== Zoya File Demo ==="
+
+file.write("hello.txt", "Hello from Zoya!")
+content = file.read("hello.txt")
+print f"Read from file: {content}"
+
+file.append("hello.txt", "\nAppended line!")
+print "Appended text to file"
+
+if file.exists("hello.txt") {
+    print "File exists!"
+    size = file.size("hello.txt")
+    print f"File size: {size} bytes"
+}
+
+data = {
+    "name": "Zoya",
+    "version": "1.0",
+    "features": ["files", "json", "ai", "games"]
+}
+json.save(data, "data.json")
+loaded = json.load("data.json")
+print f"Loaded JSON: {loaded}"
+
+file.delete("hello.txt")
+file.delete("data.json")
+print "Cleanup done"

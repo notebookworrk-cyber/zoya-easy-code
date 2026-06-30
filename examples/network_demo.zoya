@@ -1,0 +1,7 @@
+import "network" as net
+
+print "=== Zoya Network Demo ==="
+
+print "Fetching data from JSONPlaceholder..."
+response = net.get("https://jsonplaceholder.typicode.com/posts/1")
+print f"Response: {response}"

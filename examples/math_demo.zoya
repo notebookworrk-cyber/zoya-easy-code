@@ -1,0 +1,20 @@
+import "math" as math
+
+print "=== Math Module ==="
+print f"pi = {math.pi}"
+print f"e = {math.e}"
+print f"sqrt(16) = {math.sqrt(16)}"
+print f"sin(0) = {math.sin(0)}"
+print f"cos(0) = {math.cos(0)}"
+print f"ceil(3.14) = {math.ceil(3.14)}"
+print f"floor(3.14) = {math.floor(3.14)}"
+print f"factorial(5) = {math.factorial(5)}"
+
+// Built-in math functions
+print ""
+print "=== Built-in Functions ==="
+print f"abs(-5) = {abs(-5)}"
+print f"round(3.14159, 2) = {round(3.14159, 2)}"
+print f"max(1, 2, 3) = {max(1, 2, 3)}"
+print f"min(1, 2, 3) = {min(1, 2, 3)}"
+print f"range(5) = {range(5)}"

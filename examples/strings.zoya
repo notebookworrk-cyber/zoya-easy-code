@@ -1,0 +1,15 @@
+text = "  Hello, Zoya!  "
+print "Original: " + text
+print "Upper: " + text.upper()
+print "Lower: " + text.lower()
+print "Trimmed: " + text.strip()
+print "Replaced: " + text.replace("Zoya", "World")
+
+words = "apple,banana,cherry".split(",")
+print "Split: " + words
+
+print "Starts with '  Hello': " + text.startswith("  Hello")
+
+name = "Zoya"
+greeting = f"Hello, {name}! You are running Zoya v1.0"
+print greeting

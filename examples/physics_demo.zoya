@@ -1,0 +1,28 @@
+import "physics" as physics
+import "time" as time
+
+print "=== Zoya Physics Demo ==="
+
+ball = physics.body(0, 0, 0)
+ball.mass = 2
+ball.bounce = 0.8
+
+print f"Created ball at {ball.get_pos()}"
+print ""
+
+ball.apply_force(10, 0, 0)
+print f"Applied force: position = {ball.get_pos()}"
+
+loop 10 {
+    ball.update(0.1, -9.8)
+    pos = ball.get_pos()
+    print f"Frame: x={pos[0]:.2f}, y={pos[1]:.2f}"
+    sleep(0.05)
+}
+
+print ""
+d = physics.distance(0, 0, 3, 4)
+print f"Distance (0,0) to (3,4): {d}"
+
+clamped = physics.clamp(150, 0, 100)
+print f"Clamp 150 to [0, 100]: {clamped}"
