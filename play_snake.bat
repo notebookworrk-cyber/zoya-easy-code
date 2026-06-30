@@ -1,20 +1,13 @@
 @echo off
 cd /d "%~dp0"
-echo === Zoya Snake Game ===
+pip install -e . >nul 2>&1
+pip install pygame-ce >nul 2>&1
+cls
+echo ========================================
+echo    ZOYA SNAKE GAME
+echo    Use arrow keys to move
+echo    Press X on window to quit
+echo ========================================
 echo.
-
-pip show zoya-lang >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Installing Zoya...
-    pip install -e .
-)
-
-pip show pygame-ce >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Installing pygame-ce...
-    pip install pygame-ce
-)
-
-echo Starting Snake - use arrow keys to move
 python -m zoya examples\snake.zoya
 pause
