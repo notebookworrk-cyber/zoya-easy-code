@@ -6,6 +6,7 @@ from typing import NoReturn
 
 from . import run
 from .repl import main as repl_main
+from .tools.docs import run as docs_run
 from .version import __version__
 
 
@@ -23,10 +24,14 @@ def run_file(filepath: str) -> None:
 
 
 def main() -> NoReturn:
+    if len(sys.argv) > 1 and sys.argv[1] == "docs":
+        docs_run(sys.argv[2:])
+        sys.exit(0)
+
     parser = argparse.ArgumentParser(
         prog="zoya",
         description="Zoya - A beginner-friendly programming language for AI, automation, and game development",
-        epilog="Examples:\n  zoya script.zoya\n  zoya --repl\n  zoya --version",
+        epilog="Examples:\n  zoya script.zoya\n  zoya docs file.zoya\n  zoya --repl\n  zoya --version",
     )
 
     parser.add_argument(
@@ -55,6 +60,7 @@ def main() -> NoReturn:
 
     parser.add_argument(
         "-c", "--command",
+        dest="inline_cmd",
         type=str,
         help="Execute a one-liner Zoya command",
     )
@@ -70,9 +76,9 @@ def main() -> NoReturn:
         show_examples()
         sys.exit(0)
 
-    if args.command:
+    if args.inline_cmd:
         try:
-            run(args.command)
+            run(args.inline_cmd)
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
@@ -87,7 +93,7 @@ def main() -> NoReturn:
         sys.exit(0)
 
     parser.print_help()
-    print("\nTry: zoya --help\n  or: zoya --examples\n  or: zoya --repl")
+    print("\nTry: zoya --help\n  or: zoya --examples\n  or: zoya --repl\n  or: zoya docs <file.zoya>")
     sys.exit(1)
 
 
