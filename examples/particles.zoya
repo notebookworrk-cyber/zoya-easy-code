@@ -1,0 +1,40 @@
+import "game" as game
+import "random" as rnd
+
+game.window("Particles", 600, 400)
+particles = []
+
+fn update_particles() {
+    index = 0
+    while index < len(particles) {
+        p = particles[index]
+        p["x"] = p["x"] + p["vx"]
+        p["y"] = p["y"] + p["vy"]
+        p["vy"] = p["vy"] + 0.1
+        p["life"] = p["life"] - 1
+        if p["life"] <= 0 {
+            particles.pop(index)
+        } else {
+            index = index + 1
+        }
+    }
+}
+
+fn spawn_particles(x, y, count) {
+    loop count {
+        p = game.circle(x, y, rnd.randint(2, 6), (255, rnd.randint(100, 255), 0))
+        p["vx"] = rnd.random(-3, 3)
+        p["vy"] = rnd.random(-5, 2)
+        p["life"] = rnd.randint(20, 60)
+        particles.append(p)
+    }
+}
+
+while game.update(60) {
+    game.fill(0, 0, 0)
+    spawn_particles(300, 300, 2)
+    update_particles()
+    for p in particles {
+        game.draw(p)
+    }
+}

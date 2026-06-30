@@ -14,8 +14,13 @@ from .ast import (
     Boolean,
     Break,
     Call,
+    Catch,
+    ClassDef,
     Continue,
     Dict_,
+    EnumDef,
+    ForEach,
+    ForLoop,
     Function,
     GetAttr,
     Ident,
@@ -23,15 +28,22 @@ from .ast import (
     Import,
     Index,
     Input,
+    InterfaceDef,
     InterpolatedString,
+    Lambda,
     List_,
     Loop,
+    Match,
     MethodCall,
+    NamedArg,
     Number,
     Print,
     Return,
     Slice,
     String,
+    Switch,
+    Throw,
+    Try,
     UnaryOp,
     While,
 )
@@ -43,17 +55,19 @@ from .errors import (
     InterpreterError,
     ReturnException,
     RuntimeError_,
+    ZoyaRuntimeError,
+    ZoyaTypeError,
 )
 
 
 class ZoyaFunction:
-    def __init__(self, decl: Function, env: Environment) -> None:
+    def __init__(self, decl: Function | Lambda, env: Environment) -> None:
         self.decl = decl
         self.env = env
-        self.name = decl.name
+        self.name = getattr(decl, "name", "")
 
     def __repr__(self) -> str:
-        return f"<function {self.name}>"
+        return f"<function {self.name}>" if self.name else "<lambda>"
 
 
 class ZoyaModule:
@@ -63,6 +77,69 @@ class ZoyaModule:
 
     def __repr__(self) -> str:
         return f"<module {self.name}>"
+
+
+class ZoyaClass:
+    def __init__(self, name: str, parent: Optional[ZoyaClass], methods: dict[str, ZoyaFunction],
+                 env: Environment) -> None:
+        self.name = name
+        self.parent = parent
+        self.methods = methods
+        self.env = env
+
+    def create_instance(self, args: list[Any], interp: Interpreter) -> ZoyaInstance:
+        instance = ZoyaInstance(self)
+        if "init" in self.methods:
+            interp._call_function_internal(self.methods["init"], instance, args)
+        return instance
+
+    def __repr__(self) -> str:
+        return f"<class {self.name}>"
+
+
+class ZoyaInstance:
+    def __init__(self, klass: ZoyaClass) -> None:
+        self.klass = klass
+        self._fields: dict[str, Any] = {}
+
+    def _find_method(self, name: str) -> Optional[ZoyaFunction]:
+        k = self.klass
+        while k is not None:
+            if name in k.methods:
+                return k.methods[name]
+            k = k.parent
+        return None
+
+    def __repr__(self) -> str:
+        return f"<instance of {self.klass.name}>"
+
+
+class ZoyaSuper:
+    def __init__(self, instance: ZoyaInstance, klass: ZoyaClass) -> None:
+        self._instance = instance
+        self._klass = klass
+
+    def __repr__(self) -> str:
+        return f"<super of {self._klass.name}>"
+
+
+class ZoyaEnumObj:
+    def __init__(self, name: str, variants: list[str]) -> None:
+        self._name = name
+        for i, v in enumerate(variants):
+            setattr(self, v, i)
+
+    def __repr__(self) -> str:
+        return f"<enum {self._name}>"
+
+
+class ZoyaInterfaceObj:
+    def __init__(self, name: str, methods: list[str]) -> None:
+        self._name = name
+        self._methods = methods
+
+    def __repr__(self) -> str:
+        return f"<interface {self._name}>"
 
 
 class Interpreter:
@@ -117,9 +194,7 @@ class Interpreter:
                 return self.current_env.get(name)
             raise RuntimeError_(
                 f"'{name}' is not defined",
-                line=line,
-                col=col,
-                file=self.file,
+                line=line, col=col, file=self.file,
             )
 
         if isinstance(node, Assign):
@@ -145,7 +220,10 @@ class Interpreter:
         if isinstance(node, AssignAttr):
             obj = self._eval(node.obj)
             val = self._eval(node.expr)
-            setattr(obj, node.attr, val)
+            if isinstance(obj, ZoyaInstance):
+                obj._fields[node.attr] = val
+            else:
+                setattr(obj, node.attr, val)
             return val
 
         if isinstance(node, BinOp):
@@ -263,6 +341,40 @@ class Interpreter:
                     continue
             return result
 
+        if isinstance(node, ForLoop):
+            return self._eval_for_loop(node)
+
+        if isinstance(node, ForEach):
+            return self._eval_for_each(node)
+
+        if isinstance(node, Switch):
+            return self._eval_switch(node)
+
+        if isinstance(node, Try):
+            return self._eval_try(node)
+
+        if isinstance(node, Throw):
+            val = self._eval(node.expr)
+            if isinstance(val, str):
+                raise ZoyaRuntimeError(val, line=line, col=col, file=self.file)
+            raise ZoyaRuntimeError(str(val), line=line, col=col, file=self.file)
+
+        if isinstance(node, Match):
+            return self._eval_match(node)
+
+        if isinstance(node, EnumDef):
+            enum_obj = ZoyaEnumObj(node.name, node.variants)
+            self.current_env.set(node.name, enum_obj)
+            return enum_obj
+
+        if isinstance(node, ClassDef):
+            return self._eval_class_def(node)
+
+        if isinstance(node, InterfaceDef):
+            interface_obj = ZoyaInterfaceObj(node.name, node.methods)
+            self.current_env.set(node.name, interface_obj)
+            return interface_obj
+
         if isinstance(node, Break):
             raise BreakException()
 
@@ -274,11 +386,37 @@ class Interpreter:
             self.current_env.set(node.name, func)
             return func
 
+        if isinstance(node, Lambda):
+            return ZoyaFunction(node, self.current_env)
+
         if isinstance(node, Call):
             return self._call_function(node)
 
         if isinstance(node, GetAttr):
             obj = self._eval(node.obj)
+            if isinstance(obj, ZoyaInstance):
+                m = obj._find_method(node.attr)
+                if m is not None:
+                    return m
+                if node.attr in obj._fields:
+                    return obj._fields[node.attr]
+                raise RuntimeError_(
+                    f"'{obj.klass.name}' has no attribute '{node.attr}'",
+                    line=line, col=col, file=self.file,
+                )
+            if isinstance(obj, ZoyaSuper):
+                parent = obj._klass.parent
+                if parent is None:
+                    raise RuntimeError_(
+                        f"super: '{obj._klass.name}' has no parent",
+                        line=line, col=col, file=self.file,
+                    )
+                if node.attr in parent.methods:
+                    return parent.methods[node.attr]
+                raise RuntimeError_(
+                    f"super: '{parent.name}' has no attribute '{node.attr}'",
+                    line=line, col=col, file=self.file,
+                )
             return getattr(obj, node.attr)
 
         if isinstance(node, MethodCall):
@@ -336,15 +474,160 @@ class Interpreter:
             return result
         return self._eval(block)
 
+    def _eval_for_loop(self, node: ForLoop) -> None:
+        if node.init is not None:
+            self._eval(node.init)
+        result = None
+        while True:
+            if node.cond is not None:
+                if not self._truthy(self._eval(node.cond)):
+                    break
+            try:
+                result = self._eval_block(node.body)
+            except BreakException:
+                break
+            except ContinueException:
+                if node.update is not None:
+                    self._eval(node.update)
+                continue
+            if node.update is not None:
+                self._eval(node.update)
+        return result
+
+    def _eval_for_each(self, node: ForEach) -> None:
+        iterable = self._eval(node.iterable)
+        result = None
+        if isinstance(iterable, (list, tuple, str)):
+            for item in iterable:
+                self.current_env.set(node.var, item)
+                try:
+                    result = self._eval_block(node.body)
+                except BreakException:
+                    break
+                except ContinueException:
+                    continue
+        elif hasattr(iterable, "__iter__"):
+            for item in iterable:
+                self.current_env.set(node.var, item)
+                try:
+                    result = self._eval_block(node.body)
+                except BreakException:
+                    break
+                except ContinueException:
+                    continue
+        else:
+            raise RuntimeError_(
+                f"Cannot iterate over '{type(iterable).__name__}'",
+                line=node.line, col=node.col, file=self.file,
+            )
+        return result
+
+    def _eval_switch(self, node: Switch) -> Any:
+        val = self._eval(node.expr)
+        result = None
+        matched = False
+        for case_expr, case_body in node.cases:
+            case_val = self._eval(case_expr)
+            if val == case_val:
+                matched = True
+                result = self._eval_block(case_body)
+        if not matched and node.default_body is not None:
+            result = self._eval_block(node.default_body)
+        return result
+
+    def _eval_try(self, node: Try) -> Any:
+        result = None
+        caught = False
+        try:
+            result = self._eval_block(node.try_body)
+        except (ZoyaRuntimeError, ZoyaTypeError, RuntimeError_) as e:
+            caught = True
+            for catch in node.catches:
+                func_env = Environment(self.current_env)
+                if catch.var is not None:
+                    func_env.define(catch.var, str(e))
+                old_env = self.current_env
+                self.current_env = func_env
+                try:
+                    result = self._eval_block(catch.body)
+                except ReturnException as ret:
+                    result = ret.value
+                finally:
+                    self.current_env = old_env
+                break
+            if not node.catches:
+                raise
+        except Exception as e:
+            if not isinstance(e, (BreakException, ContinueException, ReturnException)):
+                for catch in node.catches:
+                    caught = True
+                    func_env = Environment(self.current_env)
+                    if catch.var is not None:
+                        func_env.define(catch.var, str(e))
+                    old_env = self.current_env
+                    self.current_env = func_env
+                    try:
+                        result = self._eval_block(catch.body)
+                    except ReturnException as ret:
+                        result = ret.value
+                    finally:
+                        self.current_env = old_env
+                    break
+            else:
+                raise
+        finally:
+            if node.final_body is not None:
+                self._eval_block(node.final_body)
+        return result
+
+    def _eval_match(self, node: Match) -> Any:
+        val = self._eval(node.expr)
+        for pattern, body in node.arms:
+            if val == self._eval(pattern):
+                return self._eval(body)
+        if node.else_arm is not None:
+            return self._eval(node.else_arm)
+        return None
+
+    def _eval_class_def(self, node: ClassDef) -> Any:
+        parent: Optional[ZoyaClass] = None
+        if node.parent is not None:
+            parent_obj = self.current_env.get(node.parent)
+            if not isinstance(parent_obj, ZoyaClass):
+                raise RuntimeError_(
+                    f"'{node.parent}' is not a class",
+                    line=node.line, col=node.col, file=self.file,
+                )
+            parent = parent_obj
+
+        class_env = Environment(self.current_env)
+        old_env = self.current_env
+        self.current_env = class_env
+        try:
+            self._eval_block(node.body)
+        finally:
+            self.current_env = old_env
+
+        methods: dict[str, ZoyaFunction] = {}
+        for key, val in class_env._vars.items():
+            if isinstance(val, ZoyaFunction):
+                methods[key] = val
+
+        if parent is not None:
+            for key, val in parent.methods.items():
+                if key not in methods:
+                    methods[key] = val
+
+        klass = ZoyaClass(node.name, parent, methods, class_env)
+        self.current_env.set(node.name, klass)
+        return klass
+
     def _call_function(self, call: Call) -> Any:
         callee = self._eval(call.callee)
 
         if isinstance(callee, ZoyaModule):
-            func_name = call.callee.name if hasattr(call.callee, "name") else ""
             if hasattr(callee, "_call"):
                 return callee._call(call.args, self)
-            if len(call.args) == 1 and hasattr(callee, call.callee.name if isinstance(call.callee, Ident) else ""):
-                ...  # This will be handled below
             raise RuntimeError_(
                 f"'{callee.name}' is not callable",
                 line=call.line, col=call.col, file=self.file,
@@ -359,24 +642,13 @@ class Interpreter:
                 return fn(*args)
 
         if isinstance(callee, ZoyaFunction):
-            args = [self._eval(arg) for arg in call.args]
-            func = callee
-            if len(args) != len(func.decl.params):
-                raise RuntimeError_(
-                    f"Function '{func.decl.name}' expects {len(func.decl.params)} arguments, got {len(args)}",
-                    line=call.line, col=call.col, file=self.file,
-                )
-            func_env = Environment(func.env)
-            for param, arg in zip(func.decl.params, args):
-                func_env.define(param, arg)
-            old_env = self.current_env
-            self.current_env = func_env
-            try:
-                return self._eval_block(func.decl.body)
-            except ReturnException as ret:
-                return ret.value
-            finally:
-                self.current_env = old_env
+            return self._call_function_internal(callee, None, call.args)
+
+        if isinstance(callee, ZoyaClass):
+            instance = ZoyaInstance(callee)
+            if "init" in callee.methods:
+                self._call_function_internal(callee.methods["init"], instance, call.args)
+            return instance
 
         if callable(callee):
             args = [self._eval(arg) for arg in call.args]
@@ -386,6 +658,63 @@ class Interpreter:
             f"'{callee}' is not callable",
             line=call.line, col=call.col, file=self.file,
         )
+
+    def _call_function_internal(self, func: ZoyaFunction, instance: Optional[ZoyaInstance],
+                                arg_nodes: list[ASTNode]) -> Any:
+        positional_nodes: list[ASTNode] = []
+        named_kwargs: dict[str, ASTNode] = {}
+
+        for arg in arg_nodes:
+            if isinstance(arg, NamedArg):
+                named_kwargs[arg.name] = arg.value
+            else:
+                positional_nodes.append(arg)
+
+        positional_args: list[Any] = [self._eval(a) for a in positional_nodes]
+        named_evaled: dict[str, Any] = {k: self._eval(v) for k, v in named_kwargs.items()}
+
+        func_env = Environment(func.env)
+
+        if instance is not None:
+            func_env.define("this", instance)
+            func_env.define("super", ZoyaSuper(instance, instance.klass))
+
+        params = func.decl.params
+        defaults = func.decl.defaults if hasattr(func.decl, "defaults") else []
+
+        param_filled: set[int] = set()
+
+        for i, param in enumerate(params):
+            if param in named_evaled:
+                func_env.define(param, named_evaled[param])
+                param_filled.add(i)
+
+        pos_idx = 0
+        for i, param in enumerate(params):
+            if i in param_filled:
+                continue
+            if pos_idx < len(positional_args):
+                func_env.define(param, positional_args[pos_idx])
+                pos_idx += 1
+            elif i < len(defaults) and defaults[i] is not None:
+                func_env.define(param, self._eval(defaults[i]))
+            else:
+                func_name = getattr(func, "name", "") or "anonymous"
+                raise RuntimeError_(
+                    f"Missing argument for parameter '{param}' in function '{func_name}'",
+                    line=getattr(func.decl, "line", 0),
+                    col=getattr(func.decl, "col", 0),
+                    file=self.file,
+                )
+
+        old_env = self.current_env
+        self.current_env = func_env
+        try:
+            return self._eval_block(func.decl.body)
+        except ReturnException as ret:
+            return ret.value
+        finally:
+            self.current_env = old_env
 
     def _call_method(self, mc: MethodCall) -> Any:
         obj = self._eval(mc.obj)
@@ -397,6 +726,35 @@ class Interpreter:
             if callable(fn):
                 return fn(*args)
             return fn
+
+        if isinstance(obj, ZoyaInstance):
+            func = obj._find_method(method)
+            if func is not None:
+                return self._call_function_internal(func, obj, mc.args)
+            if method in obj._fields:
+                field = obj._fields[method]
+                if callable(field):
+                    return field(*args)
+                return field
+            raise RuntimeError_(
+                f"'{obj.klass.name}' has no method '{method}'",
+                line=mc.line, col=mc.col, file=self.file,
+            )
+
+        if isinstance(obj, ZoyaSuper):
+            parent = obj._klass.parent
+            if parent is None:
+                raise RuntimeError_(
+                    f"super: no parent class",
+                    line=mc.line, col=mc.col, file=self.file,
+                )
+            if method in parent.methods:
+                func = parent.methods[method]
+                return self._call_function_internal(func, obj._instance, mc.args)
+            raise RuntimeError_(
+                f"super: '{parent.name}' has no method '{method}'",
+                line=mc.line, col=mc.col, file=self.file,
+            )
 
         if isinstance(obj, str) and method in STRING_METHODS:
             return STRING_METHODS[method](obj, *args)

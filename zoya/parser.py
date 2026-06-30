@@ -12,8 +12,13 @@ from .ast import (
     Boolean,
     Break,
     Call,
+    Catch,
+    ClassDef,
     Continue,
     Dict_,
+    EnumDef,
+    ForEach,
+    ForLoop,
     Function,
     GetAttr,
     Ident,
@@ -21,15 +26,22 @@ from .ast import (
     Import,
     Index,
     Input,
+    InterfaceDef,
     InterpolatedString,
+    Lambda,
     List_,
     Loop,
+    Match,
     MethodCall,
+    NamedArg,
     Number,
     Print,
     Return,
     Slice,
     String,
+    Switch,
+    Throw,
+    Try,
     UnaryOp,
     While,
 )
@@ -76,10 +88,16 @@ class Parser:
         if kind == "NEWLINE":
             self.consume("NEWLINE")
             return None
+        if kind == "SEMICOLON":
+            self.consume("SEMICOLON")
+            return None
         if kind == "EOF":
             return None
         if kind == "FN":
-            return self.parse_fn_def()
+            if (self.pos + 1 < len(self.tokens)
+                    and self.tokens[self.pos + 1].kind == "IDENT"):
+                return self.parse_fn_def()
+            return self.parse_assign_or_expr()
         if kind == "RETURN":
             return self.parse_return()
         if kind == "IF":
@@ -88,6 +106,24 @@ class Parser:
             return self.parse_while()
         if kind == "LOOP":
             return self.parse_loop()
+        if kind == "FOR":
+            return self.parse_for()
+        if kind == "FOREACH":
+            return self.parse_foreach()
+        if kind == "SWITCH":
+            return self.parse_switch()
+        if kind == "TRY":
+            return self.parse_try()
+        if kind == "THROW":
+            return self.parse_throw()
+        if kind == "MATCH":
+            return self.parse_match()
+        if kind == "ENUM":
+            return self.parse_enum()
+        if kind == "CLASS":
+            return self.parse_class()
+        if kind == "INTERFACE":
+            return self.parse_interface()
         if kind == "BREAK":
             return self.parse_break()
         if kind == "CONTINUE":
@@ -104,11 +140,24 @@ class Parser:
         name_tok = self.consume("IDENT")
         self.consume("LPAREN")
         params: list[str] = []
+        defaults: list[Optional[ASTNode]] = []
         if self.peek().kind != "RPAREN":
-            params.append(self.consume("IDENT").value)
+            param_name = self.consume("IDENT").value
+            default_val: Optional[ASTNode] = None
+            if self.check("ASSIGN"):
+                self.consume("ASSIGN")
+                default_val = self.parse_expr()
+            params.append(param_name)
+            defaults.append(default_val)
             while self.check("COMMA"):
                 self.consume("COMMA")
-                params.append(self.consume("IDENT").value)
+                param_name = self.consume("IDENT").value
+                default_val = None
+                if self.check("ASSIGN"):
+                    self.consume("ASSIGN")
+                    default_val = self.parse_expr()
+                params.append(param_name)
+                defaults.append(default_val)
         self.consume("RPAREN")
         self.skip_newlines()
         body = self.parse_block()
@@ -116,11 +165,13 @@ class Parser:
             name=name_tok.value,
             params=params,
             body=body,
+            defaults=defaults,
+            line=tok.line, col=tok.col,
         )
 
     def parse_return(self) -> Return:
         tok = self.consume("RETURN")
-        if self.peek().kind in ("NEWLINE", "RBRACE", "EOF"):
+        if self.peek().kind in ("NEWLINE", "RBRACE", "EOF", "SEMICOLON"):
             return Return(expr=None, line=tok.line, col=tok.col)
         expr = self.parse_expr()
         self.expect_newline()
@@ -155,6 +206,211 @@ class Parser:
         self.skip_newlines()
         body = self.parse_block()
         return Loop(count=count, body=body, line=tok.line, col=tok.col)
+
+    def parse_for(self) -> ASTNode:
+        tok = self.consume("FOR")
+
+        if self.check("IDENT") and self.tokens[self.pos + 1].kind == "IN":
+            var = self.consume("IDENT").value
+            self.consume("IN")
+            iterable = self.parse_expr()
+            self.skip_newlines()
+            body = self.parse_block()
+            return ForEach(var=var, iterable=iterable, body=body, line=tok.line, col=tok.col)
+
+        init: Optional[ASTNode] = None
+        if not self.check("SEMICOLON"):
+            init = self.parse_assign_or_expr_semicolon()
+        self.consume("SEMICOLON")
+
+        cond: Optional[ASTNode] = None
+        if not self.check("SEMICOLON"):
+            cond = self.parse_expr()
+        self.consume("SEMICOLON")
+
+        update: Optional[ASTNode] = None
+        if not self.check("LBRACE"):
+            update = self.parse_assign_or_expr_semicolon()
+
+        body = self.parse_block()
+        return ForLoop(init=init, cond=cond, update=update, body=body, line=tok.line, col=tok.col)
+
+    def parse_foreach(self) -> ForEach:
+        tok = self.consume("FOREACH")
+        var = self.consume("IDENT").value
+        self.consume("IN")
+        iterable = self.parse_expr()
+        self.skip_newlines()
+        body = self.parse_block()
+        return ForEach(var=var, iterable=iterable, body=body, line=tok.line, col=tok.col)
+
+    def parse_assign_or_expr_semicolon(self) -> ASTNode:
+        expr = self.parse_expr()
+        if isinstance(expr, Ident) and self.check("ASSIGN"):
+            self.consume("ASSIGN")
+            value = self.parse_expr()
+            return Assign(name=expr.name, expr=value, line=expr.line, col=expr.col)
+        if isinstance(expr, Index) and self.check("ASSIGN"):
+            self.consume("ASSIGN")
+            value = self.parse_expr()
+            return AssignIndex(obj=expr.obj, index=expr.index, expr=value, line=expr.line, col=expr.col)
+        if isinstance(expr, GetAttr) and self.check("ASSIGN"):
+            self.consume("ASSIGN")
+            value = self.parse_expr()
+            return AssignAttr(obj=expr.obj, attr=expr.attr, expr=value, line=expr.line, col=expr.col)
+        return expr
+
+    def parse_switch(self) -> Switch:
+        tok = self.consume("SWITCH")
+        expr = self.parse_expr()
+        self.skip_newlines()
+        self.consume("LBRACE")
+        cases: list[tuple[ASTNode, ASTNode]] = []
+        default_body: Optional[ASTNode] = None
+        while self.peek().kind not in ("RBRACE", "EOF"):
+            self.skip_newlines()
+            if self.check("CASE"):
+                self.consume("CASE")
+                case_expr = self.parse_expr()
+                self.skip_newlines()
+                case_body = self.parse_block()
+                cases.append((case_expr, case_body))
+            elif self.check("DEFAULT"):
+                self.consume("DEFAULT")
+                self.skip_newlines()
+                default_body = self.parse_block()
+            elif self.check("NEWLINE"):
+                self.consume("NEWLINE")
+            else:
+                raise ParseError(
+                    f"Expected 'case' or 'default' in switch, got '{self.peek().kind}'",
+                    line=self.peek().line, col=self.peek().col, file=self.file,
+                )
+        self.consume("RBRACE")
+        return Switch(expr=expr, cases=cases, default_body=default_body, line=tok.line, col=tok.col)
+
+    def parse_try(self) -> Try:
+        tok = self.consume("TRY")
+        self.skip_newlines()
+        try_body = self.parse_block()
+        catches: list[Catch] = []
+        final_body: Optional[ASTNode] = None
+        while self.peek().kind in ("CATCH", "FINALLY", "NEWLINE"):
+            if self.check("NEWLINE"):
+                self.consume("NEWLINE")
+                continue
+            if self.check("CATCH"):
+                self.consume("CATCH")
+                var: Optional[str] = None
+                if self.check("IDENT"):
+                    var = self.consume("IDENT").value
+                self.skip_newlines()
+                catch_body = self.parse_block()
+                catches.append(Catch(var=var, body=catch_body, line=tok.line, col=tok.col))
+            elif self.check("FINALLY"):
+                self.consume("FINALLY")
+                self.skip_newlines()
+                final_body = self.parse_block()
+                break
+        return Try(try_body=try_body, catches=catches, final_body=final_body, line=tok.line, col=tok.col)
+
+    def parse_throw(self) -> Throw:
+        tok = self.consume("THROW")
+        expr = self.parse_expr()
+        self.expect_newline()
+        return Throw(expr=expr, line=tok.line, col=tok.col)
+
+    def parse_match(self) -> Match:
+        tok = self.consume("MATCH")
+        expr = self.parse_expr()
+        self.skip_newlines()
+        self.consume("LBRACE")
+        self.skip_newlines()
+        arms: list[tuple[ASTNode, ASTNode]] = []
+        else_arm: Optional[ASTNode] = None
+        if self.peek().kind != "RBRACE":
+            arm = self._parse_match_item()
+            if isinstance(arm, tuple) and arm[0] is None:
+                else_arm = arm[1]
+            else:
+                arms.append(arm)
+            while self.check("COMMA"):
+                self.consume("COMMA")
+                self.skip_newlines()
+                arm = self._parse_match_item()
+                if isinstance(arm, tuple) and arm[0] is None:
+                    else_arm = arm[1]
+                else:
+                    arms.append(arm)
+        self.skip_newlines()
+        self.consume("RBRACE")
+        return Match(expr=expr, arms=arms, else_arm=else_arm, line=tok.line, col=tok.col)
+
+    def _parse_match_item(self) -> tuple[Optional[ASTNode], ASTNode]:
+        if self.check("DEFAULT"):
+            self.consume("DEFAULT")
+            self.consume("ARROW")
+            body = self.parse_expr()
+            return (None, body)
+        pattern = self.parse_expr()
+        self.consume("ARROW")
+        body = self.parse_expr()
+        return (pattern, body)
+
+    def parse_enum(self) -> EnumDef:
+        tok = self.consume("ENUM")
+        name_tok = self.consume("IDENT")
+        self.skip_newlines()
+        self.consume("LBRACE")
+        variants: list[str] = []
+        if self.peek().kind != "RBRACE":
+            variants.append(self.consume("IDENT").value)
+            while self.check("COMMA"):
+                self.consume("COMMA")
+                variants.append(self.consume("IDENT").value)
+        self.consume("RBRACE")
+        self.expect_newline()
+        return EnumDef(name=name_tok.value, variants=variants, line=tok.line, col=tok.col)
+
+    def parse_class(self) -> ClassDef:
+        tok = self.consume("CLASS")
+        name_tok = self.consume("IDENT")
+        parent: Optional[str] = None
+        if self.check("COLON"):
+            self.consume("COLON")
+            parent = self.consume("IDENT").value
+        elif self.check("EXTENDS"):
+            self.consume("EXTENDS")
+            parent = self.consume("IDENT").value
+        self.skip_newlines()
+        body = self.parse_block()
+        self.expect_newline()
+        return ClassDef(name=name_tok.value, parent=parent, body=body, line=tok.line, col=tok.col)
+
+    def parse_interface(self) -> InterfaceDef:
+        tok = self.consume("INTERFACE")
+        name_tok = self.consume("IDENT")
+        self.skip_newlines()
+        self.consume("LBRACE")
+        methods: list[str] = []
+        while self.peek().kind not in ("RBRACE", "EOF"):
+            self.skip_newlines()
+            if self.check("NEWLINE"):
+                self.consume("NEWLINE")
+                continue
+            if self.check("FN"):
+                self.consume("FN")
+                method_name = self.consume("IDENT").value
+                self.consume("LPAREN")
+                while self.peek().kind not in ("RPAREN", "EOF"):
+                    self.consume()
+                self.consume("RPAREN")
+                methods.append(method_name)
+            else:
+                break
+        self.consume("RBRACE")
+        self.expect_newline()
+        return InterfaceDef(name=name_tok.value, methods=methods, line=tok.line, col=tok.col)
 
     def parse_break(self) -> Break:
         tok = self.consume("BREAK")
@@ -292,17 +548,35 @@ class Parser:
             return UnaryOp(op=tok.kind, expr=expr, line=tok.line, col=tok.col)
         return self.parse_call()
 
+    def _parse_call_args(self) -> list[ASTNode]:
+        args: list[ASTNode] = []
+        if self.peek().kind != "RPAREN":
+            if self.check("IDENT") and self.tokens[self.pos + 1].kind == "ASSIGN":
+                tok = self.peek()
+                name = self.consume("IDENT").value
+                self.consume("ASSIGN")
+                val = self.parse_expr()
+                args.append(NamedArg(name=name, value=val, line=tok.line, col=tok.col))
+            else:
+                args.append(self.parse_expr())
+            while self.check("COMMA"):
+                self.consume("COMMA")
+                if self.check("IDENT") and self.tokens[self.pos + 1].kind == "ASSIGN":
+                    tok = self.peek()
+                    name = self.consume("IDENT").value
+                    self.consume("ASSIGN")
+                    val = self.parse_expr()
+                    args.append(NamedArg(name=name, value=val, line=tok.line, col=tok.col))
+                else:
+                    args.append(self.parse_expr())
+        return args
+
     def parse_call(self) -> ASTNode:
         expr = self.parse_primary()
         while True:
             if self.check("LPAREN"):
                 self.consume("LPAREN")
-                args: list[ASTNode] = []
-                if self.peek().kind != "RPAREN":
-                    args.append(self.parse_expr())
-                    while self.check("COMMA"):
-                        self.consume("COMMA")
-                        args.append(self.parse_expr())
+                args: list[ASTNode] = self._parse_call_args()
                 self.consume("RPAREN")
                 expr = Call(callee=expr, args=args, line=expr.line, col=expr.col)
             elif self.check("DOT"):
@@ -310,12 +584,7 @@ class Parser:
                 attr = self.consume("IDENT").value
                 if self.check("LPAREN"):
                     self.consume("LPAREN")
-                    method_args: list[ASTNode] = []
-                    if self.peek().kind != "RPAREN":
-                        method_args.append(self.parse_expr())
-                        while self.check("COMMA"):
-                            self.consume("COMMA")
-                            method_args.append(self.parse_expr())
+                    method_args: list[ASTNode] = self._parse_call_args()
                     self.consume("RPAREN")
                     expr = MethodCall(obj=expr, method=attr, args=method_args, line=expr.line, col=expr.col)
                 else:
@@ -416,9 +685,15 @@ class Parser:
         if tok.kind == "FALSE":
             self.consume()
             return Boolean(value=False, line=tok.line, col=tok.col)
-        if tok.kind == "IDENT":
+        if tok.kind in ("IDENT", "THIS", "SUPER"):
             self.consume()
             return Ident(name=tok.value, line=tok.line, col=tok.col)
+        if tok.kind == "MATCH":
+            return self.parse_match()
+        if tok.kind == "FN":
+            return self._parse_lambda()
+        if tok.kind == "LAMBDA":
+            return self._parse_lambda()
         if tok.kind == "LPAREN":
             self.consume()
             expr = self.parse_expr()
@@ -438,7 +713,7 @@ class Parser:
                     self.skip_newlines()
             self.consume("RBRACKET")
             return List_(elements=elements, line=tok.line, col=tok.col)
-        if tok.kind == "LBRACE":
+        if tok.kind == "LBRACE" and self._is_dict():
             self.consume()
             self.skip_newlines()
             pairs: list[tuple[ASTNode, ASTNode]] = []
@@ -470,6 +745,55 @@ class Parser:
             file=self.file,
         )
 
+    def _is_dict(self) -> bool:
+        if not self.check("LBRACE"):
+            return False
+        saved = self.pos
+        self.pos += 1
+        is_dict = False
+        if self.peek().kind not in ("RBRACE", "EOF"):
+            self.skip_newlines()
+            if self.peek().kind in ("NUMBER", "STRING", "IDENT", "TRUE", "FALSE", "LBRACKET", "LBRACE", "LPAREN"):
+                self.pos += 1
+                self.skip_newlines()
+                if self.check("COLON"):
+                    is_dict = True
+        self.pos = saved
+        return is_dict
+
+    def _parse_lambda(self) -> Lambda:
+        tok = self.consume()
+        self.consume("LPAREN")
+        params: list[str] = []
+        defaults: list[Optional[ASTNode]] = []
+        if self.peek().kind != "RPAREN":
+            param_name = self.consume("IDENT").value
+            default_val: Optional[ASTNode] = None
+            if self.check("ASSIGN"):
+                self.consume("ASSIGN")
+                default_val = self.parse_expr()
+            params.append(param_name)
+            defaults.append(default_val)
+            while self.check("COMMA"):
+                self.consume("COMMA")
+                param_name = self.consume("IDENT").value
+                default_val = None
+                if self.check("ASSIGN"):
+                    self.consume("ASSIGN")
+                    default_val = self.parse_expr()
+                params.append(param_name)
+                defaults.append(default_val)
+        self.consume("RPAREN")
+
+        if self.check("ARROW"):
+            self.consume("ARROW")
+            body: ASTNode = self.parse_expr()
+        else:
+            self.skip_newlines()
+            body = self.parse_block()
+
+        return Lambda(params=params, body=body, defaults=defaults, line=tok.line, col=tok.col)
+
     def skip_newlines(self) -> None:
         while self.check("NEWLINE"):
             self.consume()
@@ -478,6 +802,10 @@ class Parser:
         if self.check("NEWLINE"):
             self.consume()
         elif self.check("EOF"):
+            pass
+        elif self.check("SEMICOLON"):
+            self.consume()
+        elif self.check("RBRACE"):
             pass
         else:
             raise ParseError(

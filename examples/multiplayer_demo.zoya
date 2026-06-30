@@ -1,0 +1,6 @@
+import "network" as net
+
+print "=== Multiplayer Demo ==="
+print "This demonstrates network requests"
+response = net.get("https://jsonplaceholder.typicode.com/posts/1")
+print response

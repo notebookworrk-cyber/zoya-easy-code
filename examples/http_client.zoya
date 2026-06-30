@@ -1,0 +1,6 @@
+import "http" as http
+
+print "=== HTTP Client ==="
+response = http.get("https://jsonplaceholder.typicode.com/todos/1")
+print "Status: " + response["status"]
+print "Body: " + response["body"]

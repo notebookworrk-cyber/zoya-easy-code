@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class ZoyaError(Exception):
     def __init__(self, message: str, line: int = 0, col: int = 0, file: str = "") -> None:
         self.line = line
@@ -28,6 +31,14 @@ class ParseError(ZoyaError):
 
 
 class RuntimeError_(ZoyaError):
+    pass
+
+
+class ZoyaRuntimeError(RuntimeError_):
+    pass
+
+
+class ZoyaTypeError(RuntimeError_):
     pass
 
 

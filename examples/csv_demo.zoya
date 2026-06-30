@@ -1,0 +1,11 @@
+import "csv" as csv
+import "file" as file
+
+print "=== CSV Demo ==="
+rows = [["name", "age"], ["Alice", "30"], ["Bob", "25"]]
+csv.write("users.csv", rows)
+data = csv.read("users.csv")
+for row in data {
+    print row["name"] + ": " + row["age"]
+}
+file.delete("users.csv")

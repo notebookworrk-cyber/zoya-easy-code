@@ -1,0 +1,12 @@
+import "ai" as ai
+
+print "=== Zoya AI NPC ==="
+print "Loading AI model..."
+npc = ai.model("ollama")
+print "NPC ready! Say something (type :quit to exit)"
+while true {
+    msg = input("You: ")
+    if msg == ":quit" { break }
+    response = npc.ask(msg)
+    print f"NPC: {response}"
+}

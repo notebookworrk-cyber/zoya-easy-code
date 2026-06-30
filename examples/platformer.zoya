@@ -1,0 +1,55 @@
+import "game" as game
+
+game.window("Platformer", 800, 600)
+player = game.rect(100, 300, 32, 32, (0, 255, 0))
+platforms = [
+    game.rect(0, 500, 800, 20, (100, 100, 100)),
+    game.rect(200, 400, 150, 20, (100, 100, 100)),
+    game.rect(500, 350, 150, 20, (100, 100, 100)),
+]
+
+velocity_x = 0
+velocity_y = 0
+gravity = 0.5
+speed = 5
+jump_power = -10
+on_ground = false
+
+while game.update(60) {
+    game.fill(50, 50, 200)
+
+    if game.key_down("left") {
+        velocity_x = -speed
+    } else {
+        if game.key_down("right") {
+            velocity_x = speed
+        } else {
+            velocity_x = 0
+        }
+    }
+
+    if game.key_down("up") and on_ground {
+        velocity_y = jump_power
+        on_ground = false
+    }
+
+    velocity_y = velocity_y + gravity
+    player["x"] = player["x"] + velocity_x
+    player["y"] = player["y"] + velocity_y
+
+    on_ground = false
+    for p in platforms {
+        if game.collision(player, p) {
+            if velocity_y > 0 {
+                player["y"] = p["y"] - player["height"]
+                velocity_y = 0
+                on_ground = true
+            }
+        }
+    }
+
+    game.draw(player)
+    for p in platforms {
+        game.draw(p)
+    }
+}

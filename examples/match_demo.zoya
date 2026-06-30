@@ -1,0 +1,8 @@
+fn describe(x) {
+    match x {
+        1 -> print("one"),
+        2 -> print("two")
+    }
+}
+describe(1)
+describe(3)
