@@ -269,6 +269,8 @@ class Parser:
         default_body: Optional[ASTNode] = None
         while self.peek().kind not in ("RBRACE", "EOF"):
             self.skip_newlines()
+            if self.check("RBRACE"):
+                break
             if self.check("CASE"):
                 self.consume("CASE")
                 case_expr = self.parse_expr()
