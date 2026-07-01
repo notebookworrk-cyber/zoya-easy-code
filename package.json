@@ -1,0 +1,45 @@
+{
+  "name": "zoya3",
+  "version": "3.0.0",
+  "description": "Zoya Programming Language - Native Compiler, Engine and Professional Ecosystem",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "cli": "node --enable-source-maps dist/cli/index.js",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "zoya",
+    "language",
+    "compiler",
+    "game-engine"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "zoya": "./dist/cli/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^15.0.0",
+    "inquirer": "^14.0.2",
+    "ora": "^9.4.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.10",
+    "@types/node": "^26.1.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^10.6.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}
