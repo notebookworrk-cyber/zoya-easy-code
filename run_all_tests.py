@@ -29,16 +29,19 @@ def main():
             capture_output=True,
             text=True,
         )
-        lines = result.stdout.strip().split("\n")
-        last_line = lines[-1] if lines else ""
 
         if result.returncode == 0:
             passed += 1
-            print(f"  PASS  {file}  ({last_line})")
+            if result.stderr.strip():
+                summary = result.stderr.strip().split("\n")[-1]
+            else:
+                summary = result.stdout.strip().split("\n")[-1] if result.stdout.strip() else "OK"
+            print(f"  PASS  {file}  ({summary})")
         else:
             failed += 1
             print(f"  FAIL  {file}")
-            print(result.stderr.strip()[:500])
+            err = result.stderr.strip() or result.stdout.strip()
+            print(err[:500])
 
     elapsed = time.time() - start
     print()
