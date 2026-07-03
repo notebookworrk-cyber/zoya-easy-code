@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 __pycache__/
 *.pyc
 *.pyo
@@ -8,5 +9,13 @@ venv/
 dist/
 build/
 *.log
+=======
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.local
+>>>>>>> bd1b344 (feat: Zoya 3.0 complete ecosystem - compiler, VM, engine, AI, cloud, LSP, debugger, testing, editor, docs, packages, security)
 .DS_Store
 Thumbs.db

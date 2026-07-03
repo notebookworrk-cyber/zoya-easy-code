@@ -1,0 +1,134 @@
+"""Zoya AI Platform — agent, LLM, tool, memory, embedding, and RAG subsystem.
+
+Provides a unified interface for building AI agents with pluggable LLM
+providers, a registry of built-in tools, conversational and semantic memory,
+text embeddings, and retrieval-augmented generation (RAG) indexing.
+"""
+
+from __future__ import annotations
+
+__version__ = "0.1.0"
+
+# ---------------------------------------------------------------------------
+# LLM providers
+# ---------------------------------------------------------------------------
+from .llm import (
+    AnthropicProvider,
+    ChatMessage,
+    LLMError,
+    LLMProvider,
+    LLMResponse,
+    MockProvider,
+    OpenAIProvider,
+    create_provider,
+)
+
+# ---------------------------------------------------------------------------
+# Tool system
+# ---------------------------------------------------------------------------
+from .tools import (
+    Calculator,
+    FileReadTool,
+    FileWriteTool,
+    PythonExecuteTool,
+    ShellTool,
+    Tool,
+    ToolError,
+    ToolRegistry,
+    WebSearchTool,
+    tool,
+)
+
+# ---------------------------------------------------------------------------
+# Memory
+# ---------------------------------------------------------------------------
+from .memory import (
+    AgentMemory,
+    ConversationMemory,
+    MemoryError,
+    MemoryItem,
+    SemanticMemory,
+)
+
+# ---------------------------------------------------------------------------
+# Embeddings
+# ---------------------------------------------------------------------------
+from .embeddings import (
+    EmbeddingError,
+    TFIDFVectorizer,
+    TextEmbedding,
+    cosine_similarity,
+    simple_tokenize,
+)
+
+# ---------------------------------------------------------------------------
+# Agent
+# ---------------------------------------------------------------------------
+from .agent import (
+    Agent,
+    AgentConfig,
+    AgentError,
+    PlanningAgent,
+    create_agent,
+)
+
+# ---------------------------------------------------------------------------
+# RAG
+# ---------------------------------------------------------------------------
+from .rag import (
+    Document,
+    DocumentChunker,
+    RAGError,
+    RAGIndex,
+    RAGRetriever,
+)
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+__all__ = [
+    # LLM
+    "LLMProvider",
+    "OpenAIProvider",
+    "AnthropicProvider",
+    "MockProvider",
+    "create_provider",
+    "ChatMessage",
+    "LLMResponse",
+    "LLMError",
+    # Tools
+    "Tool",
+    "ToolRegistry",
+    "Calculator",
+    "WebSearchTool",
+    "FileReadTool",
+    "FileWriteTool",
+    "PythonExecuteTool",
+    "ShellTool",
+    "tool",
+    "ToolError",
+    # Memory
+    "ConversationMemory",
+    "SemanticMemory",
+    "AgentMemory",
+    "MemoryItem",
+    "MemoryError",
+    # Embeddings
+    "cosine_similarity",
+    "TFIDFVectorizer",
+    "TextEmbedding",
+    "simple_tokenize",
+    "EmbeddingError",
+    # Agent
+    "Agent",
+    "PlanningAgent",
+    "AgentConfig",
+    "create_agent",
+    "AgentError",
+    # RAG
+    "Document",
+    "DocumentChunker",
+    "RAGIndex",
+    "RAGRetriever",
+    "RAGError",
+]
