@@ -169,6 +169,29 @@ def newton_method(
     return x
 
 
+def _solve_linear(A: List[List[float]], b: List[float]) -> List[float]:
+    """Solve Ax = b using Gaussian elimination (pure Python)."""
+    n = len(A)
+    aug = [row[:] + [b[i]] for i, row in enumerate(A)]
+    for col in range(n):
+        pivot = max(range(col, n), key=lambda r: abs(aug[r][col]))
+        if abs(aug[pivot][col]) < 1e-12:
+            continue
+        aug[col], aug[pivot] = aug[pivot], aug[col]
+        for r in range(col + 1, n):
+            factor = aug[r][col] / aug[col][col]
+            for c in range(col, n + 1):
+                aug[r][c] -= factor * aug[col][c]
+    x = [0.0] * n
+    for i in reversed(range(n)):
+        s = sum(aug[i][j] * x[j] for j in range(i + 1, n))
+        if abs(aug[i][i]) < 1e-12:
+            x[i] = 0.0
+        else:
+            x[i] = (aug[i][n] - s) / aug[i][i]
+    return x
+
+
 def newton_method_nd(
     f: Objective,
     grad_f: Gradient,
@@ -188,21 +211,16 @@ def newton_method_nd(
         max_iter: Maximum iterations
         tol: Convergence tolerance
     """
-    import numpy as np  # Simplified
     x = x0[:]
     for _ in range(max_iter):
         g = grad_f(x)
         if math.sqrt(sum(gi**2 for gi in g)) < tol:
             break
         H = hess_f(x)
-        # x_{k+1} = x_k - H^{-1} g
         try:
-            import numpy as np
-            H_np = np.array(H)
-            g_np = np.array(g)
-            delta = np.linalg.solve(H_np, -g_np)
+            delta = _solve_linear(H, [-gi for gi in g])
             x = [x[i] + delta[i] for i in range(len(x))]
-        except np.linalg.LinAlgError:
+        except Exception:
             break
     return x
 
