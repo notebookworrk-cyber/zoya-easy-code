@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zoya-lang"
-version = "0.1.0"
-description = "Zoya - A beginner-friendly programming language for AI, automation, and game development"
+version = "4.0.0"
+description = "Zoya - A software development platform: beginner-friendly language + 15-module pure-Python SDK (AI, cloud, web, mobile, data science, security, DevOps, enterprise, robotics)"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
