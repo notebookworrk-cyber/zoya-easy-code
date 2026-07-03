@@ -1,0 +1,22 @@
+name: Daily Streak
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update streak log
+        run: |
+          echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') — automated streak commit" >> STREAK.md
+      - name: Commit and push
+        run: |
+          git config user.name "zoya-bot"
+          git config user.email "zoya-bot@users.noreply.github.com"
+          git add STREAK.md
+          git commit -m "chore: daily streak commit [skip ci]" || exit 0
+          git push
