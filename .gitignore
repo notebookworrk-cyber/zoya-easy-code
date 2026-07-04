@@ -13,3 +13,11 @@ coverage/
 .env.local
 .DS_Store
 Thumbs.db
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage*
+*.swp
+*.swo
+*~
