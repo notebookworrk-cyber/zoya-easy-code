@@ -1,9 +1,7 @@
 __version__ = "0.1.0"
 
 import json
-import math
-from typing import Any, Dict, List, Optional, Tuple, Union
-
+from typing import Any
 
 __all__ = [
     "ComponentDefinition",
@@ -23,10 +21,10 @@ class ComponentDefinition:
     def __init__(
         self,
         type: str,
-        props: Optional[Dict[str, Any]] = None,
-        children: Optional[List["ComponentDefinition"]] = None,
-        events: Optional[Dict[str, str]] = None,
-        style: Optional[Dict[str, Any]] = None,
+        props: dict[str, Any] | None = None,
+        children: list["ComponentDefinition"] | None = None,
+        events: dict[str, str] | None = None,
+        style: dict[str, Any] | None = None,
         comp_id: str = "",
     ) -> None:
         self.type = type
@@ -39,11 +37,11 @@ class ComponentDefinition:
 
 class ComponentLibrary:
     def __init__(self) -> None:
-        self._schemas: Dict[str, Dict[str, Any]] = {}
+        self._schemas: dict[str, dict[str, Any]] = {}
         self._register_builtins()
 
     def _register_builtins(self) -> None:
-        builtins: Dict[str, Dict[str, Any]] = {
+        builtins: dict[str, dict[str, Any]] = {
             "button": {
                 "props": {
                     "text": {"type": "string", "default": "Button"},
@@ -146,22 +144,22 @@ class ComponentLibrary:
         for comp_type, schema in builtins.items():
             self._schemas[comp_type] = schema
 
-    def register(self, component_type: str, schema: Dict[str, Any]) -> None:
+    def register(self, component_type: str, schema: dict[str, Any]) -> None:
         self._schemas[component_type] = schema
 
-    def get_schema(self, component_type: str) -> Optional[Dict[str, Any]]:
+    def get_schema(self, component_type: str) -> dict[str, Any] | None:
         return self._schemas.get(component_type)
 
-    def list_types(self) -> List[str]:
+    def list_types(self) -> list[str]:
         return list(self._schemas.keys())
 
 
 class Theme:
     def __init__(
         self,
-        colors: Optional[Dict[str, str]] = None,
-        spacing: Optional[Dict[str, int]] = None,
-        fonts: Optional[Dict[str, Any]] = None,
+        colors: dict[str, str] | None = None,
+        spacing: dict[str, int] | None = None,
+        fonts: dict[str, Any] | None = None,
         border_radius: int = 4,
     ) -> None:
         self.colors = colors or {
@@ -194,7 +192,7 @@ class Theme:
         self.border_radius = border_radius
 
     def to_css(self) -> str:
-        lines: List[str] = [":root {"]
+        lines: list[str] = [":root {"]
         for key, val in self.colors.items():
             css_key = key.replace("_", "-")
             lines.append(f"  --color-{css_key}: {val};")
@@ -214,10 +212,10 @@ class Theme:
 class LayoutEngine:
     def calculate(
         self,
-        components: List[ComponentDefinition],
+        components: list[ComponentDefinition],
         container_width: int,
-    ) -> List[Dict[str, Any]]:
-        results: List[Dict[str, Any]] = []
+    ) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
         x = 0
         y = 0
         row_height = 0
@@ -225,13 +223,15 @@ class LayoutEngine:
             style = comp.style
             mode = style.get("layout", "flex-row")
             if mode == "absolute":
-                results.append({
-                    "id": comp.id,
-                    "x": style.get("left", 0),
-                    "y": style.get("top", 0),
-                    "width": style.get("width", 100),
-                    "height": style.get("height", 50),
-                })
+                results.append(
+                    {
+                        "id": comp.id,
+                        "x": style.get("left", 0),
+                        "y": style.get("top", 0),
+                        "width": style.get("width", 100),
+                        "height": style.get("height", 50),
+                    }
+                )
                 continue
             width = style.get("width", 100)
             height = style.get("height", 50)
@@ -244,13 +244,15 @@ class LayoutEngine:
                     x = 0
                     y += row_height
                     row_height = 0
-            results.append({
-                "id": comp.id,
-                "x": x,
-                "y": y,
-                "width": width,
-                "height": height,
-            })
+            results.append(
+                {
+                    "id": comp.id,
+                    "x": x,
+                    "y": y,
+                    "width": width,
+                    "height": height,
+                }
+            )
             x += width + style.get("margin", 0)
             row_height = max(row_height, height)
         return results
@@ -260,11 +262,8 @@ class VisualBuilder:
     def __init__(self) -> None:
         self.library = ComponentLibrary()
 
-    def build(self, spec: Union[Dict, str]) -> List[ComponentDefinition]:
-        if isinstance(spec, str):
-            parsed = json.loads(spec)
-        else:
-            parsed = spec
+    def build(self, spec: dict | str) -> list[ComponentDefinition]:
+        parsed = json.loads(spec) if isinstance(spec, str) else spec
         if isinstance(parsed, list):
             return [self._parse_component(item) for item in parsed]
         if isinstance(parsed, dict):
@@ -273,7 +272,7 @@ class VisualBuilder:
             return [self._parse_component(parsed)]
         raise VisualBuilderError("Invalid spec format")
 
-    def _parse_component(self, item: Dict) -> ComponentDefinition:
+    def _parse_component(self, item: dict) -> ComponentDefinition:
         if "type" not in item:
             raise VisualBuilderError("Component missing 'type' field")
         children_raw = item.get("children", [])
@@ -290,13 +289,13 @@ class VisualBuilder:
             comp_id=item.get("id", ""),
         )
 
-    def to_json(self, components: List[ComponentDefinition]) -> str:
+    def to_json(self, components: list[ComponentDefinition]) -> str:
         return json.dumps(
             [self._component_to_dict(c) for c in components],
             indent=2,
         )
 
-    def _component_to_dict(self, comp: ComponentDefinition) -> Dict:
+    def _component_to_dict(self, comp: ComponentDefinition) -> dict:
         return {
             "id": comp.id,
             "type": comp.type,
@@ -306,18 +305,16 @@ class VisualBuilder:
             "style": comp.style,
         }
 
-    def to_zoya_code(self, components: List[ComponentDefinition]) -> str:
-        lines: List[str] = []
+    def to_zoya_code(self, components: list[ComponentDefinition]) -> str:
+        lines: list[str] = []
         for comp in components:
             lines.extend(self._component_to_code(comp, 0))
         return "\n".join(lines)
 
-    def _component_to_code(self, comp: ComponentDefinition, depth: int) -> List[str]:
+    def _component_to_code(self, comp: ComponentDefinition, depth: int) -> list[str]:
         indent = "  " * depth
-        lines: List[str] = []
-        props_str = ", ".join(
-            f"{k}={repr(v)}" for k, v in comp.props.items()
-        )
+        lines: list[str] = []
+        props_str = ", ".join(f"{k}={repr(v)}" for k, v in comp.props.items())
         style_str = ""
         if comp.style:
             style_str = ", style=" + json.dumps(comp.style)
@@ -334,23 +331,23 @@ class VisualBuilder:
             lines.append(header)
         return lines
 
-    def render_preview(self, components: List[ComponentDefinition]) -> str:
-        lines: List[str] = []
+    def render_preview(self, components: list[ComponentDefinition]) -> str:
+        lines: list[str] = []
         for comp in components:
             lines.extend(self._preview_component(comp, 0))
         return "\n".join(lines)
 
-    def _preview_component(self, comp: ComponentDefinition, depth: int) -> List[str]:
+    def _preview_component(self, comp: ComponentDefinition, depth: int) -> list[str]:
         indent = "  " * depth
         prefix = f"[{comp.type}]"
         title = comp.props.get("text", comp.props.get("title", comp.id))
-        lines: List[str] = [f"{indent}{prefix} {title}"]
+        lines: list[str] = [f"{indent}{prefix} {title}"]
         for child in comp.children:
             lines.extend(self._preview_component(child, depth + 1))
         return lines
 
-    def validate_spec(self, spec: Dict) -> List[str]:
-        errors: List[str] = []
+    def validate_spec(self, spec: dict) -> list[str]:
+        errors: list[str] = []
         if not isinstance(spec, dict):
             return ["Spec must be a dictionary"]
         components = spec.get("components", [spec])
@@ -379,10 +376,16 @@ class VisualBuilder:
                     )
         return errors
 
-    def merge_styles(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    def merge_styles(
+        self, base: dict[str, Any], override: dict[str, Any]
+    ) -> dict[str, Any]:
         merged = dict(base)
         for key, val in override.items():
-            if key in merged and isinstance(merged[key], dict) and isinstance(val, dict):
+            if (
+                key in merged
+                and isinstance(merged[key], dict)
+                and isinstance(val, dict)
+            ):
                 merged[key] = self.merge_styles(merged[key], val)
             else:
                 merged[key] = val

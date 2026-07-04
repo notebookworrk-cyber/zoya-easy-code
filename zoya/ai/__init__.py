@@ -12,6 +12,27 @@ __version__ = "0.1.0"
 # ---------------------------------------------------------------------------
 # LLM providers
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Agent
+# ---------------------------------------------------------------------------
+from .agent import (
+    Agent,
+    AgentConfig,
+    AgentError,
+    PlanningAgent,
+    create_agent,
+)
+
+# ---------------------------------------------------------------------------
+# Embeddings
+# ---------------------------------------------------------------------------
+from .embeddings import (
+    EmbeddingError,
+    TextEmbedding,
+    TFIDFVectorizer,
+    cosine_similarity,
+    simple_tokenize,
+)
 from .llm import (
     AnthropicProvider,
     ChatMessage,
@@ -21,6 +42,28 @@ from .llm import (
     MockProvider,
     OpenAIProvider,
     create_provider,
+)
+
+# ---------------------------------------------------------------------------
+# Memory
+# ---------------------------------------------------------------------------
+from .memory import (
+    AgentMemory,
+    ConversationMemory,
+    MemoryError,
+    MemoryItem,
+    SemanticMemory,
+)
+
+# ---------------------------------------------------------------------------
+# RAG
+# ---------------------------------------------------------------------------
+from .rag import (
+    Document,
+    DocumentChunker,
+    RAGError,
+    RAGIndex,
+    RAGRetriever,
 )
 
 # ---------------------------------------------------------------------------
@@ -37,50 +80,6 @@ from .tools import (
     ToolRegistry,
     WebSearchTool,
     tool,
-)
-
-# ---------------------------------------------------------------------------
-# Memory
-# ---------------------------------------------------------------------------
-from .memory import (
-    AgentMemory,
-    ConversationMemory,
-    MemoryError,
-    MemoryItem,
-    SemanticMemory,
-)
-
-# ---------------------------------------------------------------------------
-# Embeddings
-# ---------------------------------------------------------------------------
-from .embeddings import (
-    EmbeddingError,
-    TFIDFVectorizer,
-    TextEmbedding,
-    cosine_similarity,
-    simple_tokenize,
-)
-
-# ---------------------------------------------------------------------------
-# Agent
-# ---------------------------------------------------------------------------
-from .agent import (
-    Agent,
-    AgentConfig,
-    AgentError,
-    PlanningAgent,
-    create_agent,
-)
-
-# ---------------------------------------------------------------------------
-# RAG
-# ---------------------------------------------------------------------------
-from .rag import (
-    Document,
-    DocumentChunker,
-    RAGError,
-    RAGIndex,
-    RAGRetriever,
 )
 
 # ---------------------------------------------------------------------------

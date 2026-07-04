@@ -6,55 +6,55 @@ debugging, and documentation generation for the Zoya programming language.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from zoya.ide.completion import (
-    CompletionContext,
-    CompletionItem,
-    CompletionEngine,
-    ZOYA_KEYWORDS,
-    ZOYA_BUILTINS,
-    ZOYA_SNIPPETS,
-    STRING_METHODS,
-    LIST_METHODS,
     DICT_METHODS,
+    LIST_METHODS,
+    STRING_METHODS,
+    ZOYA_BUILTINS,
+    ZOYA_KEYWORDS,
+    ZOYA_SNIPPETS,
+    CompletionContext,
+    CompletionEngine,
+    CompletionItem,
+)
+from zoya.ide.debug import (
+    COMMON_BUG_PATTERNS,
+    BugPattern,
+    DebugAnalysis,
+    DebugAssistant,
+    DebugContext,
+)
+from zoya.ide.docs import (
+    ApiReference,
+    DocConfig,
+    DocGenerator,
+    DocSection,
+    _escape_html,
+    _extract_classes,
+    _extract_enums,
+    _extract_functions,
+    _extract_interfaces,
+    _format_fn_signature,
+    parse_doc_comments,
 )
 from zoya.ide.generation import (
-    GenerationConfig,
     CodeGenerator,
     CodeTemplate,
+    GenerationConfig,
+)
+from zoya.ide.refactor import (
+    RefactoringEngine,
+    RefactoringOperation,
+    RefactoringSuggestion,
+    get_available_refactorings,
 )
 from zoya.ide.review import (
     REVIEW_RULES,
+    CodeReviewer,
     ReviewIssue,
     ReviewResult,
-    CodeReviewer,
-)
-from zoya.ide.refactor import (
-    RefactoringOperation,
-    RefactoringSuggestion,
-    RefactoringEngine,
-    get_available_refactorings,
-)
-from zoya.ide.debug import (
-    DebugContext,
-    DebugAnalysis,
-    BugPattern,
-    COMMON_BUG_PATTERNS,
-    DebugAssistant,
-)
-from zoya.ide.docs import (
-    DocConfig,
-    DocSection,
-    ApiReference,
-    DocGenerator,
-    parse_doc_comments,
-    _extract_functions,
-    _extract_classes,
-    _extract_enums,
-    _extract_interfaces,
-    _format_fn_signature,
-    _escape_html,
 )
 
 __version__ = "0.1.0"
@@ -104,14 +104,14 @@ __all__ = [
 class IDEAssistant:
     """Main IDE assistant combining all AI-powered tools."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self._config = config or {}
-        self._completion: Optional[CompletionEngine] = None
-        self._generator: Optional[CodeGenerator] = None
-        self._reviewer: Optional[CodeReviewer] = None
-        self._refactor: Optional[RefactoringEngine] = None
-        self._debug: Optional[DebugAssistant] = None
-        self._docs: Optional[DocGenerator] = None
+        self._completion: CompletionEngine | None = None
+        self._generator: CodeGenerator | None = None
+        self._reviewer: CodeReviewer | None = None
+        self._refactor: RefactoringEngine | None = None
+        self._debug: DebugAssistant | None = None
+        self._docs: DocGenerator | None = None
 
     @property
     def completion(self) -> CompletionEngine:
@@ -173,7 +173,7 @@ class IDEAssistant:
         return self._docs
 
 
-def create_ide_assistant(config: Optional[Dict[str, Any]] = None) -> IDEAssistant:
+def create_ide_assistant(config: dict[str, Any] | None = None) -> IDEAssistant:
     """Create a fully initialized IDEAssistant with default or custom configuration.
 
     Args:

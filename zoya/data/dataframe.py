@@ -1,6 +1,10 @@
-from typing import Optional, List, Dict, Any, Callable, Union, Iterator, Tuple
-import csv, json, math, random, re
+import csv
+import json
+import math
+import random
 from collections import Counter
+from collections.abc import Callable, Iterator
+from typing import Any, Union
 
 
 class DataFrameError(Exception):
@@ -92,7 +96,7 @@ def _parse_query_expr(expr: str, row: dict) -> bool:
 
 
 class Series:
-    def __init__(self, data: List = None, name: str = "", index: List = None):
+    def __init__(self, data: list = None, name: str = "", index: list = None):
         self._data = list(data) if data is not None else []
         self._name = name
         self._index = index if index is not None else list(range(len(self._data)))
@@ -106,11 +110,11 @@ class Series:
         self._name = value
 
     @property
-    def values(self) -> List:
+    def values(self) -> list:
         return self._data
 
     @property
-    def index(self) -> List:
+    def index(self) -> list:
         return self._index
 
     @property
@@ -126,15 +130,14 @@ class Series:
             if isinstance(key, Series):
                 key = key.values
             return Series(
-                [self._data[i] for i, k in enumerate(key) if k],
-                name=self._name
+                [self._data[i] for i, k in enumerate(key) if k], name=self._name
             )
         if isinstance(key, str):
             raise DataFrameError("String key not supported on Series")
         if isinstance(key, Series):
             return Series(
-                [v for v, k in zip(self._data, key.values) if k],
-                name=self._name
+                [v for v, k in zip(self._data, key.values, strict=False) if k],
+                name=self._name,
             )
         return self._data[key]
 
@@ -161,13 +164,10 @@ class Series:
         if isinstance(other, Series):
             result = [
                 op(a, b) if a is not None and b is not None else None
-                for a, b in zip(self._data, other._data)
+                for a, b in zip(self._data, other._data, strict=False)
             ]
         else:
-            result = [
-                op(v, other) if v is not None else None
-                for v in self._data
-            ]
+            result = [op(v, other) if v is not None else None for v in self._data]
         return Series(result, name=self._name, index=self._index)
 
     def __add__(self, other) -> "Series":
@@ -242,7 +242,7 @@ class Series:
         return Series(
             [func(v) if v is not None else None for v in self._data],
             name=self._name,
-            index=self._index
+            index=self._index,
         )
 
     def map(self, func: Callable) -> "Series":
@@ -250,25 +250,20 @@ class Series:
 
     def isna(self) -> "Series":
         return Series(
-            [v is None for v in self._data],
-            name=self._name,
-            index=self._index
+            [v is None for v in self._data], name=self._name, index=self._index
         )
 
     def dropna(self) -> "Series":
-        return Series(
-            [v for v in self._data if v is not None],
-            name=self._name
-        )
+        return Series([v for v in self._data if v is not None], name=self._name)
 
     def fillna(self, value) -> "Series":
         return Series(
             [v if v is not None else value for v in self._data],
             name=self._name,
-            index=self._index
+            index=self._index,
         )
 
-    def unique(self) -> List:
+    def unique(self) -> list:
         seen = set()
         result = []
         for v in self._data:
@@ -277,12 +272,12 @@ class Series:
                 result.append(v)
         return result
 
-    def value_counts(self) -> Dict:
+    def value_counts(self) -> dict:
         counts = Counter(self._data)
         return dict(counts.most_common())
 
     def sort_values(self, ascending: bool = True) -> "Series":
-        pairs = list(zip(self._index, self._data))
+        pairs = list(zip(self._index, self._data, strict=False))
         pairs.sort(key=lambda x: (x[1] is None, x[1]), reverse=not ascending)
         sorted_idx = [p[0] for p in pairs]
         sorted_data = [p[1] for p in pairs]
@@ -294,11 +289,15 @@ class Series:
     def round(self, decimals: int = 0) -> "Series":
         return self.apply(lambda x: round(x, decimals) if isinstance(x, float) else x)
 
-    def to_list(self) -> List:
+    def to_list(self) -> list:
         return list(self._data)
 
     def corr(self, other: "Series") -> float:
-        pairs = [(a, b) for a, b in zip(self._data, other._data) if a is not None and b is not None]
+        pairs = [
+            (a, b)
+            for a, b in zip(self._data, other._data, strict=False)
+            if a is not None and b is not None
+        ]
         n = len(pairs)
         if n < 2:
             return float("nan")
@@ -306,20 +305,25 @@ class Series:
         ys = [p[1] for p in pairs]
         mx = sum(xs) / n
         my = sum(ys) / n
-        num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
-        den = math.sqrt(sum((x - mx) ** 2 for x in xs)) * math.sqrt(sum((y - my) ** 2 for y in ys))
+        num = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
+        den = math.sqrt(sum((x - mx) ** 2 for x in xs)) * math.sqrt(
+            sum((y - my) ** 2 for y in ys)
+        )
         if den == 0:
             return float("nan")
         return num / den
 
     def _repr_html_(self) -> str:
-        rows = [f"<tr><td>{i}</td><td>{v}</td></tr>" for i, v in zip(self._index[:10], self._data[:10])]
+        rows = [
+            f"<tr><td>{i}</td><td>{v}</td></tr>"
+            for i, v in zip(self._index[:10], self._data[:10], strict=False)
+        ]
         more = "<tr><td>...</td><td>...</td></tr>" if len(self._data) > 10 else ""
         return f"<table><thead><tr><th></th><th>{self._name}</th></tr></thead><tbody>{''.join(rows)}{more}</tbody></table>"
 
 
 class GroupBy:
-    def __init__(self, df: "DataFrame", keys: List[str]):
+    def __init__(self, df: "DataFrame", keys: list[str]):
         self._df = df
         self._keys = keys
         self._groups = {}
@@ -330,7 +334,7 @@ class GroupBy:
             self._groups[key].append(i)
 
     @property
-    def groups(self) -> Dict:
+    def groups(self) -> dict:
         return {k: list(v) for k, v in self._groups.items()}
 
     @property
@@ -345,12 +349,16 @@ class GroupBy:
     def __getitem__(self, key) -> "GroupByColumn":
         return GroupByColumn(self, key)
 
-    def aggregate(self, funcs: Dict[str, str]) -> "DataFrame":
+    def aggregate(self, funcs: dict[str, str]) -> "DataFrame":
         result = []
         for key, indices in self._groups.items():
-            row = dict(zip(self._keys, key))
+            row = dict(zip(self._keys, key, strict=False))
             for col, func_name in funcs.items():
-                col_vals = [self._df._data[i][col] for i in indices if self._df._data[i][col] is not None]
+                col_vals = [
+                    self._df._data[i][col]
+                    for i in indices
+                    if self._df._data[i][col] is not None
+                ]
                 if not col_vals:
                     row[f"{col}_{func_name}"] = None
                 else:
@@ -358,7 +366,7 @@ class GroupBy:
             result.append(row)
         return DataFrame(result)
 
-    def _apply_func(self, vals: List, func_name: str):
+    def _apply_func(self, vals: list, func_name: str):
         if func_name == "sum":
             return sum(vals)
         if func_name == "mean":
@@ -394,7 +402,7 @@ class GroupBy:
 
     def _agg_all(self, func_name: str) -> "DataFrame":
         cols = [c for c in self._df.columns if c not in self._keys]
-        funcs = {c: func_name for c in cols}
+        funcs = dict.fromkeys(cols, func_name)
         return self.aggregate(funcs)
 
     def sum(self) -> "DataFrame":
@@ -434,20 +442,17 @@ class GroupBy:
             applied = func(sub_df)
             if isinstance(applied, DataFrame):
                 for row in applied._data:
-                    agg_row = dict(zip(self._keys, key))
+                    agg_row = dict(zip(self._keys, key, strict=False))
                     agg_row.update(row)
                     result.append(agg_row)
             else:
-                agg_row = dict(zip(self._keys, key))
+                agg_row = dict(zip(self._keys, key, strict=False))
                 agg_row["result"] = applied
                 result.append(agg_row)
         return DataFrame(result)
 
     def get_group(self, key) -> "DataFrame":
-        if isinstance(key, tuple):
-            key = tuple(key)
-        else:
-            key = (key,)
+        key = tuple(key) if isinstance(key, tuple) else (key,)
         if key not in self._groups:
             raise DataFrameError(f"Group {key} not found")
         indices = self._groups[key]
@@ -496,12 +501,17 @@ class GroupByColumn:
         result = []
         for key, indices in self._groupby._groups.items():
             vals = [self._groupby._df._data[i][self._column] for i in indices]
-            result.append({**dict(zip(self._groupby._keys, key)), self._column: func(vals)})
+            result.append(
+                {
+                    **dict(zip(self._groupby._keys, key, strict=False)),
+                    self._column: func(vals),
+                }
+            )
         return DataFrame(result)
 
 
 class DataFrame:
-    def __init__(self, data=None, columns: List[str] = None):
+    def __init__(self, data=None, columns: list[str] = None):
         self._data = []
         if data is None:
             if columns:
@@ -522,7 +532,9 @@ class DataFrame:
                     self._columns = [f"col{i}" for i in range(len(data[0]))]
                 else:
                     self._columns = list(columns)
-                self._data = [dict(zip(self._columns, row)) for row in data]
+                self._data = [
+                    dict(zip(self._columns, row, strict=False)) for row in data
+                ]
                 for row in self._data:
                     for c in self._columns:
                         if c not in row:
@@ -530,7 +542,7 @@ class DataFrame:
             else:
                 if columns:
                     self._columns = list(columns)
-                    self._data = [{c: v for c, v in zip(columns, data)}]
+                    self._data = [dict(zip(columns, data, strict=False))]
                 else:
                     self._columns = ["col0"]
                     self._data = [{"col0": v} for v in data]
@@ -547,21 +559,21 @@ class DataFrame:
                     self._data.append(row)
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         return self._columns
 
     @columns.setter
-    def columns(self, value: List[str]):
+    def columns(self, value: list[str]):
         if len(value) != len(self._columns):
             raise DataFrameError("New columns must match current number of columns")
         self._columns = list(value)
 
     @property
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> tuple[int, int]:
         return (len(self._data), len(self._columns))
 
     @property
-    def dtypes(self) -> Dict[str, str]:
+    def dtypes(self) -> dict[str, str]:
         return {c: _infer_type(self[c].values) for c in self._columns}
 
     @property
@@ -577,14 +589,13 @@ class DataFrame:
             return self._get_column(key)
         if isinstance(key, list):
             return DataFrame(
-                [{k: row[k] for k in key} for row in self._data],
-                columns=key
+                [{k: row[k] for k in key} for row in self._data], columns=key
             )
         if isinstance(key, Series):
             bools = key.values
             return DataFrame(
-                [row for row, b in zip(self._data, bools) if b],
-                columns=self._columns
+                [row for row, b in zip(self._data, bools, strict=False) if b],
+                columns=self._columns,
             )
         raise DataFrameError(f"Invalid key type: {type(key)}")
 
@@ -623,8 +634,7 @@ class DataFrame:
                 if isinstance(key, int):
                     row = dict(self._df._data[key])
                     return Series(
-                        [row[c] for c in self._df._columns],
-                        index=self._df._columns
+                        [row[c] for c in self._df._columns], index=self._df._columns
                     )
                 if isinstance(key, slice):
                     rows = self._df._data[key]
@@ -646,13 +656,17 @@ class DataFrame:
                 if isinstance(key, Series):
                     bools = key.values
                     return DataFrame(
-                        [row for row, b in zip(self._df._data, bools) if b],
-                        columns=self._df._columns
+                        [
+                            row
+                            for row, b in zip(self._df._data, bools, strict=False)
+                            if b
+                        ],
+                        columns=self._df._columns,
                     )
                 if callable(key):
                     return DataFrame(
                         [row for row in self._df._data if key(row)],
-                        columns=self._df._columns
+                        columns=self._df._columns,
                     )
                 raise DataFrameError("loc requires a boolean Series or callable")
 
@@ -664,11 +678,10 @@ class DataFrame:
     def tail(self, n: int = 5) -> "DataFrame":
         return DataFrame(self._data[-n:], columns=self._columns)
 
-    def sample(self, n: int = None, frac: float = None, random_state: int = None) -> "DataFrame":
-        if random_state is not None:
-            rng = random.Random(random_state)
-        else:
-            rng = random
+    def sample(
+        self, n: int = None, frac: float = None, random_state: int = None
+    ) -> "DataFrame":
+        rng = random.Random(random_state) if random_state is not None else random
         total = len(self._data)
         if n is not None:
             k = min(n, total)
@@ -681,39 +694,42 @@ class DataFrame:
 
     def filter(self, condition: Callable) -> "DataFrame":
         return DataFrame(
-            [row for row in self._data if condition(row)],
-            columns=self._columns
+            [row for row in self._data if condition(row)], columns=self._columns
         )
 
     def query(self, expr: str) -> "DataFrame":
         return DataFrame(
             [row for row in self._data if _parse_query_expr(expr, row)],
-            columns=self._columns
+            columns=self._columns,
         )
 
-    def isin(self, column: str, values: List) -> "DataFrame":
+    def isin(self, column: str, values: list) -> "DataFrame":
         val_set = set(values)
         return DataFrame(
             [row for row in self._data if row.get(column) in val_set],
-            columns=self._columns
+            columns=self._columns,
         )
 
     def between(self, column: str, low, high) -> "DataFrame":
         return DataFrame(
             [row for row in self._data if low <= row.get(column) <= high],
-            columns=self._columns
+            columns=self._columns,
         )
 
-    def dropna(self, axis: int = 0, subset: List[str] = None) -> "DataFrame":
+    def dropna(self, axis: int = 0, subset: list[str] = None) -> "DataFrame":
         if axis == 0:
             cols = subset or self._columns
             return DataFrame(
-                [row for row in self._data if all(row.get(c) is not None for c in cols)],
-                columns=self._columns
+                [
+                    row
+                    for row in self._data
+                    if all(row.get(c) is not None for c in cols)
+                ],
+                columns=self._columns,
             )
         raise DataFrameError("axis=1 dropna not supported")
 
-    def fillna(self, value, columns: List[str] = None) -> "DataFrame":
+    def fillna(self, value, columns: list[str] = None) -> "DataFrame":
         cols = columns or self._columns
         new_data = []
         for row in self._data:
@@ -724,7 +740,7 @@ class DataFrame:
             new_data.append(new_row)
         return DataFrame(new_data, columns=self._columns)
 
-    def sort_values(self, by: Union[str, List[str]], ascending: bool = True) -> "DataFrame":
+    def sort_values(self, by: str | list[str], ascending: bool = True) -> "DataFrame":
         keys = [by] if isinstance(by, str) else list(by)
 
         def sort_key(row):
@@ -733,11 +749,11 @@ class DataFrame:
         sorted_data = sorted(self._data, key=sort_key, reverse=not ascending)
         return DataFrame(sorted_data, columns=self._columns)
 
-    def group_by(self, by: Union[str, List[str]]) -> GroupBy:
+    def group_by(self, by: str | list[str]) -> GroupBy:
         keys = [by] if isinstance(by, str) else list(by)
         return GroupBy(self, keys)
 
-    def aggregate(self, agg_dict: Dict[str, str]) -> "DataFrame":
+    def aggregate(self, agg_dict: dict[str, str]) -> "DataFrame":
         result = {}
         for col, func_name in agg_dict.items():
             vals = [row[col] for row in self._data if row[col] is not None]
@@ -764,7 +780,9 @@ class DataFrame:
                     result[col] = None
                 else:
                     m = sum(vals) / len(vals)
-                    result[col] = math.sqrt(sum((x - m) ** 2 for x in vals) / (len(vals) - 1))
+                    result[col] = math.sqrt(
+                        sum((x - m) ** 2 for x in vals) / (len(vals) - 1)
+                    )
             elif func_name == "var":
                 if len(vals) < 2:
                     result[col] = None
@@ -789,13 +807,20 @@ class DataFrame:
                 n = len(list(result.values())[0])
                 return DataFrame(
                     [{c: result[c][i] for c in self._columns} for i in range(n)],
-                    columns=self._columns
+                    columns=self._columns,
                 )
             return DataFrame([result])
         elif axis == 1:
             return DataFrame(
-                [func(row) if isinstance(func(row), dict) else {c: func(row[c]) for c in self._columns} for row in self._data],
-                columns=self._columns
+                [
+                    (
+                        func(row)
+                        if isinstance(func(row), dict)
+                        else {c: func(row[c]) for c in self._columns}
+                    )
+                    for row in self._data
+                ],
+                columns=self._columns,
             )
         raise DataFrameError(f"Invalid axis: {axis}")
 
@@ -808,8 +833,8 @@ class DataFrame:
     def map(self, column: str, func: Callable) -> Series:
         return self[column].apply(func)
 
-    def rename(self, columns: Dict[str, str]) -> "DataFrame":
-        mapping = {k: v for k, v in columns.items()}
+    def rename(self, columns: dict[str, str]) -> "DataFrame":
+        mapping = dict(columns.items())
         new_cols = [mapping.get(c, c) for c in self._columns]
         new_data = []
         for row in self._data:
@@ -817,7 +842,7 @@ class DataFrame:
             new_data.append(new_row)
         return DataFrame(new_data, columns=new_cols)
 
-    def drop(self, columns: List[str] = None, index: List[int] = None) -> "DataFrame":
+    def drop(self, columns: list[str] = None, index: list[int] = None) -> "DataFrame":
         new_data = list(self._data)
         if index is not None:
             idx_set = set(index)
@@ -825,7 +850,9 @@ class DataFrame:
         if columns is not None:
             col_set = set(columns)
             new_cols = [c for c in self._columns if c not in col_set]
-            new_data = [{k: v for k, v in row.items() if k not in col_set} for row in new_data]
+            new_data = [
+                {k: v for k, v in row.items() if k not in col_set} for row in new_data
+            ]
             return DataFrame(new_data, columns=new_cols)
         return DataFrame(new_data, columns=self._columns)
 
@@ -842,13 +869,15 @@ class DataFrame:
             raise DataFrameError(f"Column '{column}' not found")
         return DataFrame(
             [{k: v for k, v in row.items() if k != column} for row in self._data],
-            columns=[c for c in self._columns if c != column]
+            columns=[c for c in self._columns if c != column],
         )
 
     def describe(self) -> "DataFrame":
         stats = {}
         for c in self._columns:
-            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
+            vals = [
+                row[c] for row in self._data if isinstance(row.get(c), (int, float))
+            ]
             if vals:
                 n = len(vals)
                 s = sum(vals)
@@ -883,21 +912,27 @@ class DataFrame:
     def sum(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
+            vals = [
+                row[c] for row in self._data if isinstance(row.get(c), (int, float))
+            ]
             result.append(sum(vals) if vals else 0)
         return Series(result, name="sum", index=self._columns)
 
     def mean(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
+            vals = [
+                row[c] for row in self._data if isinstance(row.get(c), (int, float))
+            ]
             result.append(sum(vals) / len(vals) if vals else float("nan"))
         return Series(result, name="mean", index=self._columns)
 
     def median(self) -> Series:
         result = []
         for c in self._columns:
-            vals = sorted([row[c] for row in self._data if isinstance(row.get(c), (int, float))])
+            vals = sorted(
+                [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
+            )
             if not vals:
                 result.append(float("nan"))
             else:
@@ -926,18 +961,24 @@ class DataFrame:
     def std(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
+            vals = [
+                row[c] for row in self._data if isinstance(row.get(c), (int, float))
+            ]
             if len(vals) < 2:
                 result.append(float("nan"))
             else:
                 m = sum(vals) / len(vals)
-                result.append(math.sqrt(sum((x - m) ** 2 for x in vals) / (len(vals) - 1)))
+                result.append(
+                    math.sqrt(sum((x - m) ** 2 for x in vals) / (len(vals) - 1))
+                )
         return Series(result, name="std", index=self._columns)
 
     def var(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
+            vals = [
+                row[c] for row in self._data if isinstance(row.get(c), (int, float))
+            ]
             if len(vals) < 2:
                 result.append(float("nan"))
             else:
@@ -953,13 +994,15 @@ class DataFrame:
 
     def corr(self) -> "DataFrame":
         num_cols = [c for c in self._columns if self._is_numeric(c)]
-        n = len(num_cols)
+        len(num_cols)
         corr_data = {c: [] for c in num_cols}
         for c1 in num_cols:
             for c2 in num_cols:
                 pairs = [
-                    (row[c1], row[c2]) for row in self._data
-                    if isinstance(row.get(c1), (int, float)) and isinstance(row.get(c2), (int, float))
+                    (row[c1], row[c2])
+                    for row in self._data
+                    if isinstance(row.get(c1), (int, float))
+                    and isinstance(row.get(c2), (int, float))
                 ]
                 if len(pairs) < 2:
                     corr_data[c1].append(float("nan"))
@@ -968,20 +1011,24 @@ class DataFrame:
                     ys = [p[1] for p in pairs]
                     mx = sum(xs) / len(xs)
                     my = sum(ys) / len(ys)
-                    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
-                    den = math.sqrt(sum((x - mx) ** 2 for x in xs)) * math.sqrt(sum((y - my) ** 2 for y in ys))
+                    num = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
+                    den = math.sqrt(sum((x - mx) ** 2 for x in xs)) * math.sqrt(
+                        sum((y - my) ** 2 for y in ys)
+                    )
                     corr_data[c1].append(num / den if den != 0 else float("nan"))
         return DataFrame(corr_data, columns=num_cols)
 
     def cov(self) -> "DataFrame":
         num_cols = [c for c in self._columns if self._is_numeric(c)]
-        n = len(num_cols)
+        len(num_cols)
         cov_data = {c: [] for c in num_cols}
         for c1 in num_cols:
             for c2 in num_cols:
                 pairs = [
-                    (row[c1], row[c2]) for row in self._data
-                    if isinstance(row.get(c1), (int, float)) and isinstance(row.get(c2), (int, float))
+                    (row[c1], row[c2])
+                    for row in self._data
+                    if isinstance(row.get(c1), (int, float))
+                    and isinstance(row.get(c2), (int, float))
                 ]
                 if len(pairs) < 2:
                     cov_data[c1].append(float("nan"))
@@ -990,16 +1037,19 @@ class DataFrame:
                     ys = [p[1] for p in pairs]
                     mx = sum(xs) / len(xs)
                     my = sum(ys) / len(ys)
-                    cov_data[c1].append(sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / (len(xs) - 1))
+                    cov_data[c1].append(
+                        sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
+                        / (len(xs) - 1)
+                    )
         return DataFrame(cov_data, columns=num_cols)
 
     def _is_numeric(self, column: str) -> bool:
         return self.dtypes.get(column) in ("int64", "float64")
 
-    def value_counts(self, column: str) -> Dict:
+    def value_counts(self, column: str) -> dict:
         return Counter(row[column] for row in self._data if row.get(column) is not None)
 
-    def unique(self, column: str) -> List:
+    def unique(self, column: str) -> list:
         seen = set()
         result = []
         for row in self._data:
@@ -1010,9 +1060,13 @@ class DataFrame:
         return result
 
     def nunique(self, column: str) -> int:
-        return len(set(row.get(column) for row in self._data if row.get(column) is not None))
+        return len(
+            {row.get(column) for row in self._data if row.get(column) is not None}
+        )
 
-    def merge(self, right: "DataFrame", on: str = None, how: str = "inner") -> "DataFrame":
+    def merge(
+        self, right: "DataFrame", on: str = None, how: str = "inner"
+    ) -> "DataFrame":
         if on is None:
             common = [c for c in self._columns if c in right._columns]
             if not common:
@@ -1063,11 +1117,13 @@ class DataFrame:
                 all_cols.append(c)
         return DataFrame(result, columns=all_cols)
 
-    def join(self, right: "DataFrame", on: str = None, how: str = "left") -> "DataFrame":
+    def join(
+        self, right: "DataFrame", on: str = None, how: str = "left"
+    ) -> "DataFrame":
         return self.merge(right, on=on, how=how)
 
     @staticmethod
-    def concat(dfs: List["DataFrame"], axis: int = 0) -> "DataFrame":
+    def concat(dfs: list["DataFrame"], axis: int = 0) -> "DataFrame":
         if not dfs:
             return DataFrame()
         if axis == 0:
@@ -1090,6 +1146,7 @@ class DataFrame:
 
     def to_csv(self, path: str = None) -> str:
         import io
+
         buf = io.StringIO()
         writer = csv.DictWriter(buf, fieldnames=self._columns, extrasaction="ignore")
         writer.writeheader()
@@ -1104,13 +1161,21 @@ class DataFrame:
         if orient == "records":
             result = json.dumps(self._data, default=str, indent=2)
         elif orient == "list":
-            result = json.dumps({c: [row[c] for row in self._data] for c in self._columns}, default=str, indent=2)
+            result = json.dumps(
+                {c: [row[c] for row in self._data] for c in self._columns},
+                default=str,
+                indent=2,
+            )
         elif orient == "split":
-            result = json.dumps({
-                "columns": self._columns,
-                "index": list(range(len(self._data))),
-                "data": [[row[c] for c in self._columns] for row in self._data]
-            }, default=str, indent=2)
+            result = json.dumps(
+                {
+                    "columns": self._columns,
+                    "index": list(range(len(self._data))),
+                    "data": [[row[c] for c in self._columns] for row in self._data],
+                },
+                default=str,
+                indent=2,
+            )
         else:
             result = json.dumps(self._data, default=str, indent=2)
         if path:
@@ -1118,7 +1183,7 @@ class DataFrame:
                 f.write(result)
         return result
 
-    def to_dict(self, orient: str = "records") -> List[Dict]:
+    def to_dict(self, orient: str = "records") -> list[dict]:
         if orient == "records":
             return [dict(row) for row in self._data]
         if orient == "list":
@@ -1135,14 +1200,14 @@ class DataFrame:
 
     @staticmethod
     def read_csv(path: str) -> "DataFrame":
-        with open(path, "r") as f:
+        with open(path) as f:
             reader = csv.DictReader(f)
             data = [dict(row) for row in reader]
         return DataFrame(data)
 
     @staticmethod
     def read_json(path: str) -> "DataFrame":
-        with open(path, "r") as f:
+        with open(path) as f:
             data = json.load(f)
         if isinstance(data, list):
             return DataFrame(data)
@@ -1150,7 +1215,7 @@ class DataFrame:
             return DataFrame(data)
         raise DataFrameError("Invalid JSON format for DataFrame")
 
-    def __iter__(self) -> Iterator[Dict]:
+    def __iter__(self) -> Iterator[dict]:
         return iter(self._data)
 
     def __len__(self) -> int:
@@ -1167,7 +1232,7 @@ class DataFrame:
         col_widths = [max(len(str(c)), 5) for c in self._columns]
         for row in self._data[:10]:
             cells = []
-            for c, w in zip(self._columns, col_widths):
+            for c, w in zip(self._columns, col_widths, strict=False):
                 val = str(row.get(c, ""))
                 cells.append(val.ljust(w)[:w])
             result.append("  ".join(cells))
@@ -1182,5 +1247,9 @@ class DataFrame:
             rows_html.append(f"<tr>{cells}</tr>")
         header = "".join(f"<th>{c}</th>" for c in self._columns)
         n = len(self._data)
-        more = f"<tr><td colspan='{len(self._columns)}'>... {n - 100} more rows</td></tr>" if n > 100 else ""
+        more = (
+            f"<tr><td colspan='{len(self._columns)}'>... {n - 100} more rows</td></tr>"
+            if n > 100
+            else ""
+        )
         return f"<table><thead><tr>{header}</tr></thead><tbody>{''.join(rows_html)}{more}</tbody></table>"

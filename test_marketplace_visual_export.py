@@ -1,36 +1,35 @@
-import sys
-import os
-import time
 import json
+import os
+import sys
 import unittest
 
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "..")))
 
+from zoya.export import (
+    ExportConfig,
+    Exporter,
+    ExportError,
+    ExportResult,
+    ExportTarget,
+    generate_dockerfile,
+    generate_html_wrapper,
+    generate_requirements,
+    generate_setup_py,
+)
 from zoya.marketplace import (
-    PackageInfo,
-    PackageVersion,
+    DependencyResolver,
     MarketplaceRegistry,
     PackageError,
-    DependencyResolver,
+    PackageInfo,
+    PackageVersion,
 )
 from zoya.visual import (
     ComponentDefinition,
-    VisualBuilder,
     ComponentLibrary,
     LayoutEngine,
     Theme,
+    VisualBuilder,
     VisualBuilderError,
-)
-from zoya.export import (
-    ExportTarget,
-    ExportConfig,
-    Exporter,
-    ExportResult,
-    ExportError,
-    generate_dockerfile,
-    generate_setup_py,
-    generate_html_wrapper,
-    generate_requirements,
 )
 
 
@@ -64,7 +63,9 @@ class TestMarketplacePackageInfo(unittest.TestCase):
         self.assertEqual(info.readme, "# Test")
 
     def test_create_with_defaults(self):
-        info = PackageInfo(name="minimal", version="0.0.1", description="desc", author="a")
+        info = PackageInfo(
+            name="minimal", version="0.0.1", description="desc", author="a"
+        )
         self.assertEqual(info.license, "MIT")
         self.assertEqual(info.dependencies, [])
         self.assertEqual(info.tags, [])
@@ -78,7 +79,9 @@ class TestMarketplacePackageInfo(unittest.TestCase):
 
     def test_created_at_preserved(self):
         fixed = 1000000.0
-        info = PackageInfo(name="p", version="1.0", description="d", author="a", created_at=fixed)
+        info = PackageInfo(
+            name="p", version="1.0", description="d", author="a", created_at=fixed
+        )
         self.assertEqual(info.created_at, fixed)
 
 
@@ -135,7 +138,9 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_publish_version_stores_version(self):
         pkg = self._make_pkg("ver-pkg")
         self.reg.register(pkg)
-        ver = PackageVersion(package="ver-pkg", version="2.0.0", files={"app.py": "code"})
+        ver = PackageVersion(
+            package="ver-pkg", version="2.0.0", files={"app.py": "code"}
+        )
         self.reg.publish_version("ver-pkg", ver)
         retrieved = self.reg.get_version("ver-pkg", "2.0.0")
         self.assertIsNotNone(retrieved)
@@ -144,7 +149,9 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_publish_version_updates_package_version(self):
         pkg = self._make_pkg("up-pkg", "1.0.0")
         self.reg.register(pkg)
-        self.reg.publish_version("up-pkg", PackageVersion(package="up-pkg", version="2.0.0"))
+        self.reg.publish_version(
+            "up-pkg", PackageVersion(package="up-pkg", version="2.0.0")
+        )
         self.assertEqual(self.reg.get_package("up-pkg").version, "2.0.0")
 
     def test_get_version_returns_none_for_unregistered(self):
@@ -220,7 +227,9 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_install_returns_files(self):
         pkg = self._make_pkg("installable")
         self.reg.register(pkg)
-        ver = PackageVersion(package="installable", version="1.0.0", files={"main.py": "code"})
+        ver = PackageVersion(
+            package="installable", version="1.0.0", files={"main.py": "code"}
+        )
         self.reg.publish_version("installable", ver)
         files = self.reg.install("installable")
         self.assertEqual(files, {"main.py": "code"})
@@ -228,7 +237,9 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_install_increments_downloads(self):
         pkg = self._make_pkg("dl-pkg", downloads=0)
         self.reg.register(pkg)
-        self.reg.publish_version("dl-pkg", PackageVersion(package="dl-pkg", version="1.0.0"))
+        self.reg.publish_version(
+            "dl-pkg", PackageVersion(package="dl-pkg", version="1.0.0")
+        )
         before = self.reg.get_package("dl-pkg").downloads
         self.reg.install("dl-pkg")
         after = self.reg.get_package("dl-pkg").downloads
@@ -237,16 +248,28 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_install_selects_latest(self):
         pkg = self._make_pkg("multi-ver")
         self.reg.register(pkg)
-        self.reg.publish_version("multi-ver", PackageVersion(package="multi-ver", version="1.0.0", files={"f1": "v1"}))
-        self.reg.publish_version("multi-ver", PackageVersion(package="multi-ver", version="2.0.0", files={"f2": "v2"}))
+        self.reg.publish_version(
+            "multi-ver",
+            PackageVersion(package="multi-ver", version="1.0.0", files={"f1": "v1"}),
+        )
+        self.reg.publish_version(
+            "multi-ver",
+            PackageVersion(package="multi-ver", version="2.0.0", files={"f2": "v2"}),
+        )
         files = self.reg.install("multi-ver")
         self.assertEqual(files, {"f2": "v2"})
 
     def test_install_specific_version(self):
         pkg = self._make_pkg("specific")
         self.reg.register(pkg)
-        self.reg.publish_version("specific", PackageVersion(package="specific", version="1.0.0", files={"f": "v1"}))
-        self.reg.publish_version("specific", PackageVersion(package="specific", version="2.0.0", files={"f": "v2"}))
+        self.reg.publish_version(
+            "specific",
+            PackageVersion(package="specific", version="1.0.0", files={"f": "v1"}),
+        )
+        self.reg.publish_version(
+            "specific",
+            PackageVersion(package="specific", version="2.0.0", files={"f": "v2"}),
+        )
         files = self.reg.install("specific", version="1.0.0")
         self.assertEqual(files, {"f": "v1"})
 
@@ -263,7 +286,9 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_install_deprecated_raises(self):
         pkg = self._make_pkg("depr")
         self.reg.register(pkg)
-        self.reg.publish_version("depr", PackageVersion(package="depr", version="1.0.0"))
+        self.reg.publish_version(
+            "depr", PackageVersion(package="depr", version="1.0.0")
+        )
         self.reg.deprecate("depr", "use v2 instead")
         with self.assertRaises(PackageError) as ctx:
             self.reg.install("depr")
@@ -283,14 +308,18 @@ class TestMarketplaceRegistry(unittest.TestCase):
     def test_update_returns_none_when_version_already_current(self):
         pkg = self._make_pkg("updatable", "1.0.0")
         self.reg.register(pkg)
-        self.reg.publish_version("updatable", PackageVersion(package="updatable", version="2.0.0"))
+        self.reg.publish_version(
+            "updatable", PackageVersion(package="updatable", version="2.0.0")
+        )
         new_ver = self.reg.update("updatable")
         self.assertIsNone(new_ver)
 
     def test_update_returns_none_when_up_to_date(self):
         pkg = self._make_pkg("current", "2.0.0")
         self.reg.register(pkg)
-        self.reg.publish_version("current", PackageVersion(package="current", version="2.0.0"))
+        self.reg.publish_version(
+            "current", PackageVersion(package="current", version="2.0.0")
+        )
         result = self.reg.update("current")
         self.assertIsNone(result)
 
@@ -318,8 +347,16 @@ class TestMarketplaceRegistry(unittest.TestCase):
         self.assertIn("already registered", str(ctx.exception))
 
     def test_get_dependency_tree(self):
-        inner = PackageInfo(name="inner", version="1.0.0", description="i", author="a", dependencies=[])
-        outer = PackageInfo(name="outer", version="2.0.0", description="o", author="a", dependencies=["inner"])
+        inner = PackageInfo(
+            name="inner", version="1.0.0", description="i", author="a", dependencies=[]
+        )
+        outer = PackageInfo(
+            name="outer",
+            version="2.0.0",
+            description="o",
+            author="a",
+            dependencies=["inner"],
+        )
         self.reg.register(inner)
         self.reg.register(outer)
         tree = self.reg.get_dependency_tree("outer")
@@ -694,8 +731,12 @@ class TestVisualLayoutEngine(unittest.TestCase):
 
     def test_calculate_column_layout(self):
         comps = [
-            ComponentDefinition(type="label", style={"layout": "flex-column", "width": 50, "height": 20}),
-            ComponentDefinition(type="label", style={"layout": "flex-column", "width": 50, "height": 30}),
+            ComponentDefinition(
+                type="label", style={"layout": "flex-column", "width": 50, "height": 20}
+            ),
+            ComponentDefinition(
+                type="label", style={"layout": "flex-column", "width": 50, "height": 30}
+            ),
         ]
         positions = self.engine.calculate(comps, container_width=400)
         self.assertEqual(positions[0]["x"], 0)
@@ -707,7 +748,13 @@ class TestVisualLayoutEngine(unittest.TestCase):
         comps = [
             ComponentDefinition(
                 type="button",
-                style={"layout": "absolute", "left": 10, "top": 20, "width": 100, "height": 50},
+                style={
+                    "layout": "absolute",
+                    "left": 10,
+                    "top": 20,
+                    "width": 100,
+                    "height": 50,
+                },
             )
         ]
         positions = self.engine.calculate(comps, container_width=400)
@@ -715,16 +762,16 @@ class TestVisualLayoutEngine(unittest.TestCase):
         self.assertEqual(positions[0]["y"], 20)
 
     def test_calculate_absolute_defaults(self):
-        comps = [
-            ComponentDefinition(type="button", style={"layout": "absolute"})
-        ]
+        comps = [ComponentDefinition(type="button", style={"layout": "absolute"})]
         positions = self.engine.calculate(comps, container_width=400)
         self.assertEqual(positions[0]["x"], 0)
         self.assertEqual(positions[0]["y"], 0)
 
     def test_calculate_with_margin(self):
         comps = [
-            ComponentDefinition(type="button", style={"width": 50, "height": 30, "margin": 10}),
+            ComponentDefinition(
+                type="button", style={"width": 50, "height": 30, "margin": 10}
+            ),
             ComponentDefinition(type="button", style={"width": 50, "height": 30}),
         ]
         positions = self.engine.calculate(comps, container_width=400)
@@ -872,7 +919,7 @@ class TestExportHelpers(unittest.TestCase):
         self.assertIn("WORKDIR /app", df)
         self.assertIn("requirements.txt", df)
         self.assertIn("EXPOSE 8080", df)
-        self.assertIn("CMD [\"python\", \"main.py\"]", df)
+        self.assertIn('CMD ["python", "main.py"]', df)
 
     def test_generate_html_wrapper(self):
         html = generate_html_wrapper("print('hello')")
@@ -917,12 +964,16 @@ class TestExporter(unittest.TestCase):
         self.assertIn("print('hello world')", html)
 
     def test_export_web_with_tests(self):
-        config = ExportConfig(target=ExportTarget.WEB, output_dir="/tmp/web", include_tests=True)
+        config = ExportConfig(
+            target=ExportTarget.WEB, output_dir="/tmp/web", include_tests=True
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("tests/test_app.py", result.files)
 
     def test_export_desktop_returns_python_files(self):
-        config = ExportConfig(target=ExportTarget.DESKTOP, output_dir="/tmp/desk", entry_point="app.zy")
+        config = ExportConfig(
+            target=ExportTarget.DESKTOP, output_dir="/tmp/desk", entry_point="app.zy"
+        )
         result = self.exporter.export(self.source, config)
         self.assertTrue(result.success)
         self.assertIn("app.py", result.files)
@@ -930,14 +981,18 @@ class TestExporter(unittest.TestCase):
         self.assertIn("requirements.txt", result.files)
 
     def test_export_desktop_run_py_has_create_app(self):
-        config = ExportConfig(target=ExportTarget.DESKTOP, output_dir="/tmp/desk", entry_point="main.zy")
+        config = ExportConfig(
+            target=ExportTarget.DESKTOP, output_dir="/tmp/desk", entry_point="main.zy"
+        )
         result = self.exporter.export(self.source, config)
         run_py = result.files["run.py"]
         self.assertIn("def main():", run_py)
         self.assertIn("create_app()", run_py)
 
     def test_export_desktop_with_tests(self):
-        config = ExportConfig(target=ExportTarget.DESKTOP, output_dir="/tmp/desk", include_tests=True)
+        config = ExportConfig(
+            target=ExportTarget.DESKTOP, output_dir="/tmp/desk", include_tests=True
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("tests/test_app.py", result.files)
 
@@ -957,7 +1012,9 @@ class TestExporter(unittest.TestCase):
         self.assertIn("cli_main", cli_py)
 
     def test_export_cli_with_tests(self):
-        config = ExportConfig(target=ExportTarget.CLI, output_dir="/tmp/cli", include_tests=True)
+        config = ExportConfig(
+            target=ExportTarget.CLI, output_dir="/tmp/cli", include_tests=True
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("tests/test_cli.py", result.files)
 
@@ -977,12 +1034,16 @@ class TestExporter(unittest.TestCase):
         self.assertIn("FROM python:3.12-slim", df)
 
     def test_export_docker_with_tests(self):
-        config = ExportConfig(target=ExportTarget.DOCKER, output_dir="/tmp/dkr", include_tests=True)
+        config = ExportConfig(
+            target=ExportTarget.DOCKER, output_dir="/tmp/dkr", include_tests=True
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("tests/test_docker.py", result.files)
 
     def test_export_mobile_returns_project_structure(self):
-        config = ExportConfig(target=ExportTarget.MOBILE, output_dir="/tmp/mob", entry_point="main.zy")
+        config = ExportConfig(
+            target=ExportTarget.MOBILE, output_dir="/tmp/mob", entry_point="main.zy"
+        )
         result = self.exporter.export(self.source, config)
         self.assertTrue(result.success)
         self.assertIn("app/__init__.py", result.files)
@@ -991,12 +1052,16 @@ class TestExporter(unittest.TestCase):
         self.assertIn("requirements.txt", result.files)
 
     def test_export_mobile_with_tests(self):
-        config = ExportConfig(target=ExportTarget.MOBILE, output_dir="/tmp/mob", include_tests=True)
+        config = ExportConfig(
+            target=ExportTarget.MOBILE, output_dir="/tmp/mob", include_tests=True
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("tests/test_mobile.py", result.files)
 
     def test_export_library_returns_setup_py(self):
-        config = ExportConfig(target=ExportTarget.LIBRARY, output_dir="/tmp/lib", entry_point="mylib.zy")
+        config = ExportConfig(
+            target=ExportTarget.LIBRARY, output_dir="/tmp/lib", entry_point="mylib.zy"
+        )
         result = self.exporter.export(self.source, config)
         self.assertTrue(result.success)
         self.assertIn("mylib/__init__.py", result.files)
@@ -1004,12 +1069,22 @@ class TestExporter(unittest.TestCase):
         self.assertIn("requirements.txt", result.files)
 
     def test_export_library_with_docs(self):
-        config = ExportConfig(target=ExportTarget.LIBRARY, output_dir="/tmp/lib", entry_point="lib.zy", include_docs=True)
+        config = ExportConfig(
+            target=ExportTarget.LIBRARY,
+            output_dir="/tmp/lib",
+            entry_point="lib.zy",
+            include_docs=True,
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("README.md", result.files)
 
     def test_export_library_with_tests(self):
-        config = ExportConfig(target=ExportTarget.LIBRARY, output_dir="/tmp/lib", entry_point="lib.zy", include_tests=True)
+        config = ExportConfig(
+            target=ExportTarget.LIBRARY,
+            output_dir="/tmp/lib",
+            entry_point="lib.zy",
+            include_tests=True,
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("tests/test_library.py", result.files)
 
@@ -1029,7 +1104,9 @@ class TestExporter(unittest.TestCase):
         self.assertIsInstance(result.warnings, list)
 
     def test_export_result_uses_entry_point_name(self):
-        config = ExportConfig(target=ExportTarget.WEB, output_dir="/tmp/web", entry_point="custom.zy")
+        config = ExportConfig(
+            target=ExportTarget.WEB, output_dir="/tmp/web", entry_point="custom.zy"
+        )
         result = self.exporter.export(self.source, config)
         self.assertIn("custom.html", result.files)
         self.assertIn("custom.zy", result.files)

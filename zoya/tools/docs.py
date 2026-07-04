@@ -1,31 +1,30 @@
 from __future__ import annotations
 
 import os
-import re
 
-from ..ast import (
+from zoya.ast import (
     ASTNode,
+    BinOp,
     Block,
+    Boolean,
+    Call,
     ClassDef,
+    Dict_,
     EnumDef,
     Function,
+    GetAttr,
+    Ident,
+    Index,
     InterfaceDef,
+    Lambda,
+    List_,
+    MethodCall,
     Number,
     String,
-    Boolean,
-    Ident,
-    List_,
-    Dict_,
-    BinOp,
     UnaryOp,
-    Call,
-    MethodCall,
-    GetAttr,
-    Index,
-    Lambda,
 )
-from ..lexer import tokenize
-from ..parser import parse
+from zoya.lexer import tokenize
+from zoya.parser import parse
 
 
 def extract_comments(source: str, line_num: int) -> str:
@@ -94,8 +93,11 @@ def generate_docs(source: str, filepath: str = "") -> str:
             if isinstance(stmt, Function):
                 doc_comment = extract_comments(source, stmt.line)
                 params_str = ", ".join(
-                    f"{p}" if i >= len(stmt.defaults) or stmt.defaults[i] is None
-                    else f"{p}={format_expr(stmt.defaults[i])}"
+                    (
+                        f"{p}"
+                        if i >= len(stmt.defaults) or stmt.defaults[i] is None
+                        else f"{p}={format_expr(stmt.defaults[i])}"
+                    )
                     for i, p in enumerate(stmt.params)
                 )
                 out.append(f"## fn `{stmt.name}({params_str})`\n")
@@ -115,8 +117,11 @@ def generate_docs(source: str, filepath: str = "") -> str:
                     for s in stmt.body.statements:
                         if isinstance(s, Function):
                             params_str = ", ".join(
-                                f"{p}" if i >= len(s.defaults) or s.defaults[i] is None
-                                else f"{p}={format_expr(s.defaults[i])}"
+                                (
+                                    f"{p}"
+                                    if i >= len(s.defaults) or s.defaults[i] is None
+                                    else f"{p}={format_expr(s.defaults[i])}"
+                                )
                                 for i, p in enumerate(s.params)
                             )
                             method_doc = extract_comments(source, s.line)
@@ -153,13 +158,14 @@ def generate_docs(source: str, filepath: str = "") -> str:
 
 def run(args: list[str]) -> None:
     import sys
+
     if not args:
         print("Usage: zoya docs <file.zoya> [file2.zoya ...]", file=sys.stderr)
         sys.exit(1)
 
     for filepath in args:
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 source = f.read()
             docs = generate_docs(source, filepath)
             base = os.path.splitext(os.path.basename(filepath))[0]

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import NoReturn
 
 
 def generate_project(name: str, template: str = "default") -> None:
@@ -78,14 +77,14 @@ zoya main.zoya
 """
 
 
-_DEFAULT_MAIN = '''// Zoya v2.0 - Default Project
+_DEFAULT_MAIN = """// Zoya v2.0 - Default Project
 // A beginner-friendly programming language
 
 print "Hello, World!"
-'''
+"""
 
 
-_GAME_MAIN = '''// Zoya v2.0 - Game Project
+_GAME_MAIN = """// Zoya v2.0 - Game Project
 
 print "Loading game..."
 
@@ -106,10 +105,10 @@ loop 5 {
     update()
     render()
 }
-'''
+"""
 
 
-_AI_MAIN = '''// Zoya v2.0 - AI Project
+_AI_MAIN = """// Zoya v2.0 - AI Project
 
 print "Loading AI model..."
 
@@ -132,10 +131,10 @@ data = load_data("data/training.csv")
 model = train_model(data)
 result = predict(model, 42)
 print "Prediction: " + result
-'''
+"""
 
 
-_WEB_MAIN = '''// Zoya v2.0 - Web Project
+_WEB_MAIN = """// Zoya v2.0 - Web Project
 
 print "Starting web server..."
 
@@ -154,4 +153,4 @@ print "Server ready on port 8080"
 print handle_request("/")
 print handle_request("/about")
 print handle_request("/unknown")
-'''
+"""

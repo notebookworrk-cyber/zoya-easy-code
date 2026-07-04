@@ -1,23 +1,21 @@
-import sys
-import os
-import math
-import tempfile
 import json
+import math
+import os
+import sys
+import tempfile
 import unittest
 
-sys.path.insert(0, r"C:\Users\hp\zoya3")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from zoya.data import (
     DataFrame,
-    Series,
-    GroupBy,
-    GroupByColumn,
     DataFrameError,
     Figure,
     Plot,
+    Series,
     VisualizationError,
-    set_style,
     create_dataframe,
+    set_style,
 )
 
 
@@ -63,7 +61,9 @@ class TestDataFrameCreation(unittest.TestCase):
 
 class TestDataFrameProperties(unittest.TestCase):
     def setUp(self):
-        self.df = DataFrame({"a": [1, 2, 3], "b": [4.0, 5.0, 6.0], "c": ["x", "y", "z"]})
+        self.df = DataFrame(
+            {"a": [1, 2, 3], "b": [4.0, 5.0, 6.0], "c": ["x", "y", "z"]}
+        )
 
     def test_shape(self):
         self.assertEqual(self.df.shape, (3, 3))
@@ -757,7 +757,7 @@ class TestSeriesTransform(unittest.TestCase):
         self.assertEqual(result.values, [2, None, 6])
 
     def test_map(self):
-        result = self.s.map(lambda x: x ** 2)
+        result = self.s.map(lambda x: x**2)
         self.assertEqual(result.values, [1, 4, 9, 16, 25])
 
     def test_isna(self):
@@ -918,6 +918,7 @@ class TestDataInit(unittest.TestCase):
 
     def test_module_exports(self):
         from zoya.data import __all__ as all_exports
+
         self.assertIn("DataFrame", all_exports)
         self.assertIn("Series", all_exports)
         self.assertIn("GroupBy", all_exports)

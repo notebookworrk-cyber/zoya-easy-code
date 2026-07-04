@@ -1,6 +1,10 @@
+import hashlib
+import secrets
+import threading
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from typing import Optional, Callable, Dict, List, Any, Set
-import hashlib, secrets, time, threading
+from typing import Any
 
 
 @dataclass
@@ -9,12 +13,12 @@ class AuthUser:
     email: str
     username: str
     display_name: str
-    avatar_url: Optional[str] = None
+    avatar_url: str | None = None
     email_verified: bool = False
     created_at: float = 0.0
     last_login: float = 0.0
-    roles: List[str] = field(default_factory=lambda: ["user"])
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    roles: list[str] = field(default_factory=lambda: ["user"])
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -23,19 +27,19 @@ class AuthSession:
     token: str
     refresh_token: str
     expires_at: float
-    device: Optional[str] = None
+    device: str | None = None
 
 
 class AuthConfig:
-    jwt_secret: Optional[str] = None
+    jwt_secret: str | None = None
     session_duration: float = 3600.0
     max_sessions: int = 5
     require_email_verification: bool = False
     allow_anonymous: bool = True
-    oauth_providers: List[str] = field(default_factory=list)
+    oauth_providers: list[str] = field(default_factory=list)
 
 
-AUTH_DEFAULTS: Dict[str, Any] = {
+AUTH_DEFAULTS: dict[str, Any] = {
     "session_duration": 3600.0,
     "max_sessions": 5,
     "require_email_verification": False,
@@ -59,22 +63,22 @@ def _hash_password(password: str) -> str:
 
 
 class AuthService:
-    def __init__(self, config: Optional[AuthConfig] = None):
+    def __init__(self, config: AuthConfig | None = None):
         merged = AUTH_DEFAULTS.copy()
         if config:
             for k, v in vars(config).items():
                 if v is not None:
                     merged[k] = v
         self._config = merged
-        self._current_user: Optional[AuthUser] = None
-        self._current_session: Optional[AuthSession] = None
-        self._token_refresh_timer: Optional[threading.Timer] = None
-        self._state_callbacks: Set[Callable[[Optional[AuthUser]], None]] = set()
-        self._users: Dict[str, AuthUser] = {}
-        self._password_hashes: Dict[str, str] = {}
-        self._sessions: Dict[str, AuthSession] = {}
-        self._refresh_tokens: Dict[str, str] = {}
-        self._email_tokens: Dict[str, str] = {}
+        self._current_user: AuthUser | None = None
+        self._current_session: AuthSession | None = None
+        self._token_refresh_timer: threading.Timer | None = None
+        self._state_callbacks: set[Callable[[AuthUser | None], None]] = set()
+        self._users: dict[str, AuthUser] = {}
+        self._password_hashes: dict[str, str] = {}
+        self._sessions: dict[str, AuthSession] = {}
+        self._refresh_tokens: dict[str, str] = {}
+        self._email_tokens: dict[str, str] = {}
 
     def _create_session(self, user_id: str) -> AuthSession:
         existing_tokens = [
@@ -133,7 +137,7 @@ class AuthService:
         email: str,
         password: str,
         username: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuthUser:
         for u in self._users.values():
             if u.email == email:
@@ -191,8 +195,7 @@ class AuthService:
             )
 
         mock_id = (
-            f"oauth_{provider}_"
-            f"{hashlib.sha256(token.encode()).hexdigest()[:12]}"
+            f"oauth_{provider}_" f"{hashlib.sha256(token.encode()).hexdigest()[:12]}"
         )
 
         if mock_id not in self._users:
@@ -278,7 +281,7 @@ class AuthService:
             return False
         return stored.user_id in self._users
 
-    def get_current_user(self) -> Optional[AuthUser]:
+    def get_current_user(self) -> AuthUser | None:
         if not self._current_user:
             return None
         return replace(self._current_user)
@@ -286,7 +289,7 @@ class AuthService:
     def is_authenticated(self) -> bool:
         return self._current_user is not None and self._current_session is not None
 
-    def update_profile(self, data: Dict[str, Any]) -> AuthUser:
+    def update_profile(self, data: dict[str, Any]) -> AuthUser:
         if not self._current_user:
             raise AuthError("Not authenticated", "NOT_AUTHENTICATED")
 
@@ -311,9 +314,7 @@ class AuthService:
         if stored_hash is None:
             raise AuthError("User not found", "USER_NOT_FOUND")
         if not stored_hash:
-            raise AuthError(
-                "Cannot change password for OAuth users", "OAUTH_USER"
-            )
+            raise AuthError("Cannot change password for OAuth users", "OAUTH_USER")
         if stored_hash != _hash_password(old_password):
             raise AuthError("Current password is incorrect", "INVALID_PASSWORD")
 
@@ -366,10 +367,8 @@ class AuthService:
         self._notify_state_change()
         return True
 
-    def get_token(self) -> Optional[str]:
+    def get_token(self) -> str | None:
         return self._current_session.token if self._current_session else None
 
-    def on_auth_state_change(
-        self, callback: Callable[[Optional[AuthUser]], None]
-    ) -> None:
+    def on_auth_state_change(self, callback: Callable[[AuthUser | None], None]) -> None:
         self._state_callbacks.add(callback)

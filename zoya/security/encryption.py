@@ -1,12 +1,11 @@
-import os
 import base64
-import struct
 import hashlib
 import hmac as _hmac
+import os
 import secrets
+import struct
 import uuid
 import warnings
-from typing import Tuple
 
 
 class AESCipher:
@@ -37,9 +36,10 @@ class AESCipher:
 
         for i in range(0, len(data), cls.BLOCK_SIZE):
             block = data[i : i + cls.BLOCK_SIZE]
-            xored = bytes(a ^ b for a, b in zip(block, prev))
+            xored = bytes(a ^ b for a, b in zip(block, prev, strict=False))
             enc_block = bytes(
-                a ^ b for a, b in zip(xored, keystream[i : i + cls.BLOCK_SIZE])
+                a ^ b
+                for a, b in zip(xored, keystream[i : i + cls.BLOCK_SIZE], strict=False)
             )
             ciphertext += enc_block
             prev = enc_block
@@ -59,9 +59,10 @@ class AESCipher:
         for i in range(0, len(data), cls.BLOCK_SIZE):
             block = data[i : i + cls.BLOCK_SIZE]
             xored = bytes(
-                a ^ b for a, b in zip(block, keystream[i : i + cls.BLOCK_SIZE])
+                a ^ b
+                for a, b in zip(block, keystream[i : i + cls.BLOCK_SIZE], strict=False)
             )
-            dec_block = bytes(a ^ b for a, b in zip(xored, prev))
+            dec_block = bytes(a ^ b for a, b in zip(xored, prev, strict=False))
             plaintext += dec_block
             prev = block
 
@@ -100,7 +101,7 @@ class Hasher:
     @staticmethod
     def pbkdf2(
         password: str, salt: str = None, iterations: int = 100000
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         if salt is None:
             salt = base64.b64encode(os.urandom(16)).decode("ascii")
         key = hashlib.pbkdf2_hmac(
@@ -118,7 +119,7 @@ class Hasher:
         return key.hex() == hash
 
     @staticmethod
-    def bcrypt_like(password: str, salt: str = None) -> Tuple[str, str]:
+    def bcrypt_like(password: str, salt: str = None) -> tuple[str, str]:
         if salt is None:
             salt = base64.b64encode(os.urandom(16)).decode("ascii")
         h = salt + password

@@ -1,18 +1,19 @@
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any
+import builtins
+import mimetypes
+import os
 import secrets
 import time
-import os
-import mimetypes
+from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
 class UploadOptions:
     content_type: str = "application/octet-stream"
     public: bool = False
-    metadata: Dict[str, str] = field(default_factory=dict)
-    cache_control: Optional[str] = None
-    encryption_key: Optional[str] = None
+    metadata: dict[str, str] = field(default_factory=dict)
+    cache_control: str | None = None
+    encryption_key: str | None = None
 
 
 @dataclass
@@ -33,7 +34,7 @@ class StorageObject:
     etag: str
     uploaded_at: float
     last_modified: float
-    metadata: Dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, str] = field(default_factory=dict)
 
 
 class StorageError(Exception):
@@ -48,7 +49,7 @@ def _generate_etag() -> str:
 
 def _normalize_path(path: str) -> str:
     parts = [p for p in path.replace("\\", "/").split("/") if p and p != "."]
-    stack: List[str] = []
+    stack: list[str] = []
     for part in parts:
         if part == "..":
             if stack:
@@ -62,9 +63,9 @@ class StorageService:
     def __init__(self, base_url: str, api_key: str):
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
-        self._buckets: Dict[str, Dict[str, StorageObject]] = {}
-        self._bucket_data: Dict[str, Dict[str, bytes]] = {}
-        self._bucket_metadata: Dict[str, Dict[str, Any]] = {}
+        self._buckets: dict[str, dict[str, StorageObject]] = {}
+        self._bucket_data: dict[str, dict[str, bytes]] = {}
+        self._bucket_metadata: dict[str, dict[str, Any]] = {}
         self._create_bucket_internal("default")
 
     def _get_upload_url(self, bucket: str, path: str) -> str:
@@ -88,7 +89,7 @@ class StorageService:
         self,
         data: bytes,
         path: str,
-        options: Optional[UploadOptions] = None,
+        options: UploadOptions | None = None,
         bucket: str = "default",
     ) -> UploadResult:
         self._get_bucket_or_raise(bucket)
@@ -115,7 +116,11 @@ class StorageService:
         self._buckets[bucket][normalized] = obj
         self._bucket_data[bucket][normalized] = data
 
-        url = self._get_public_url(bucket, normalized) if options.public else self._get_upload_url(bucket, normalized)
+        url = (
+            self._get_public_url(bucket, normalized)
+            if options.public
+            else self._get_upload_url(bucket, normalized)
+        )
         return UploadResult(
             url=url,
             path=normalized,
@@ -129,7 +134,7 @@ class StorageService:
         self,
         file_path: str,
         dest_path: str,
-        options: Optional[UploadOptions] = None,
+        options: UploadOptions | None = None,
         bucket: str = "default",
     ) -> UploadResult:
         if not os.path.isfile(file_path):
@@ -161,7 +166,7 @@ class StorageService:
         self._buckets[bucket].pop(normalized, None)
         self._bucket_data[bucket].pop(normalized, None)
 
-    def delete_batch(self, paths: List[str], bucket: str = "default") -> int:
+    def delete_batch(self, paths: list[str], bucket: str = "default") -> int:
         self._get_bucket_or_raise(bucket)
         count = 0
         for p in paths:
@@ -187,17 +192,17 @@ class StorageService:
 
     def list(
         self,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         recursive: bool = False,
         bucket: str = "default",
-    ) -> List[StorageObject]:
+    ) -> list[StorageObject]:
         self._get_bucket_or_raise(bucket)
-        results: List[StorageObject] = []
+        results: list[StorageObject] = []
         for obj_path, obj in self._buckets[bucket].items():
             if prefix and not obj_path.startswith(_normalize_path(prefix)):
                 continue
             if not recursive and prefix:
-                remainder = obj_path[len(_normalize_path(prefix)):].lstrip("/")
+                remainder = obj_path[len(_normalize_path(prefix)) :].lstrip("/")
                 if "/" in remainder:
                     continue
             results.append(obj)
@@ -209,7 +214,9 @@ class StorageService:
         dest_normalized = _normalize_path(dest)
         obj = self._buckets[bucket].get(src_normalized)
         if obj is None:
-            raise StorageError(f"Source not found: {src_normalized}", "OBJECT_NOT_FOUND")
+            raise StorageError(
+                f"Source not found: {src_normalized}", "OBJECT_NOT_FOUND"
+            )
         data = self._bucket_data[bucket][src_normalized]
         now = time.time()
         new_obj = StorageObject(
@@ -265,5 +272,5 @@ class StorageService:
         del self._bucket_data[name]
         del self._bucket_metadata[name]
 
-    def list_buckets(self) -> List[str]:
+    def list_buckets(self) -> builtins.list[str]:
         return list(self._buckets.keys())

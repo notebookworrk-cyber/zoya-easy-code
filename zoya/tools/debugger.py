@@ -1,22 +1,12 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Optional
+from typing import Any
 
-from ..ast import (
-    ASTNode,
-    Block,
-    Break,
-    Continue,
-    Function,
-    If,
-    Loop,
-    While,
-)
-from ..errors import BreakException, ContinueException, ReturnException
-from ..interpreter import Environment, Interpreter, ZoyaFunction
-from ..lexer import tokenize
-from ..parser import parse
+from zoya.ast import ASTNode, Block, Function
+from zoya.interpreter import Interpreter, ZoyaFunction
+from zoya.lexer import tokenize
+from zoya.parser import parse
 
 
 class DebugInterpreter(Interpreter):
@@ -24,7 +14,7 @@ class DebugInterpreter(Interpreter):
         self,
         source_lines: list[str],
         file: str = "",
-        breakpoints: Optional[set[int]] = None,
+        breakpoints: set[int] | None = None,
     ) -> None:
         super().__init__(file)
         self.source_lines = source_lines

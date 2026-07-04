@@ -1,8 +1,10 @@
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Callable, Set
-import time
+import contextlib
 import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class RealtimeEventType(str, Enum):
@@ -20,7 +22,7 @@ class RealtimeEvent:
     channel: str
     data: Any = None
     timestamp: float = 0.0
-    sender: Optional[str] = None
+    sender: str | None = None
 
 
 @dataclass
@@ -36,7 +38,7 @@ class PresenceInfo:
     username: str
     status: str = "online"
     last_seen: float = 0.0
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class RealtimeError(Exception):
@@ -46,7 +48,7 @@ class RealtimeError(Exception):
 
 
 Callback = Callable[[RealtimeEvent], None]
-PresenceCallback = Callable[[List[PresenceInfo]], None]
+PresenceCallback = Callable[[list[PresenceInfo]], None]
 ErrorCallback = Callable[[Exception], None]
 
 
@@ -55,11 +57,11 @@ class RealtimeService:
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._connected = False
-        self._channel_subscribers: Dict[str, List[Callback]] = {}
-        self._presence_callbacks: Dict[str, List[PresenceCallback]] = {}
-        self._presence_store: Dict[str, Dict[str, PresenceInfo]] = {}
-        self._global_event_listeners: List[Callback] = []
-        self._global_error_listeners: List[ErrorCallback] = []
+        self._channel_subscribers: dict[str, list[Callback]] = {}
+        self._presence_callbacks: dict[str, list[PresenceCallback]] = {}
+        self._presence_store: dict[str, dict[str, PresenceInfo]] = {}
+        self._global_event_listeners: list[Callback] = []
+        self._global_error_listeners: list[ErrorCallback] = []
         self._reconnect_max_attempts: int = 5
         self._reconnect_interval: float = 2.0
         self._reconnect_attempts: int = 0
@@ -104,7 +106,7 @@ class RealtimeService:
     def unsubscribe(
         self,
         channel: str,
-        callback: Optional[Callback] = None,
+        callback: Callback | None = None,
     ):
         with self._lock:
             if channel not in self._channel_subscribers:
@@ -113,7 +115,9 @@ class RealtimeService:
                 self._channel_subscribers[channel] = []
             else:
                 self._channel_subscribers[channel] = [
-                    cb for cb in self._channel_subscribers[channel] if cb is not callback
+                    cb
+                    for cb in self._channel_subscribers[channel]
+                    if cb is not callback
                 ]
             if not self._channel_subscribers[channel]:
                 del self._channel_subscribers[channel]
@@ -134,12 +138,14 @@ class RealtimeService:
     def update_presence(
         self,
         status: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
         user_id: str = "anonymous",
         username: str = "anonymous",
     ):
         if not self._connected:
-            raise RealtimeError("Cannot update presence: not connected", "NOT_CONNECTED")
+            raise RealtimeError(
+                "Cannot update presence: not connected", "NOT_CONNECTED"
+            )
         now = time.time()
         info = PresenceInfo(
             user_id=user_id,
@@ -167,10 +173,10 @@ class RealtimeService:
                     for cb in self._presence_callbacks[channel]:
                         self._safe_call(cb, presence_list)
 
-    def get_presence(self, channel: str) -> List[PresenceInfo]:
+    def get_presence(self, channel: str) -> list[PresenceInfo]:
         return self._get_presence_list(channel)
 
-    def _get_presence_list(self, channel: str) -> List[PresenceInfo]:
+    def _get_presence_list(self, channel: str) -> list[PresenceInfo]:
         with self._lock:
             store = self._presence_store.get(channel, {})
             return list(store.values())
@@ -181,8 +187,8 @@ class RealtimeService:
                 self._presence_callbacks[channel] = []
             self._presence_callbacks[channel].append(callback)
 
-    def list_channels(self) -> List[RealtimeChannelInfo]:
-        results: List[RealtimeChannelInfo] = []
+    def list_channels(self) -> list[RealtimeChannelInfo]:
+        results: list[RealtimeChannelInfo] = []
         with self._lock:
             for name, subs in self._channel_subscribers.items():
                 results.append(
@@ -228,7 +234,5 @@ class RealtimeService:
             with self._lock:
                 err_listeners = list(self._global_error_listeners)
             for err_cb in err_listeners:
-                try:
+                with contextlib.suppress(Exception):
                     err_cb(e)
-                except Exception:
-                    pass

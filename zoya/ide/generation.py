@@ -1,34 +1,35 @@
 from __future__ import annotations
 
-import json
 import re
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any
 
 from zoya.ai.llm import LLMProvider, MockProvider
 
 
 @dataclass
 class GenerationConfig:
-    provider: Optional[LLMProvider] = None
+    provider: LLMProvider | None = None
     temperature: float = 0.3
     max_tokens: int = 500
     style: str = "standard"
 
 
 class CodeGenerator:
-    def __init__(self, config: Optional[GenerationConfig] = None):
+    def __init__(self, config: GenerationConfig | None = None):
         self.config = config or GenerationConfig()
         if self.config.provider is None:
-            self.config.provider = MockProvider(responses={
-                "generate": self._default_generate_response(),
-                "function": self._default_function_response(),
-                "class": self._default_class_response(),
-                "test": self._default_test_response(),
-                "explain": self._default_explain_response(),
-                "translate": self._default_translate_response(),
-                "complete": self._default_complete_response(),
-            })
+            self.config.provider = MockProvider(
+                responses={
+                    "generate": self._default_generate_response(),
+                    "function": self._default_function_response(),
+                    "class": self._default_class_response(),
+                    "test": self._default_test_response(),
+                    "explain": self._default_explain_response(),
+                    "translate": self._default_translate_response(),
+                    "complete": self._default_complete_response(),
+                }
+            )
 
     def generate(self, description: str, context: str = "") -> str:
         prompt = (
@@ -43,7 +44,7 @@ class CodeGenerator:
             "- class Name { ... }, interface Name { ... }, enum Name { Variant1, Variant2 }\n"
             "- match expr { pattern => result }, switch (expr) { case val { ... } default { ... } }\n"
             "- try { ... } catch (var) { ... }, throw expr\n"
-            "- import \"path\", import \"path\" as alias\n"
+            '- import "path", import "path" as alias\n'
             "- return expr, break, continue\n"
             "Return only the code, no explanation.\n\n"
         )
@@ -52,7 +53,9 @@ class CodeGenerator:
         prompt += f"Description: {description}\n\nGenerate Zoya code:"
 
         if isinstance(self.config.provider, MockProvider):
-            mock_response = self._mock_code(f"fn generated() {{\n    // {description}\n}}")
+            mock_response = self._mock_code(
+                f"fn generated() {{\n    // {description}\n}}"
+            )
             self.config.provider.responses["generate"] = mock_response
 
         response = self.config.provider.chat(
@@ -68,8 +71,8 @@ class CodeGenerator:
     def generate_function(
         self,
         description: str,
-        name: Optional[str] = None,
-        params: Optional[List[str]] = None,
+        name: str | None = None,
+        params: list[str] | None = None,
     ) -> str:
         param_str = ", ".join(params) if params else "..."
         name_str = name or "generated_function"
@@ -96,7 +99,7 @@ class CodeGenerator:
     def generate_class(
         self,
         description: str,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> str:
         name_str = name or "GeneratedClass"
         prompt = (
@@ -131,9 +134,7 @@ class CodeGenerator:
         return self._apply_style(code)
 
     def generate_test(self, description: str, code: str = "") -> str:
-        prompt = (
-            f"Generate Zoya test code for the following:\n{description}\n"
-        )
+        prompt = f"Generate Zoya test code for the following:\n{description}\n"
         if code:
             prompt += f"\nCode under test:\n{code}\n"
 
@@ -143,9 +144,9 @@ class CodeGenerator:
                 f"    // Test: {description}\n"
                 f"    let result = true\n"
                 f"    if (result == false) {{\n"
-                f"        print(\"FAIL: {description}\")\n"
+                f'        print("FAIL: {description}")\n'
                 f"    }} else {{\n"
-                f"        print(\"PASS: {description}\")\n"
+                f'        print("PASS: {description}")\n'
                 f"    }}\n"
                 f"}}\n"
                 f"\n"
@@ -228,10 +229,7 @@ class CodeGenerator:
         code = code.strip()
         if code.startswith("```"):
             first_newline = code.find("\n")
-            if first_newline != -1:
-                code = code[first_newline + 1:]
-            else:
-                code = code[3:]
+            code = code[first_newline + 1 :] if first_newline != -1 else code[3:]
         if code.endswith("```"):
             code = code[:-3]
         return code.strip()
@@ -242,7 +240,7 @@ class CodeGenerator:
             return "\n".join(lines)
         if self.config.style == "verbose":
             lines = code.split("\n")
-            result: List[str] = []
+            result: list[str] = []
             for line in lines:
                 result.append(line)
                 stripped = line.strip()
@@ -252,35 +250,22 @@ class CodeGenerator:
         return code
 
     def _default_generate_response(self) -> str:
-        return (
-            "fn generated() {\n"
-            "    print(\"Generated function\")\n"
-            "}"
-        )
+        return "fn generated() {\n" '    print("Generated function")\n' "}"
 
     def _default_function_response(self) -> str:
-        return (
-            "fn generated(params) {\n"
-            "    return null\n"
-            "}"
-        )
+        return "fn generated(params) {\n" "    return null\n" "}"
 
     def _default_class_response(self) -> str:
-        return (
-            "class GeneratedClass {\n"
-            "    fn init() {\n"
-            "    }\n"
-            "}"
-        )
+        return "class GeneratedClass {\n" "    fn init() {\n" "    }\n" "}"
 
     def _default_test_response(self) -> str:
         return (
             "fn test_feature() {\n"
             "    let result = true\n"
             "    if (result == false) {\n"
-            "        print(\"FAIL\")\n"
+            '        print("FAIL")\n'
             "    } else {\n"
-            "        print(\"PASS\")\n"
+            '        print("PASS")\n'
             "    }\n"
             "}"
         )
@@ -297,10 +282,10 @@ class CodeGenerator:
     def _mock_code(self, fallback: str) -> str:
         return fallback
 
-    def _mock_explain(self, lines: List[str]) -> str:
+    def _mock_explain(self, lines: list[str]) -> str:
         functions = []
         for line in lines:
-            fn_match = re.match(r'\s*fn\s+(\w+)', line)
+            fn_match = re.match(r"\s*fn\s+(\w+)", line)
             if fn_match:
                 functions.append(fn_match.group(1))
         if functions:
@@ -309,29 +294,32 @@ class CodeGenerator:
 
     def _mock_translate(self, code: str, target: str) -> str:
         result = code
-        replacements: List[tuple[str, str]] = [
-            (r'fn\s+(\w+)\s*\(', rf'def \1('),
-            (r'\blet\b', ''),
-            (r'\bconst\b', ''),
-            (r'\bprint\(', 'print('),
-            (r'\binput\(', 'input('),
-            (r'\band\b', 'and'),
-            (r'\bor\b', 'or'),
-            (r'\bnot\b', 'not'),
-            (r'\bnull\b', 'None'),
-            (r'\btrue\b', 'True'),
-            (r'\bfalse\b', 'False'),
-            (r'\bthis\b', 'self'),
-            (r'\bsuper\b', 'super()'),
-            (r'\bclass\s+(\w+)(?:\s*:\s*(\w+))?', r'class \1(\2):' if target == "python" else r'class \1'),
-            (r'\binterface\b', '# interface'),
-            (r'\benum\b', 'class'),
-            (r'\bswitch\s*\(', 'match '),
-            (r'\bcase\b', 'case'),
-            (r'\bdefault\b', 'case _'),
-            (r'\bmatch\b', 'match'),
-            (r'\bloop\b', 'for _ in range'),
-            (r'//', '#'),
+        replacements: list[tuple[str, str]] = [
+            (r"fn\s+(\w+)\s*\(", r"def \1("),
+            (r"\blet\b", ""),
+            (r"\bconst\b", ""),
+            (r"\bprint\(", "print("),
+            (r"\binput\(", "input("),
+            (r"\band\b", "and"),
+            (r"\bor\b", "or"),
+            (r"\bnot\b", "not"),
+            (r"\bnull\b", "None"),
+            (r"\btrue\b", "True"),
+            (r"\bfalse\b", "False"),
+            (r"\bthis\b", "self"),
+            (r"\bsuper\b", "super()"),
+            (
+                r"\bclass\s+(\w+)(?:\s*:\s*(\w+))?",
+                r"class \1(\2):" if target == "python" else r"class \1",
+            ),
+            (r"\binterface\b", "# interface"),
+            (r"\benum\b", "class"),
+            (r"\bswitch\s*\(", "match "),
+            (r"\bcase\b", "case"),
+            (r"\bdefault\b", "case _"),
+            (r"\bmatch\b", "match"),
+            (r"\bloop\b", "for _ in range"),
+            (r"//", "#"),
         ]
         for pattern, repl in replacements:
             result = re.sub(pattern, repl, result)
@@ -340,13 +328,13 @@ class CodeGenerator:
 
 class CodeTemplate:
     @staticmethod
-    def function_template(name: str, params: List[str], body: str) -> str:
+    def function_template(name: str, params: list[str], body: str) -> str:
         param_str = ", ".join(params)
         return f"fn {name}({param_str}) {{\n    {body}\n}}"
 
     @staticmethod
-    def class_template(name: str, methods: List[Dict[str, Any]]) -> str:
-        lines: List[str] = [f"class {name} {{"]
+    def class_template(name: str, methods: list[dict[str, Any]]) -> str:
+        lines: list[str] = [f"class {name} {{"]
         for method in methods:
             method_name = method.get("name", "method")
             method_params = method.get("params", [])

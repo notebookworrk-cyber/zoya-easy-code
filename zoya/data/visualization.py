@@ -1,7 +1,4 @@
-from typing import List, Optional, Dict, Any
-import math
-
-from .dataframe import Series, DataFrameError
+from .dataframe import Series
 
 
 class VisualizationError(Exception):
@@ -80,7 +77,7 @@ class Plot:
         xs = list(x)
         ys = list(y)
 
-        pairs = sorted(zip(xs, ys), key=lambda p: p[0])
+        pairs = sorted(zip(xs, ys, strict=False), key=lambda p: p[0])
         xs_sorted = [p[0] for p in pairs]
         ys_sorted = [p[1] for p in pairs]
 
@@ -132,11 +129,13 @@ class Plot:
             label_str = Plot._format_axis_label(y_val) if r % 4 == 0 else ""
             lines.append(f"{_STYLE['axis']} {row_str}  {label_str}".rstrip())
         lines.append(f"{_STYLE['corner']}{_STYLE['line'] * width}")
-        lines.append(f"x: {Plot._format_axis_label(xmin)} {' ' * (width - 10)} {Plot._format_axis_label(xmax)}")
+        lines.append(
+            f"x: {Plot._format_axis_label(xmin)} {' ' * (width - 10)} {Plot._format_axis_label(xmax)}"
+        )
         return "\n".join(lines)
 
     @staticmethod
-    def bar(x: List[str], y: List[float], title: str = "") -> str:
+    def bar(x: list[str], y: list[float], title: str = "") -> str:
         if len(x) == 0:
             raise VisualizationError("No data to plot")
 
@@ -151,14 +150,18 @@ class Plot:
             lines.append("")
 
         max_label_len = max(len(str(label)) for label in x)
-        for label, val in zip(x, y):
+        for label, val in zip(x, y, strict=False):
             bar_len = int((val / max_val) * max_width) if max_val else 0
-            bar_str = _STYLE["hbar_fill"] * bar_len + _STYLE["hbar_empty"] * (max_width - bar_len)
+            bar_str = _STYLE["hbar_fill"] * bar_len + _STYLE["hbar_empty"] * (
+                max_width - bar_len
+            )
             val_str = Plot._format_axis_label(val)
             lines.append(f"  {str(label).ljust(max_label_len)} |{bar_str} {val_str}")
 
         lines.append(f"  {' ' * max_label_len} {'─' * (max_width + 2)}")
-        lines.append(f"  {' ' * max_label_len}  0{' ' * (max_width - 6)}{Plot._format_axis_label(max_val)}")
+        lines.append(
+            f"  {' ' * max_label_len}  0{' ' * (max_width - 6)}{Plot._format_axis_label(max_val)}"
+        )
         return "\n".join(lines)
 
     @staticmethod
@@ -213,9 +216,26 @@ class Plot:
 
         grid = [[" " for _ in range(width)] for _ in range(height)]
 
-        for xi, yi in zip(xs, ys):
-            col = min(int((xi - xmin) / (xmax - xmin) * (width - 1)) if xmax != xmin else width // 2, width - 1)
-            row = max(0, min(height - 1 - int((yi - ymin) / (ymax - ymin) * (height - 1)) if ymax != ymin else height // 2, height - 1))
+        for xi, yi in zip(xs, ys, strict=False):
+            col = min(
+                (
+                    int((xi - xmin) / (xmax - xmin) * (width - 1))
+                    if xmax != xmin
+                    else width // 2
+                ),
+                width - 1,
+            )
+            row = max(
+                0,
+                min(
+                    (
+                        height - 1 - int((yi - ymin) / (ymax - ymin) * (height - 1))
+                        if ymax != ymin
+                        else height // 2
+                    ),
+                    height - 1,
+                ),
+            )
             grid[row][col] = _STYLE["point"]
 
         lines = []
@@ -228,11 +248,13 @@ class Plot:
             label_str = Plot._format_axis_label(y_val) if r % 4 == 0 else ""
             lines.append(f"{_STYLE['axis']} {row_str}  {label_str}".rstrip())
         lines.append(f"{_STYLE['corner']}{_STYLE['line'] * width}")
-        lines.append(f"x: {Plot._format_axis_label(xmin)} {' ' * (width - 10)} {Plot._format_axis_label(xmax)}")
+        lines.append(
+            f"x: {Plot._format_axis_label(xmin)} {' ' * (width - 10)} {Plot._format_axis_label(xmax)}"
+        )
         return "\n".join(lines)
 
     @staticmethod
-    def pie(labels: List[str], values: List[float], title: str = "") -> str:
+    def pie(labels: list[str], values: list[float], title: str = "") -> str:
         if not labels or not values:
             raise VisualizationError("No data for pie chart")
         if len(labels) != len(values):
@@ -253,7 +275,6 @@ class Plot:
 
         # Horizontal stacked bar as pie representation
         width = 30
-        remaining = width
         bars = []
         for v in values:
             frac = v / total
@@ -267,9 +288,11 @@ class Plot:
 
         # Legend
         max_label_len = max(len(str(l)) for l in labels)
-        for label, val, p in zip(labels, values, pct):
+        for label, val, p in zip(labels, values, pct, strict=False):
             bar = _STYLE["hbar_fill"]
-            lines.append(f"  {bar} {str(label).ljust(max_label_len)}  {Plot._format_axis_label(val)} ({p:.1f}%)")
+            lines.append(
+                f"  {bar} {str(label).ljust(max_label_len)}  {Plot._format_axis_label(val)} ({p:.1f}%)"
+            )
 
         lines.append(f"  {'─' * (max_label_len + 16)}")
         lines.append(f"  Total: {Plot._format_axis_label(total)}")

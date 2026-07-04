@@ -1,18 +1,20 @@
 """Test the Zoya 4.0 web framework."""
 
+import os
 import sys
-sys.path.insert(0, r"C:\Users\hp\zoya3")
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from zoya.web import Web, create_app, create_success, create_error
-    from zoya.web.response import ResponseData, HTTP_200_OK, HTTP_400_BAD_REQUEST
-    from zoya.web.router import Router, Route
+    from zoya.web import Web, create_app, create_error, create_success
     from zoya.web.middleware import (
-        BaseMiddleware,
-        LoggingMiddleware,
         AuthMiddleware,
+        BaseMiddleware,
         ErrorHandlingMiddleware,
+        LoggingMiddleware,
     )
+    from zoya.web.response import HTTP_400_BAD_REQUEST
+    from zoya.web.router import Router
 
     print("[OK] All imports succeeded")
 
@@ -41,7 +43,7 @@ try:
     # Test Router.match raises KeyError
     try:
         router.match("GET", "/nope")
-        assert False, "Should have raised KeyError"
+        raise AssertionError("Should have raised KeyError")
     except KeyError:
         pass
     print("[OK] Router.match raises KeyError on no match")
@@ -54,7 +56,9 @@ try:
     assert success["meta"] == {"page": 1}
     print("[OK] create_success test passed")
 
-    error = create_error("Bad request", status=HTTP_400_BAD_REQUEST, meta={"field": "id"})
+    error = create_error(
+        "Bad request", status=HTTP_400_BAD_REQUEST, meta={"field": "id"}
+    )
     assert error["success"] is False
     assert error["data"] is None
     assert error["error"] == "Bad request"

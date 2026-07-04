@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from zoya import run
-from zoya.errors import ParseError, RuntimeError_
+from zoya.errors import ParseError
 
 
 def test_hello_world():
@@ -9,7 +9,7 @@ def test_hello_world():
 
 
 def test_variables():
-    run('x = 10\ny = 20\nprint x + y')
+    run("x = 10\ny = 20\nprint x + y")
 
 
 def test_if_else():
@@ -21,11 +21,11 @@ def test_loop():
 
 
 def test_function():
-    run('fn add(a, b) {\n    return a + b\n}\nprint add(2, 3)')
+    run("fn add(a, b) {\n    return a + b\n}\nprint add(2, 3)")
 
 
 def test_list():
-    run('nums = [1, 2, 3]\nnums.append(4)\nprint nums[0]')
+    run("nums = [1, 2, 3]\nnums.append(4)\nprint nums[0]")
 
 
 def test_dict():
@@ -33,11 +33,15 @@ def test_dict():
 
 
 def test_nested_if_else():
-    run('x = 15\nif x > 10 {\n    if x > 20 {\n        print ">20"\n    } else {\n        print "10-20"\n    }\n} else {\n    print "<=10"\n}')
+    run(
+        'x = 15\nif x > 10 {\n    if x > 20 {\n        print ">20"\n    } else {\n        print "10-20"\n    }\n} else {\n    print "<=10"\n}'
+    )
 
 
 def test_while_sum():
-    run('sum = 0\ni = 1\nwhile i <= 10 {\n    sum = sum + i\n    i = i + 1\n}\nprint sum')
+    run(
+        "sum = 0\ni = 1\nwhile i <= 10 {\n    sum = sum + i\n    i = i + 1\n}\nprint sum"
+    )
 
 
 def test_recursive_fib():
@@ -58,7 +62,7 @@ def test_string_methods():
 
 
 def test_list_sort():
-    run('nums = [3, 1, 4, 1, 5]\nnums.sort()\nprint nums[0]\nprint nums.length()')
+    run("nums = [3, 1, 4, 1, 5]\nnums.sort()\nprint nums[0]\nprint nums.length()")
 
 
 def test_class():
@@ -104,7 +108,7 @@ def test_interpolated_string():
 
 
 def test_for_loop():
-    code = 'for i = 0; i < 5; i = i + 1 {\n    print i\n}\n'
+    code = "for i = 0; i < 5; i = i + 1 {\n    print i\n}\n"
     run(code)
 
 
@@ -129,7 +133,7 @@ def test_import():
 
 
 def test_slice():
-    code = 'items = [0, 1, 2, 3, 4]\nprint items[1:4]\n'
+    code = "items = [0, 1, 2, 3, 4]\nprint items[1:4]\n"
     run(code)
 
 
@@ -172,20 +176,22 @@ def test_foreach_on_string():
 
 
 def test_math_operations():
-    run('print 2 ** 10')
-    run('print 10 % 3')
-    run('print abs(-5)')
-    run('print max(1, 2, 3)')
-    run('print min(1, 2, 3)')
+    run("print 2 ** 10")
+    run("print 10 % 3")
+    run("print abs(-5)")
+    run("print max(1, 2, 3)")
+    run("print min(1, 2, 3)")
 
 
 def test_parse_error():
     import pytest
+
     with pytest.raises(ParseError):
-        run('x = ')
+        run("x = ")
 
 
 def test_type_error():
     import pytest
-    with pytest.raises(Exception):
+
+    with pytest.raises(Exception):  # noqa: B017
         run('"hello" - "world"')

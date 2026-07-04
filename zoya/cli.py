@@ -12,7 +12,7 @@ from .version import __version__
 
 def run_file(filepath: str) -> None:
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             source = f.read()
         run(source, filepath)
     except FileNotFoundError:
@@ -41,13 +41,15 @@ def main() -> NoReturn:
     )
 
     parser.add_argument(
-        "-r", "--repl",
+        "-r",
+        "--repl",
         action="store_true",
         help="Start interactive REPL session",
     )
 
     parser.add_argument(
-        "-v", "--version",
+        "-v",
+        "--version",
         action="store_true",
         help="Show version information and exit",
     )
@@ -59,7 +61,8 @@ def main() -> NoReturn:
     )
 
     parser.add_argument(
-        "-c", "--command",
+        "-c",
+        "--command",
         dest="inline_cmd",
         type=str,
         help="Execute a one-liner Zoya command",
@@ -69,7 +72,9 @@ def main() -> NoReturn:
 
     if args.version:
         print(f"Zoya v{__version__}")
-        print("A beginner-friendly programming language for AI, automation, and game development")
+        print(
+            "A beginner-friendly programming language for AI, automation, and game development"
+        )
         sys.exit(0)
 
     if args.examples:
@@ -93,7 +98,9 @@ def main() -> NoReturn:
         sys.exit(0)
 
     parser.print_help()
-    print("\nTry: zoya --help\n  or: zoya --examples\n  or: zoya --repl\n  or: zoya docs <file.zoya>")
+    print(
+        "\nTry: zoya --help\n  or: zoya --examples\n  or: zoya --repl\n  or: zoya docs <file.zoya>"
+    )
     sys.exit(1)
 
 

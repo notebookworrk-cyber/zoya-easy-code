@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 
 class ASTNode:
@@ -71,7 +70,7 @@ class Print(ASTNode):
 
 @dataclass
 class Input(ASTNode):
-    prompt: Optional[ASTNode] = None
+    prompt: ASTNode | None = None
     line: int = 0
     col: int = 0
 
@@ -80,7 +79,7 @@ class Input(ASTNode):
 class If(ASTNode):
     cond: ASTNode
     body: ASTNode
-    else_body: Optional[ASTNode] = None
+    else_body: ASTNode | None = None
     line: int = 0
     col: int = 0
 
@@ -125,7 +124,7 @@ class Function(ASTNode):
     name: str
     params: list[str]
     body: ASTNode
-    defaults: list[Optional[ASTNode]] = field(default_factory=list)
+    defaults: list[ASTNode | None] = field(default_factory=list)
     line: int = 0
     col: int = 0
 
@@ -134,7 +133,7 @@ class Function(ASTNode):
 class Lambda(ASTNode):
     params: list[str]
     body: ASTNode
-    defaults: list[Optional[ASTNode]] = field(default_factory=list)
+    defaults: list[ASTNode | None] = field(default_factory=list)
     line: int = 0
     col: int = 0
 
@@ -157,7 +156,7 @@ class NamedArg(ASTNode):
 
 @dataclass
 class Return(ASTNode):
-    expr: Optional[ASTNode] = None
+    expr: ASTNode | None = None
     line: int = 0
     col: int = 0
 
@@ -222,7 +221,7 @@ class MethodCall(ASTNode):
 @dataclass
 class Import(ASTNode):
     path: str
-    alias: Optional[str] = None
+    alias: str | None = None
     line: int = 0
     col: int = 0
 
@@ -237,18 +236,18 @@ class InterpolatedString(ASTNode):
 @dataclass
 class Slice(ASTNode):
     obj: ASTNode
-    start: Optional[ASTNode] = None
-    stop: Optional[ASTNode] = None
-    step: Optional[ASTNode] = None
+    start: ASTNode | None = None
+    stop: ASTNode | None = None
+    step: ASTNode | None = None
     line: int = 0
     col: int = 0
 
 
 @dataclass
 class ForLoop(ASTNode):
-    init: Optional[ASTNode]
-    cond: Optional[ASTNode]
-    update: Optional[ASTNode]
+    init: ASTNode | None
+    cond: ASTNode | None
+    update: ASTNode | None
     body: ASTNode
     line: int = 0
     col: int = 0
@@ -267,7 +266,7 @@ class ForEach(ASTNode):
 class Switch(ASTNode):
     expr: ASTNode
     cases: list[tuple[ASTNode, ASTNode]]
-    default_body: Optional[ASTNode] = None
+    default_body: ASTNode | None = None
     line: int = 0
     col: int = 0
 
@@ -276,15 +275,15 @@ class Switch(ASTNode):
 class Try(ASTNode):
     try_body: ASTNode
     catches: list[Catch] = field(default_factory=list)
-    final_body: Optional[ASTNode] = None
+    final_body: ASTNode | None = None
     line: int = 0
     col: int = 0
 
 
 @dataclass
 class Catch(ASTNode):
-    var: Optional[str] = None
-    body: Optional[ASTNode] = None
+    var: str | None = None
+    body: ASTNode | None = None
     line: int = 0
     col: int = 0
 
@@ -300,7 +299,7 @@ class Throw(ASTNode):
 class Match(ASTNode):
     expr: ASTNode
     arms: list[tuple[ASTNode, ASTNode]]
-    else_arm: Optional[ASTNode] = None
+    else_arm: ASTNode | None = None
     line: int = 0
     col: int = 0
 
@@ -316,7 +315,7 @@ class EnumDef(ASTNode):
 @dataclass
 class ClassDef(ASTNode):
     name: str
-    parent: Optional[str] = None
+    parent: str | None = None
     body: ASTNode = None
     line: int = 0
     col: int = 0

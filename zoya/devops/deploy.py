@@ -4,7 +4,6 @@ import os
 import shutil
 import time
 import uuid
-from typing import Dict, List, Optional
 
 
 class DeploymentConfig:
@@ -12,11 +11,11 @@ class DeploymentConfig:
     source: str
     target: str
     strategy: str
-    health_check: Optional[str]
+    health_check: str | None
     timeout: int = 300
     rollback_on_failure: bool = True
     environment: str
-    env_vars: Dict[str, str]
+    env_vars: dict[str, str]
 
     def __init__(
         self,
@@ -24,11 +23,11 @@ class DeploymentConfig:
         source: str,
         target: str,
         strategy: str = "rolling",
-        health_check: Optional[str] = None,
+        health_check: str | None = None,
         timeout: int = 300,
         rollback_on_failure: bool = True,
         environment: str = "dev",
-        env_vars: Optional[Dict[str, str]] = None,
+        env_vars: dict[str, str] | None = None,
     ) -> None:
         self.name = name
         self.source = source
@@ -47,18 +46,18 @@ class Deployment:
     version: str
     status: str
     started_at: float
-    completed_at: Optional[float]
-    logs: List[str]
+    completed_at: float | None
+    logs: list[str]
 
     def __init__(
         self,
         config: DeploymentConfig,
         version: str,
-        id: Optional[str] = None,
+        id: str | None = None,
         status: str = "pending",
-        started_at: Optional[float] = None,
-        completed_at: Optional[float] = None,
-        logs: Optional[List[str]] = None,
+        started_at: float | None = None,
+        completed_at: float | None = None,
+        logs: list[str] | None = None,
     ) -> None:
         self.config = config
         self.version = version
@@ -70,7 +69,7 @@ class Deployment:
 
 
 class Deployer:
-    _deployments: Dict[str, Deployment]
+    _deployments: dict[str, Deployment]
     _environments: set
 
     def __init__(self) -> None:
@@ -78,7 +77,7 @@ class Deployer:
         self._environments = {"dev", "staging", "production"}
 
     def deploy(
-        self, config: DeploymentConfig, version: Optional[str] = None
+        self, config: DeploymentConfig, version: str | None = None
     ) -> Deployment:
         ver = version or uuid.uuid4().hex[:8]
         deployment = Deployment(config=config, version=ver)
@@ -133,9 +132,7 @@ class Deployer:
             )
         except Exception as exc:
             deployment.status = "failed"
-            deployment.logs.append(
-                f"[{deployment.id}] Deploy failed: {exc}."
-            )
+            deployment.logs.append(f"[{deployment.id}] Deploy failed: {exc}.")
             if config.rollback_on_failure:
                 return self._do_rollback(deployment, str(exc))
 
@@ -150,28 +147,24 @@ class Deployer:
 
     def _do_rollback(self, deployment: Deployment, reason: str) -> Deployment:
         deployment.status = "rolled_back"
-        deployment.logs.append(
-            f"[{deployment.id}] Rolled back: {reason}."
-        )
+        deployment.logs.append(f"[{deployment.id}] Rolled back: {reason}.")
         deployment.completed_at = time.time()
         self._deployments[deployment.id] = deployment
         return deployment
 
-    def get_deployment(self, id: str) -> Optional[Deployment]:
+    def get_deployment(self, id: str) -> Deployment | None:
         return self._deployments.get(id)
 
-    def list_deployments(
-        self, environment: Optional[str] = None
-    ) -> List[Deployment]:
+    def list_deployments(self, environment: str | None = None) -> list[Deployment]:
         if environment is None:
             return list(self._deployments.values())
         return [
-            d for d in self._deployments.values()
-            if d.config.environment == environment
+            d for d in self._deployments.values() if d.config.environment == environment
         ]
 
     def health_check(self, url: str) -> bool:
         import urllib.request
+
         try:
             resp = urllib.request.urlopen(url, timeout=10)
             return resp.status < 500
@@ -194,5 +187,5 @@ class Deployer:
             f"'{src.config.name}' to '{dst.config.name}'."
         )
 
-    def list_environments(self) -> List[str]:
+    def list_environments(self) -> list[str]:
         return sorted(self._environments)

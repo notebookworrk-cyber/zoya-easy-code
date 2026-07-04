@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-import traceback
-from typing import Optional
-
 
 class ZoyaError(Exception):
     """Base exception for all Zoya language errors."""
@@ -46,7 +42,7 @@ class ZoyaError(Exception):
                     base += f"\n  {marker}"
         return base
 
-    def with_source(self, source: str) -> "ZoyaError":
+    def with_source(self, source: str) -> ZoyaError:
         """Return a new error instance with source code attached."""
         new = type(self)(
             str(self).split(": ", 1)[1] if ": " in str(self) else str(self),
@@ -60,31 +56,37 @@ class ZoyaError(Exception):
 
 class LexError(ZoyaError):
     """Lexical analysis error (invalid token, unterminated string, etc.)."""
+
     pass
 
 
 class ParseError(ZoyaError):
     """Parsing error (syntax error, unexpected token, etc.)."""
+
     pass
 
 
 class RuntimeError_(ZoyaError):
     """Base class for runtime errors."""
+
     pass
 
 
 class ZoyaRuntimeError(RuntimeError_):
     """General runtime error (thrown by 'throw' or uncaught exception)."""
+
     pass
 
 
 class ZoyaTypeError(RuntimeError_):
     """Type error (invalid operation for type, wrong argument type, etc.)."""
+
     pass
 
 
 class InterpreterError(RuntimeError_):
     """Internal interpreter error (should not happen in user code)."""
+
     pass
 
 
@@ -98,11 +100,13 @@ class ReturnException(Exception):
 
 class BreakException(Exception):
     """Control flow exception for break statements."""
+
     pass
 
 
 class ContinueException(Exception):
     """Control flow exception for continue statements."""
+
     pass
 
 
@@ -120,7 +124,7 @@ class CallFrame:
         self.file = file
         self.line = line
         self.col = col
-        self.parent: Optional[CallFrame] = None
+        self.parent: CallFrame | None = None
 
     def __repr__(self) -> str:
         loc = f"{self.file}:{self.line}:{self.col}" if self.file else "unknown"
@@ -158,23 +162,17 @@ class ImportCycleError(RuntimeError_):
         self.cycle = cycle
 
 
-@dataclass
-class CallFrame:
-    """Represents a single call frame in the call stack."""
-    func_name: str
-    file: str
-    line: int
-    col: int
-    source: str = ""
-
-
 def format_stack_trace(frames: list[CallFrame]) -> str:
     """Format a list of call frames into a readable stack trace."""
     if not frames:
         return ""
     lines = ["Stack trace (most recent call last):"]
     for frame in reversed(frames):
-        loc = f"{frame.file}:{frame.line}:{frame.col}" if frame.file else "unknown location"
+        loc = (
+            f"{frame.file}:{frame.line}:{frame.col}"
+            if frame.file
+            else "unknown location"
+        )
         lines.append(f"  {frame.func_name} at {loc}")
     return "\n".join(lines)
 

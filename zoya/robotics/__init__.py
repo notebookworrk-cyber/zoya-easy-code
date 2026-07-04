@@ -1,12 +1,10 @@
 __version__ = "0.1.0"
 
 import math
-import time
-import uuid
 import random
+import time
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Tuple
-from collections import deque
+from typing import Any
 
 
 class RoboticsError(Exception):
@@ -19,23 +17,19 @@ class RobotHardware(ABC):
         self._connected: bool = False
 
     @abstractmethod
-    def connect(self) -> None:
-        ...
+    def connect(self) -> None: ...
 
     @abstractmethod
-    def disconnect(self) -> None:
-        ...
+    def disconnect(self) -> None: ...
 
     def is_connected(self) -> bool:
         return self._connected
 
     @abstractmethod
-    def get_status(self) -> Dict[str, Any]:
-        ...
+    def get_status(self) -> dict[str, Any]: ...
 
     @abstractmethod
-    def emergency_stop(self) -> None:
-        ...
+    def emergency_stop(self) -> None: ...
 
 
 class Motor:
@@ -69,8 +63,7 @@ class Sensor(ABC):
         self._offset: float = 0.0
 
     @abstractmethod
-    def read(self) -> float:
-        ...
+    def read(self) -> float: ...
 
     def get_value(self) -> float:
         return self.read()
@@ -92,7 +85,7 @@ class UltrasonicSensor(Sensor):
     def read(self) -> float:
         self._distance = max(2.0, 400.0 - abs(hash(f"{time.time():.1f}")) % 398.0)
         if self._calibrated:
-            self._distance *= (1.0 + self._offset)
+            self._distance *= 1.0 + self._offset
         return round(self._distance, 2)
 
     def calibrate(self) -> None:
@@ -108,7 +101,9 @@ class InfraredSensor(Sensor):
         self._detected: int = 0
 
     def read(self) -> float:
-        self._detected = 1 if (abs(hash(f"ir_{int(time.time() * 2)}")) % 100 > 70) else 0
+        self._detected = (
+            1 if (abs(hash(f"ir_{int(time.time() * 2)}")) % 100 > 70) else 0
+        )
         return float(self._detected)
 
 
@@ -135,9 +130,9 @@ class Gyroscope(Sensor):
         self.x = random.uniform(-5.0, 5.0)
         self.y = random.uniform(-5.0, 5.0)
         self.z = random.uniform(-5.0, 5.0)
-        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+        return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
-    def get_value(self) -> Tuple[float, float, float]:
+    def get_value(self) -> tuple[float, float, float]:
         self.read()
         return (round(self.x, 2), round(self.y, 2), round(self.z, 2))
 
@@ -153,9 +148,9 @@ class Accelerometer(Sensor):
         self.x = random.uniform(-2.0, 2.0)
         self.y = random.uniform(-2.0, 2.0)
         self.z = 9.81 + random.uniform(-0.5, 0.5)
-        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+        return math.sqrt(self.x**2 + self.y**2 + self.z**2)
 
-    def get_value(self) -> Tuple[float, float, float]:
+    def get_value(self) -> tuple[float, float, float]:
         self.read()
         return (round(self.x, 2), round(self.y, 2), round(self.z, 2))
 
@@ -167,7 +162,11 @@ class LightSensor(Sensor):
         self._lux: float = 0.0
 
     def read(self) -> float:
-        base = random.uniform(100, 900) if abs(hash(str(int(time.time()))[:2])) % 2 == 0 else random.uniform(0, 50)
+        base = (
+            random.uniform(100, 900)
+            if abs(hash(str(int(time.time()))[:2])) % 2 == 0
+            else random.uniform(0, 50)
+        )
         self._lux = round(base, 1)
         return self._lux
 
@@ -180,13 +179,17 @@ class GPSModule:
         self._base_lat: float = 37.7749
         self._base_lng: float = -122.4194
 
-    def read(self) -> Tuple[float, float, float]:
+    def read(self) -> tuple[float, float, float]:
         self.latitude = self._base_lat + random.uniform(-0.001, 0.001)
         self.longitude = self._base_lng + random.uniform(-0.001, 0.001)
         self.altitude = max(0.0, self.altitude + random.uniform(-0.5, 0.5))
-        return (round(self.latitude, 6), round(self.longitude, 6), round(self.altitude, 2))
+        return (
+            round(self.latitude, 6),
+            round(self.longitude, 6),
+            round(self.altitude, 2),
+        )
 
-    def get_value(self) -> Dict[str, float]:
+    def get_value(self) -> dict[str, float]:
         self.read()
         return {
             "latitude": round(self.latitude, 6),
@@ -221,9 +224,9 @@ class Servo:
 class RobotController:
     def __init__(self, name: str):
         self.name: str = name
-        self.motors: List[Motor] = []
-        self.sensors: List[Sensor] = []
-        self.servos: List[Servo] = []
+        self.motors: list[Motor] = []
+        self.sensors: list[Sensor] = []
+        self.servos: list[Servo] = []
 
     def add_motor(self, motor: Motor) -> None:
         self.motors.append(motor)
@@ -256,13 +259,13 @@ class RobotController:
         for motor in self.motors:
             motor.stop()
 
-    def read_all_sensors(self) -> Dict[str, float]:
-        data: Dict[str, float] = {}
+    def read_all_sensors(self) -> dict[str, float]:
+        data: dict[str, float] = {}
         for sensor in self.sensors:
             data[sensor.name] = sensor.read()
         return data
 
-    def execute_sequence(self, commands: List[Dict[str, Any]]) -> None:
+    def execute_sequence(self, commands: list[dict[str, Any]]) -> None:
         for cmd in commands:
             action = cmd.get("action")
             params = {k: v for k, v in cmd.items() if k != "action"}
@@ -271,7 +274,7 @@ class RobotController:
             else:
                 raise RoboticsError(f"Unknown command action: {action}")
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "motors": [{"channel": m.channel, "speed": m.speed} for m in self.motors],
@@ -288,7 +291,7 @@ class DroneController(RobotController):
         self._battery: float = 100.0
         self._home_lat: float = 37.7749
         self._home_lng: float = -122.4194
-        self._position: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
+        self._position: dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
         self._yaw: float = 0.0
 
     def arm(self) -> None:
@@ -354,7 +357,7 @@ class SimulationEnvironment:
         self.robot: RobotController = robot
         self._running: bool = False
         self._time: float = 0.0
-        self._obstacles: List[Dict[str, Any]] = []
+        self._obstacles: list[dict[str, Any]] = []
 
     def start(self) -> None:
         self._running = True
@@ -362,11 +365,11 @@ class SimulationEnvironment:
     def stop(self) -> None:
         self._running = False
 
-    def set_obstacles(self, obstacles: List[Dict[str, Any]]) -> None:
+    def set_obstacles(self, obstacles: list[dict[str, Any]]) -> None:
         self._obstacles = list(obstacles)
 
-    def get_simulated_sensor_data(self) -> Dict[str, float]:
-        data: Dict[str, float] = {}
+    def get_simulated_sensor_data(self) -> dict[str, float]:
+        data: dict[str, float] = {}
         for sensor in self.robot.sensors:
             data[sensor.name] = sensor.read()
         return data
@@ -417,7 +420,7 @@ def calculate_odometry(
     right_ticks: int,
     wheel_diameter: float,
     wheel_base: float,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     ticks_per_revolution = 360
     left_rev = left_ticks / ticks_per_revolution
     right_rev = right_ticks / ticks_per_revolution

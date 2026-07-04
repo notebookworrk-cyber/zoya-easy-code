@@ -1,23 +1,22 @@
 import math
 import re
 from collections import Counter
-from typing import List, Dict, Set
 
 
 class EmbeddingError(Exception):
     pass
 
 
-def simple_tokenize(text: str) -> List[str]:
+def simple_tokenize(text: str) -> list[str]:
     if not isinstance(text, str):
         raise EmbeddingError("Input must be a string")
     return re.findall(r"[a-z]+", text.lower())
 
 
-def cosine_similarity(a: List[float], b: List[float]) -> float:
+def cosine_similarity(a: list[float], b: list[float]) -> float:
     if len(a) != len(b):
         raise EmbeddingError("Vectors must have the same dimension")
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=False))
     norm_a = math.sqrt(sum(x * x for x in a))
     norm_b = math.sqrt(sum(y * y for y in b))
     if norm_a == 0 or norm_b == 0:
@@ -27,16 +26,16 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
 
 class TFIDFVectorizer:
     def __init__(self):
-        self._vocab: Dict[str, int] = {}
-        self._idf: Dict[str, float] = {}
+        self._vocab: dict[str, int] = {}
+        self._idf: dict[str, float] = {}
         self._fitted = False
 
-    def fit(self, documents: List[str]) -> None:
+    def fit(self, documents: list[str]) -> None:
         if not documents:
             raise EmbeddingError("Must provide at least one document for fitting")
-        vocab_set: Set[str] = set()
+        vocab_set: set[str] = set()
         doc_count = len(documents)
-        df: Dict[str, int] = {}
+        df: dict[str, int] = {}
         for doc in documents:
             tokens = simple_tokenize(doc)
             unique = set(tokens)
@@ -50,7 +49,7 @@ class TFIDFVectorizer:
         }
         self._fitted = True
 
-    def transform(self, text: str) -> List[float]:
+    def transform(self, text: str) -> list[float]:
         if not self._fitted:
             raise EmbeddingError("Vectorizer has not been fitted yet")
         tokens = simple_tokenize(text)
@@ -78,16 +77,16 @@ class TextEmbedding:
         self._vectorizer = TFIDFVectorizer()
         self._fitted = False
 
-    def _pad_or_truncate(self, vec: List[float]) -> List[float]:
+    def _pad_or_truncate(self, vec: list[float]) -> list[float]:
         if len(vec) >= self._dimension:
-            return vec[:self._dimension]
+            return vec[: self._dimension]
         return vec + [0.0] * (self._dimension - len(vec))
 
-    def fit(self, texts: List[str]) -> None:
+    def fit(self, texts: list[str]) -> None:
         self._vectorizer.fit(texts)
         self._fitted = True
 
-    def embed(self, text: str) -> List[float]:
+    def embed(self, text: str) -> list[float]:
         if not self._fitted:
             raise EmbeddingError("Embedding model has not been fitted yet")
         raw = self._vectorizer.transform(text)
@@ -100,5 +99,5 @@ class TextEmbedding:
         vec_b = self.embed(b)
         return cosine_similarity(vec_a, vec_b)
 
-    def batch_embed(self, texts: List[str]) -> List[List[float]]:
+    def batch_embed(self, texts: list[str]) -> list[list[float]]:
         return [self.embed(t) for t in texts]

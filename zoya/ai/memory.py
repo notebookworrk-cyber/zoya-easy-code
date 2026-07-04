@@ -1,9 +1,9 @@
 import json
-import time
 import math
-from typing import Any, Dict, List, Optional, TypedDict
+import time
+from typing import Any, TypedDict
 
-from zoya.ai.embeddings import TextEmbedding, cosine_similarity, simple_tokenize, EmbeddingError
+from zoya.ai.embeddings import TextEmbedding, cosine_similarity
 
 
 class MemoryItem(TypedDict):
@@ -19,10 +19,10 @@ class MemoryError(Exception):
 
 class ConversationMemory:
     def __init__(self, max_tokens: int = 0):
-        self._history: List[MemoryItem] = []
+        self._history: list[MemoryItem] = []
         self._max_tokens = max_tokens
 
-    def add(self, role: str, content: str, metadata: Optional[dict] = None) -> None:
+    def add(self, role: str, content: str, metadata: dict | None = None) -> None:
         item: MemoryItem = {
             "role": role,
             "content": content,
@@ -33,10 +33,10 @@ class ConversationMemory:
         if self._max_tokens > 0 and self.count_tokens() > self._max_tokens:
             self.summarize()
 
-    def get_history(self) -> List[MemoryItem]:
+    def get_history(self) -> list[MemoryItem]:
         return list(self._history)
 
-    def get_recent(self, n: int) -> List[MemoryItem]:
+    def get_recent(self, n: int) -> list[MemoryItem]:
         if n < 1:
             raise MemoryError("Number of recent items must be positive")
         return list(self._history[-n:])
@@ -45,7 +45,9 @@ class ConversationMemory:
         self._history.clear()
 
     def count_tokens(self) -> int:
-        total_chars = sum(len(item["content"]) + len(item["role"]) for item in self._history)
+        total_chars = sum(
+            len(item["content"]) + len(item["role"]) for item in self._history
+        )
         return math.ceil(total_chars / 4)
 
     def summarize(self, max_tokens: int = 1000) -> None:
@@ -54,16 +56,21 @@ class ConversationMemory:
         target = self._max_tokens if self._max_tokens > 0 else max_tokens
         while self.count_tokens() > target and len(self._history) > 1:
             oldest = self._history.pop(0)
-            char_limit = self._max_tokens * 4 if self._max_tokens > 0 else max_tokens * 4
+            char_limit = (
+                self._max_tokens * 4 if self._max_tokens > 0 else max_tokens * 4
+            )
             summary_content = oldest["content"][:char_limit]
             if len(oldest["content"]) > char_limit:
                 summary_content += "..."
-            self._history.insert(0, {
-                "role": "system",
-                "content": f"[Summary of earlier {oldest['role']} message]: {summary_content}",
-                "timestamp": oldest["timestamp"],
-                "metadata": {"summarized": True, "original_role": oldest["role"]},
-            })
+            self._history.insert(
+                0,
+                {
+                    "role": "system",
+                    "content": f"[Summary of earlier {oldest['role']} message]: {summary_content}",
+                    "timestamp": oldest["timestamp"],
+                    "metadata": {"summarized": True, "original_role": oldest["role"]},
+                },
+            )
             break
 
     def set_max_tokens(self, limit: int) -> None:
@@ -76,9 +83,9 @@ class ConversationMemory:
 
 class SemanticMemory:
     def __init__(self):
-        self._data: Dict[str, Any] = {}
-        self._metadata: Dict[str, dict] = {}
-        self._embedder: Optional[TextEmbedding] = None
+        self._data: dict[str, Any] = {}
+        self._metadata: dict[str, dict] = {}
+        self._embedder: TextEmbedding | None = None
 
     def _ensure_embedder(self) -> TextEmbedding:
         if self._embedder is None:
@@ -89,7 +96,7 @@ class SemanticMemory:
                 self._embedder.fit(["placeholder"])
         return self._embedder
 
-    def store(self, key: str, value: Any, metadata: Optional[dict] = None) -> None:
+    def store(self, key: str, value: Any, metadata: dict | None = None) -> None:
         if not isinstance(key, str) or not key:
             raise MemoryError("Key must be a non-empty string")
         self._data[key] = value
@@ -97,7 +104,7 @@ class SemanticMemory:
         if self._embedder is not None:
             self._embedder.fit(list(self._data.keys()))
 
-    def retrieve(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
+    def retrieve(self, query: str, k: int = 5) -> list[dict[str, Any]]:
         if not self._data:
             return []
         if k < 1:
@@ -113,12 +120,14 @@ class SemanticMemory:
         results = []
         for score, key in scored[:k]:
             if score > 0:
-                results.append({
-                    "key": key,
-                    "value": self._data[key],
-                    "metadata": self._metadata.get(key, {}),
-                    "score": score,
-                })
+                results.append(
+                    {
+                        "key": key,
+                        "value": self._data[key],
+                        "metadata": self._metadata.get(key, {}),
+                        "score": score,
+                    }
+                )
         return results
 
     def get(self, key: str) -> Any:
@@ -132,7 +141,7 @@ class SemanticMemory:
         del self._data[key]
         self._metadata.pop(key, None)
 
-    def list(self) -> List[str]:
+    def list(self) -> list[str]:
         return list(self._data.keys())
 
     def clear(self) -> None:
@@ -161,17 +170,21 @@ class AgentMemory:
             json.dump(serialized, f, indent=2, ensure_ascii=False, default=str)
 
     def load(self, filepath: str) -> None:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             serialized = json.load(f)
         conv_data = serialized.get("conversation", {})
-        self.conversation = ConversationMemory(max_tokens=conv_data.get("max_tokens", 0))
+        self.conversation = ConversationMemory(
+            max_tokens=conv_data.get("max_tokens", 0)
+        )
         for item in conv_data.get("history", []):
-            self.conversation._history.append({
-                "role": item["role"],
-                "content": item["content"],
-                "timestamp": item.get("timestamp", time.time()),
-                "metadata": item.get("metadata", {}),
-            })
+            self.conversation._history.append(
+                {
+                    "role": item["role"],
+                    "content": item["content"],
+                    "timestamp": item.get("timestamp", time.time()),
+                    "metadata": item.get("metadata", {}),
+                }
+            )
         know_data = serialized.get("knowledge", {})
         self.knowledge = SemanticMemory()
         self.knowledge._data = dict(know_data.get("data", {}))

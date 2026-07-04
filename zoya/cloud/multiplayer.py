@@ -1,7 +1,10 @@
+import copy
+import secrets
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Callable, Set
-import secrets, time, copy
 from enum import Enum
+from typing import Any
 
 
 class MatchStatus(str, Enum):
@@ -25,20 +28,20 @@ class MatchConfig:
     timeout: float = 30.0
     ranked: bool = False
     region: str = "us-east"
-    custom_data: Optional[Dict[str, Any]] = None
+    custom_data: dict[str, Any] | None = None
 
 
 @dataclass
 class Match:
     id: str
-    players: List[str] = field(default_factory=list)
+    players: list[str] = field(default_factory=list)
     status: MatchStatus = MatchStatus.WAITING
-    config: Optional[MatchConfig] = None
+    config: MatchConfig | None = None
     created_at: float = 0.0
-    started_at: Optional[float] = None
-    ended_at: Optional[float] = None
-    winner_id: Optional[str] = None
-    server_endpoint: Optional[str] = None
+    started_at: float | None = None
+    ended_at: float | None = None
+    winner_id: str | None = None
+    server_endpoint: str | None = None
 
 
 @dataclass
@@ -46,17 +49,17 @@ class LobbyPlayer:
     user_id: str
     username: str
     ready: bool = False
-    party_id: Optional[str] = None
+    party_id: str | None = None
 
 
 @dataclass
 class Lobby:
     id: str
     name: str
-    players: List[LobbyPlayer] = field(default_factory=list)
-    config: Optional[MatchConfig] = None
+    players: list[LobbyPlayer] = field(default_factory=list)
+    config: MatchConfig | None = None
     status: LobbyStatus = LobbyStatus.OPEN
-    host_user_id: Optional[str] = None
+    host_user_id: str | None = None
 
 
 class MultiplayerError(Exception):
@@ -65,7 +68,7 @@ class MultiplayerError(Exception):
         super().__init__(message)
 
 
-_MOCK_USERNAMES: Dict[str, str] = {
+_MOCK_USERNAMES: dict[str, str] = {
     "user_alice": "Alice",
     "user_bob": "Bob",
     "user_charlie": "Charlie",
@@ -88,17 +91,17 @@ class MultiplayerService:
         self.base_url = base_url
         self.api_key = api_key
         self._realtime = realtime
-        self._matches: Dict[str, Match] = {}
-        self._lobbies: Dict[str, Lobby] = {}
-        self._matchmaking_queue: List[str] = []
-        self._parties: Dict[str, Set[str]] = {}
-        self._player_parties: Dict[str, str] = {}
-        self._state: Dict[str, Any] = {}
-        self._state_listeners: Dict[str, List[Callable]] = {}
-        self._event_handlers: Dict[str, List[Callable]] = {}
-        self._player_lobby: Dict[str, str] = {}
-        self._player_match: Dict[str, str] = {}
-        self._matchmaking_users: Set[str] = set()
+        self._matches: dict[str, Match] = {}
+        self._lobbies: dict[str, Lobby] = {}
+        self._matchmaking_queue: list[str] = []
+        self._parties: dict[str, set[str]] = {}
+        self._player_parties: dict[str, str] = {}
+        self._state: dict[str, Any] = {}
+        self._state_listeners: dict[str, list[Callable]] = {}
+        self._event_handlers: dict[str, list[Callable]] = {}
+        self._player_lobby: dict[str, str] = {}
+        self._player_match: dict[str, str] = {}
+        self._matchmaking_users: set[str] = set()
 
     def find_match(self, config: MatchConfig) -> Match:
         if not self._matchmaking_queue:
@@ -139,7 +142,9 @@ class MultiplayerService:
         )
 
     def cancel_matchmaking(self) -> None:
-        self._matchmaking_queue[:] = [u for u in self._matchmaking_queue if u != "user_alice"]
+        self._matchmaking_queue[:] = [
+            u for u in self._matchmaking_queue if u != "user_alice"
+        ]
         self._matchmaking_users.discard("user_alice")
 
     def get_match(self, match_id: str) -> Match:
@@ -179,9 +184,7 @@ class MultiplayerService:
                 f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
             )
         if lobby.status != LobbyStatus.OPEN:
-            raise MultiplayerError(
-                "Lobby is not open", code="LOBBY_CLOSED"
-            )
+            raise MultiplayerError("Lobby is not open", code="LOBBY_CLOSED")
 
         party_id = self._player_parties.get("user_alice")
         player = LobbyPlayer(
@@ -210,7 +213,7 @@ class MultiplayerService:
             )
         return copy.deepcopy(lobby)
 
-    def list_lobbies(self) -> List[Lobby]:
+    def list_lobbies(self) -> list[Lobby]:
         return [copy.deepcopy(l) for l in self._lobbies.values()]
 
     def set_ready(self, lobby_id: str, ready: bool) -> None:
@@ -223,9 +226,7 @@ class MultiplayerService:
             if player.user_id == "user_alice":
                 player.ready = ready
                 return
-        raise MultiplayerError(
-            "User not in lobby", code="USER_NOT_IN_LOBBY"
-        )
+        raise MultiplayerError("User not in lobby", code="USER_NOT_IN_LOBBY")
 
     def start_match(self, lobby_id: str) -> Match:
         lobby = self._lobbies.get(lobby_id)
@@ -234,9 +235,7 @@ class MultiplayerService:
                 f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
             )
         if lobby.host_user_id != "user_alice":
-            raise MultiplayerError(
-                "Only the host can start a match", code="NOT_HOST"
-            )
+            raise MultiplayerError("Only the host can start a match", code="NOT_HOST")
 
         ready_count = sum(1 for p in lobby.players if p.ready)
         min_players = lobby.config.min_players if lobby.config else 2
@@ -281,9 +280,7 @@ class MultiplayerService:
     def invite_to_party(self, user_id: str) -> None:
         party_id = self._player_parties.get("user_alice")
         if party_id is None:
-            raise MultiplayerError(
-                "User is not in a party", code="NO_PARTY"
-            )
+            raise MultiplayerError("User is not in a party", code="NO_PARTY")
 
     def sync_state(self, match_id: str, state: Any) -> None:
         self._state[match_id] = state
@@ -298,17 +295,13 @@ class MultiplayerService:
             self._state_listeners[match_id] = []
         self._state_listeners[match_id].append(callback)
 
-    def send_event(
-        self, match_id: str, event: str, data: Any = None
-    ) -> None:
+    def send_event(self, match_id: str, event: str, data: Any = None) -> None:
         for callback in self._event_handlers.get(f"{match_id}:{event}", []):
             callback(data)
         for callback in self._event_handlers.get(f"{match_id}:*", []):
             callback({"event": event, "data": data})
 
-    def on_event(
-        self, match_id: str, event_type: str, callback: Callable
-    ) -> None:
+    def on_event(self, match_id: str, event_type: str, callback: Callable) -> None:
         key = f"{match_id}:{event_type}"
         if key not in self._event_handlers:
             self._event_handlers[key] = []

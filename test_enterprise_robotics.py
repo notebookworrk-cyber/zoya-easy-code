@@ -1,21 +1,36 @@
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import unittest
 import json
 import math
-from unittest.mock import patch
+import unittest
 
 from zoya.enterprise import (
-    EnterpriseError, Tenant, RBACManager, AuditLog, AuditLogger,
-    FeatureFlags, SSOProvider, SSOManager, TenantManager,
+    AuditLog,
+    AuditLogger,
+    EnterpriseError,
+    FeatureFlags,
+    RBACManager,
+    SSOManager,
+    SSOProvider,
+    TenantManager,
 )
 from zoya.robotics import (
-    RoboticsError, Motor, UltrasonicSensor, TemperatureSensor,
-    Gyroscope, GPSModule, Servo, RobotController, DroneController,
-    SimulationEnvironment, create_wheeled_robot, create_quadcopter,
+    DroneController,
+    GPSModule,
+    Gyroscope,
+    Motor,
+    RobotController,
+    RoboticsError,
+    Servo,
+    SimulationEnvironment,
+    TemperatureSensor,
+    UltrasonicSensor,
     calculate_odometry,
+    create_quadcopter,
+    create_wheeled_robot,
 )
 
 
@@ -79,18 +94,24 @@ class TestRBACManager(unittest.TestCase):
 
     def test_check_permission_granted(self):
         self.rbac.assign_role(self.user_id, "editor", self.tenant_id)
-        self.assertTrue(self.rbac.check_permission(self.user_id, "write", self.tenant_id))
+        self.assertTrue(
+            self.rbac.check_permission(self.user_id, "write", self.tenant_id)
+        )
 
     def test_check_permission_denied(self):
         self.rbac.assign_role(self.user_id, "viewer", self.tenant_id)
-        self.assertFalse(self.rbac.check_permission(self.user_id, "delete", self.tenant_id))
+        self.assertFalse(
+            self.rbac.check_permission(self.user_id, "delete", self.tenant_id)
+        )
 
     def test_check_permission_no_role_returns_false(self):
         self.assertFalse(self.rbac.check_permission("no_user", "read", self.tenant_id))
 
     def test_check_permission_admin_wildcard(self):
         self.rbac.assign_role(self.user_id, "admin", self.tenant_id)
-        self.assertTrue(self.rbac.check_permission(self.user_id, "anything", self.tenant_id))
+        self.assertTrue(
+            self.rbac.check_permission(self.user_id, "anything", self.tenant_id)
+        )
 
     def test_list_roles_includes_built_in(self):
         roles = self.rbac.list_roles()
@@ -260,7 +281,9 @@ class TestSSOManager(unittest.TestCase):
         self.sso = SSOManager()
 
     def test_add_provider(self):
-        provider = SSOProvider("google", {"client_id": "abc", "client_secret": "secret"})
+        provider = SSOProvider(
+            "google", {"client_id": "abc", "client_secret": "secret"}
+        )
         self.sso.add_provider(provider)
         self.assertIsNotNone(self.sso.get_provider("google"))
 
@@ -274,18 +297,36 @@ class TestSSOManager(unittest.TestCase):
         self.assertIsNone(self.sso.get_provider("nonexistent"))
 
     def test_list_providers(self):
-        self.sso.add_provider(SSOProvider("google", {"client_id": "a", "client_secret": "b"}))
-        self.sso.add_provider(SSOProvider("github", {"client_id": "c", "client_secret": "d"}))
+        self.sso.add_provider(
+            SSOProvider("google", {"client_id": "a", "client_secret": "b"})
+        )
+        self.sso.add_provider(
+            SSOProvider("github", {"client_id": "c", "client_secret": "d"})
+        )
         self.assertEqual(len(self.sso.list_providers()), 2)
 
     def test_remove_provider(self):
-        provider = SSOProvider("okta", {"client_id": "x", "client_secret": "y", "issuer": "https://okta.example.com"})
+        provider = SSOProvider(
+            "okta",
+            {
+                "client_id": "x",
+                "client_secret": "y",
+                "issuer": "https://okta.example.com",
+            },
+        )
         self.sso.add_provider(provider)
         self.sso.remove_provider("okta")
         self.assertIsNone(self.sso.get_provider("okta"))
 
     def test_generate_auth_url_returns_url(self):
-        provider = SSOProvider("google", {"client_id": "abc", "client_secret": "secret", "issuer": "https://accounts.google.com"})
+        provider = SSOProvider(
+            "google",
+            {
+                "client_id": "abc",
+                "client_secret": "secret",
+                "issuer": "https://accounts.google.com",
+            },
+        )
         self.sso.add_provider(provider)
         url = self.sso.generate_auth_url("google", "https://myapp.com/callback")
         self.assertIn("accounts.google.com", url)
@@ -298,7 +339,10 @@ class TestSSOManager(unittest.TestCase):
             self.sso.generate_auth_url("google", "https://myapp.com/callback")
 
     def test_handle_callback_returns_dict(self):
-        provider = SSOProvider("github", {"client_id": "x", "client_secret": "y", "issuer": "https://github.com"})
+        provider = SSOProvider(
+            "github",
+            {"client_id": "x", "client_secret": "y", "issuer": "https://github.com"},
+        )
         self.sso.add_provider(provider)
         result = self.sso.handle_callback("github", "auth_code_123")
         self.assertIn("access_token", result)
@@ -623,7 +667,6 @@ class TestRobotController(unittest.TestCase):
     def test_execute_sequence_unknown_action_raises(self):
         with self.assertRaises(RoboticsError):
             self.robot.execute_sequence([{"action": "fly"}])
-
 
     def test_get_state_returns_full_state(self):
         sensor = UltrasonicSensor(2, 3)

@@ -2,8 +2,7 @@ __version__ = "0.1.0"
 
 import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any
 
 __all__ = [
     "PackageInfo",
@@ -26,15 +25,15 @@ class PackageInfo:
         description: str,
         author: str,
         license: str = "MIT",
-        dependencies: Optional[List[str]] = None,
-        tags: Optional[List[str]] = None,
+        dependencies: list[str] | None = None,
+        tags: list[str] | None = None,
         downloads: int = 0,
         rating: float = 0.0,
-        created_at: Optional[float] = None,
-        updated_at: Optional[float] = None,
-        homepage: Optional[str] = None,
-        repository: Optional[str] = None,
-        readme: Optional[str] = None,
+        created_at: float | None = None,
+        updated_at: float | None = None,
+        homepage: str | None = None,
+        repository: str | None = None,
+        readme: str | None = None,
     ) -> None:
         self.name = name
         self.version = version
@@ -58,9 +57,9 @@ class PackageVersion:
         self,
         package: str,
         version: str,
-        files: Optional[Dict[str, str]] = None,
-        manifest: Optional[Dict[str, Any]] = None,
-        published_at: Optional[float] = None,
+        files: dict[str, str] | None = None,
+        manifest: dict[str, Any] | None = None,
+        published_at: float | None = None,
     ) -> None:
         self.package = package
         self.version = version
@@ -70,12 +69,12 @@ class PackageVersion:
 
 
 class DependencyResolver:
-    def resolve(self, name: str, version: str = "*") -> List[Tuple[str, str]]:
+    def resolve(self, name: str, version: str = "*") -> list[tuple[str, str]]:
         return [(name, version)]
 
-    def check_conflicts(self, dependencies: List[Tuple[str, str]]) -> List[str]:
-        seen: Dict[str, str] = {}
-        conflicts: List[str] = []
+    def check_conflicts(self, dependencies: list[tuple[str, str]]) -> list[str]:
+        seen: dict[str, str] = {}
+        conflicts: list[str] = []
         for pkg, ver in dependencies:
             if pkg in seen and seen[pkg] != ver:
                 conflicts.append(f"{pkg}: {seen[pkg]} vs {ver}")
@@ -92,7 +91,7 @@ class DependencyResolver:
         max_len = max(len(parts1), len(parts2))
         parts1.extend([0] * (max_len - len(parts1)))
         parts2.extend([0] * (max_len - len(parts2)))
-        for a, b in zip(parts1, parts2):
+        for a, b in zip(parts1, parts2, strict=False):
             if a < b:
                 return -1
             if a > b:
@@ -129,9 +128,9 @@ class DependencyResolver:
 
 class MarketplaceRegistry:
     def __init__(self) -> None:
-        self._packages: Dict[str, PackageInfo] = {}
-        self._versions: Dict[str, Dict[str, PackageVersion]] = {}
-        self._deprecated: Dict[str, str] = {}
+        self._packages: dict[str, PackageInfo] = {}
+        self._versions: dict[str, dict[str, PackageVersion]] = {}
+        self._deprecated: dict[str, str] = {}
 
     def register(self, package: PackageInfo) -> str:
         if package.name in self._packages:
@@ -148,49 +147,56 @@ class MarketplaceRegistry:
         pkg.version = version.version
         pkg.updated_at = time.time()
 
-    def get_package(self, name: str) -> Optional[PackageInfo]:
+    def get_package(self, name: str) -> PackageInfo | None:
         return self._packages.get(name)
 
-    def get_version(self, name: str, version: str) -> Optional[PackageVersion]:
+    def get_version(self, name: str, version: str) -> PackageVersion | None:
         versions = self._versions.get(name)
         if versions is None:
             return None
         return versions.get(version)
 
-    def search(self, query: str, tags: Optional[List[str]] = None) -> List[PackageInfo]:
+    def search(self, query: str, tags: list[str] | None = None) -> list[PackageInfo]:
         query_lower = query.lower()
-        results: List[PackageInfo] = []
+        results: list[PackageInfo] = []
         for pkg in self._packages.values():
-            if query_lower in pkg.name.lower() or query_lower in pkg.description.lower():
+            if (
+                query_lower in pkg.name.lower()
+                or query_lower in pkg.description.lower()
+            ):
                 if tags is None or any(t in pkg.tags for t in tags):
                     results.append(pkg)
         return results
 
-    def list_by_tag(self, tag: str) -> List[PackageInfo]:
+    def list_by_tag(self, tag: str) -> list[PackageInfo]:
         return [pkg for pkg in self._packages.values() if tag in pkg.tags]
 
-    def list_popular(self, limit: int = 10) -> List[PackageInfo]:
+    def list_popular(self, limit: int = 10) -> list[PackageInfo]:
         sorted_pkgs = sorted(
             self._packages.values(), key=lambda p: p.downloads, reverse=True
         )
         return sorted_pkgs[:limit]
 
-    def list_recent(self, limit: int = 10) -> List[PackageInfo]:
+    def list_recent(self, limit: int = 10) -> list[PackageInfo]:
         sorted_pkgs = sorted(
             self._packages.values(), key=lambda p: p.created_at, reverse=True
         )
         return sorted_pkgs[:limit]
 
-    def install(self, name: str, version: str = "latest") -> Dict[str, str]:
+    def install(self, name: str, version: str = "latest") -> dict[str, str]:
         if name not in self._packages:
             raise PackageError(f"Package '{name}' not found")
         if name in self._deprecated:
-            raise PackageError(f"Package '{name}' is deprecated: {self._deprecated[name]}")
+            raise PackageError(
+                f"Package '{name}' is deprecated: {self._deprecated[name]}"
+            )
         versions = self._versions.get(name, {})
         if not versions:
             raise PackageError(f"No versions published for '{name}'")
         if version == "latest":
-            selected = max(versions.keys(), key=lambda v: [int(x) for x in v.split(".")])
+            selected = max(
+                versions.keys(), key=lambda v: [int(x) for x in v.split(".")]
+            )
         elif version in versions:
             selected = version
         else:
@@ -205,7 +211,7 @@ class MarketplaceRegistry:
         self._versions.pop(name, None)
         self._deprecated.pop(name, None)
 
-    def update(self, name: str) -> Optional[str]:
+    def update(self, name: str) -> str | None:
         if name not in self._packages:
             raise PackageError(f"Package '{name}' not found")
         versions = self._versions.get(name, {})
@@ -225,27 +231,31 @@ class MarketplaceRegistry:
             raise PackageError(f"Package '{name}' not found")
         self._deprecated[name] = reason
 
-    def get_dependency_tree(self, name: str) -> Dict[str, Any]:
+    def get_dependency_tree(self, name: str) -> dict[str, Any]:
         pkg = self._packages.get(name)
         if pkg is None:
             return {}
-        tree: Dict[str, Any] = {
+        tree: dict[str, Any] = {
             "name": pkg.name,
             "version": pkg.version,
             "dependencies": [],
         }
         for dep in pkg.dependencies:
-            dep_name = dep.split(">")[0].split("<")[0].split("=")[0].split("@")[0].strip()
+            dep_name = (
+                dep.split(">")[0].split("<")[0].split("=")[0].split("@")[0].strip()
+            )
             tree["dependencies"].append(self.get_dependency_tree(dep_name))
         return tree
 
-    def check_updates(self) -> List[Tuple[str, str, str]]:
+    def check_updates(self) -> list[tuple[str, str, str]]:
         resolver = DependencyResolver()
-        updates: List[Tuple[str, str, str]] = []
+        updates: list[tuple[str, str, str]] = []
         for name, pkg in self._packages.items():
             versions = self._versions.get(name, {})
             if versions:
-                latest = max(versions.keys(), key=lambda v: [int(x) for x in v.split(".")])
+                latest = max(
+                    versions.keys(), key=lambda v: [int(x) for x in v.split(".")]
+                )
                 if resolver.compare_versions(latest, pkg.version) > 0:
                     updates.append((name, pkg.version, latest))
         return updates

@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 
 def load_module(interpreter: Any) -> Any:
     from zoya.interpreter import ZoyaModule
 
-    def _request(method: str, url: str, data: str = "", headers: dict[str, str] | None = None) -> dict[str, Any]:
+    def _request(
+        method: str, url: str, data: str = "", headers: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         try:
-            from urllib.request import urlopen, Request
-            from urllib.parse import urlencode
+            from urllib.request import Request, urlopen
 
             if headers is None:
                 headers = {}
@@ -34,10 +36,14 @@ def load_module(interpreter: Any) -> Any:
     def get(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
         return _request("GET", url, headers=headers)
 
-    def post(url: str, data: str = "", headers: dict[str, str] | None = None) -> dict[str, Any]:
+    def post(
+        url: str, data: str = "", headers: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         return _request("POST", url, data, headers)
 
-    def put(url: str, data: str = "", headers: dict[str, str] | None = None) -> dict[str, Any]:
+    def put(
+        url: str, data: str = "", headers: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         return _request("PUT", url, data, headers)
 
     def delete(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
@@ -45,14 +51,13 @@ def load_module(interpreter: Any) -> Any:
 
     def json(url: str, data: Any = None, method: str = "GET") -> dict[str, Any]:
         import json as _json
+
         payload = _json.dumps(data) if data is not None else ""
         headers = {"Content-Type": "application/json"}
         result = _request(method, url, payload, headers)
         if result["status"] != 0 and result["body"]:
-            try:
+            with contextlib.suppress(Exception):
                 result["body"] = _json.loads(result["body"])
-            except Exception:
-                pass
         return result
 
     funcs = {

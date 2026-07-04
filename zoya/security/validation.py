@@ -1,9 +1,8 @@
-import re
-import json as _json
 import ipaddress
+import json as _json
+import re
 import unicodedata
 from urllib.parse import urlparse
-from typing import List, Dict, Optional
 
 
 class Validator:
@@ -135,13 +134,15 @@ class Validator:
         return bool(pattern.match(phone.strip()))
 
     @staticmethod
-    def password_strength(password: str) -> Dict:
+    def password_strength(password: str) -> dict:
         if not isinstance(password, str):
             return {"score": 0, "feedback": "invalid input"}
         has_upper = bool(re.search(r"[A-Z]", password))
         has_lower = bool(re.search(r"[a-z]", password))
         has_digit = bool(re.search(r"\d", password))
-        has_special = bool(re.search(r"[!@#$%^&*(),.?\":{}|<>_~`\-+=\[\]\\;'/]", password))
+        has_special = bool(
+            re.search(r"[!@#$%^&*(),.?\":{}|<>_~`\-+=\[\]\\;'/]", password)
+        )
         min_length = len(password) >= 8
         score = sum([has_upper, has_lower, has_digit, has_special, min_length])
         feedback = []
@@ -221,13 +222,11 @@ class Validator:
 class Sanitizer:
     _html_tag_re = re.compile(r"<[^>]*>")
     _control_chars_re = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
-    _dangerous_filename_re = re.compile(
-        r'[<>:"/\\|?*\x00-\x1f]'
-    )
+    _dangerous_filename_re = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
     _shell_dangerous_re = re.compile(r"[^\w@%+=:,./-]")
 
     @staticmethod
-    def strip_html(html: str, allowed_tags: List[str] = None) -> str:
+    def strip_html(html: str, allowed_tags: list[str] = None) -> str:
         if not isinstance(html, str):
             return ""
         if allowed_tags is None:

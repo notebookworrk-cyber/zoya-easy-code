@@ -6,7 +6,7 @@ services, and exceptions from the platform's seven service modules.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional as _Optional
+from typing import Any
 
 from .analytics import (
     AnalyticsError,
@@ -78,7 +78,7 @@ from .storage import (
 __version__ = "0.1.0"
 
 
-CLOUD_DEFAULTS: Dict[str, Any] = {
+CLOUD_DEFAULTS: dict[str, Any] = {
     "project_id": "",
     "api_key": "",
     "region": "us-east",
@@ -105,7 +105,7 @@ class ZoyaCloud:
     interface.
     """
 
-    def __init__(self, config: _Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         merged = dict(CLOUD_DEFAULTS)
         if config is not None:
             merged.update(config)
@@ -138,14 +138,14 @@ class ZoyaCloud:
     def is_connected(self) -> bool:
         return self._connected
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         return dict(self._config)
 
-    def update_config(self, config: Dict[str, Any]) -> None:
+    def update_config(self, config: dict[str, Any]) -> None:
         self._config.update(config)
 
 
-def create_cloud(config: _Optional[Dict[str, Any]] = None) -> ZoyaCloud:
+def create_cloud(config: dict[str, Any] | None = None) -> ZoyaCloud:
     """Factory function — creates and returns a ZoyaCloud instance."""
     return ZoyaCloud(config)
 

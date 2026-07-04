@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import ClassVar
-
-from .errors import LexError
 
 
 @dataclass
@@ -90,7 +87,9 @@ TOKEN_SPEC: list[tuple[str, str]] = [
     ("MISMATCH", r"."),
 ]
 
-TOKEN_RE = re.compile("|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC))
+TOKEN_RE = re.compile(
+    "|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC)
+)
 
 KEYWORD_TOKENS: dict[str, str] = {
     "fn": "FN",

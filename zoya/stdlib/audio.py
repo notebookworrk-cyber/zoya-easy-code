@@ -14,6 +14,7 @@ def load_module(interpreter: Any) -> Any:
         if not _initialized:
             try:
                 import pygame as _pygame
+
                 _pygame.mixer.init()
                 _initialized = True
             except ImportError:
@@ -24,6 +25,7 @@ def load_module(interpreter: Any) -> Any:
         nonlocal _player
         try:
             import pygame as _pygame
+
             _pygame.mixer.music.load(path)
             _pygame.mixer.music.play(-1 if loop else 0)
         except Exception as e:
@@ -32,6 +34,7 @@ def load_module(interpreter: Any) -> Any:
     def pause() -> None:
         try:
             import pygame as _pygame
+
             _pygame.mixer.music.pause()
         except ImportError:
             pass
@@ -39,6 +42,7 @@ def load_module(interpreter: Any) -> Any:
     def stop() -> None:
         try:
             import pygame as _pygame
+
             _pygame.mixer.music.stop()
         except ImportError:
             pass
@@ -46,6 +50,7 @@ def load_module(interpreter: Any) -> Any:
     def resume() -> None:
         try:
             import pygame as _pygame
+
             _pygame.mixer.music.unpause()
         except ImportError:
             pass
@@ -53,6 +58,7 @@ def load_module(interpreter: Any) -> Any:
     def set_volume(vol: float) -> None:
         try:
             import pygame as _pygame
+
             _pygame.mixer.music.set_volume(max(0.0, min(1.0, vol)))
         except ImportError:
             pass

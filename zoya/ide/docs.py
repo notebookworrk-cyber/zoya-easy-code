@@ -5,7 +5,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -21,7 +21,7 @@ class DocSection:
     title: str
     content: str = ""
     level: int = 1
-    children: List[DocSection] = field(default_factory=list)
+    children: list[DocSection] = field(default_factory=list)
 
     def to_markdown(self) -> str:
         result: list[str] = []
@@ -47,9 +47,9 @@ class DocSection:
 
 class ApiReference:
     def __init__(self) -> None:
-        self.functions: List[Dict[str, Any]] = []
-        self.classes: List[Dict[str, Any]] = []
-        self.modules: List[Dict[str, Any]] = []
+        self.functions: list[dict[str, Any]] = []
+        self.classes: list[dict[str, Any]] = []
+        self.modules: list[dict[str, Any]] = []
 
     def to_markdown(self) -> str:
         out: list[str] = ["# API Reference\n"]
@@ -73,7 +73,9 @@ class ApiReference:
                     for p in fn["params"]:
                         pname = p["name"]
                         ptype = f": {p['type']}" if p.get("type") else ""
-                        pdefault = f" = {p['default']}" if p.get("default") is not None else ""
+                        pdefault = (
+                            f" = {p['default']}" if p.get("default") is not None else ""
+                        )
                         pdoc = f" — {p['doc']}" if p.get("doc") else ""
                         out.append(f"- `{pname}{ptype}{pdefault}`{pdoc}")
                 if fn.get("return_type"):
@@ -118,7 +120,9 @@ class ApiReference:
         if self.modules:
             sections.append("<h2>Modules</h2><ul>")
             for mod in self.modules:
-                sections.append(f'<li><code>{_escape_html(mod["name"])}</code>: {_escape_html(mod.get("doc", "No description"))}</li>')
+                sections.append(
+                    f'<li><code>{_escape_html(mod["name"])}</code>: {_escape_html(mod.get("doc", "No description"))}</li>'
+                )
             sections.append("</ul>")
 
         if self.functions:
@@ -134,29 +138,36 @@ class ApiReference:
                         pname = p["name"]
                         ptype = f": {p['type']}" if p.get("type") else ""
                         pdoc = f" \u2014 {p['doc']}" if p.get("doc") else ""
-                        sections.append(f"<li><code>{_escape_html(pname)}{_escape_html(ptype)}</code>{_escape_html(pdoc)}</li>")
+                        sections.append(
+                            f"<li><code>{_escape_html(pname)}{_escape_html(ptype)}</code>{_escape_html(pdoc)}</li>"
+                        )
                     sections.append("</ul>")
 
         if self.classes:
             sections.append("<h2>Classes</h2>")
             for cls in self.classes:
                 parent = f" extends {cls['parent']}" if cls.get("parent") else ""
-                sections.append(f'<h3>class <code>{_escape_html(cls["name"])}{_escape_html(parent)}</code></h3>')
+                sections.append(
+                    f'<h3>class <code>{_escape_html(cls["name"])}{_escape_html(parent)}</code></h3>'
+                )
                 if cls.get("doc"):
                     sections.append(f"<p>{_escape_html(cls['doc'])}</p>")
 
         return "\n".join(sections)
 
     def to_json(self) -> str:
-        return json.dumps({
-            "functions": self.functions,
-            "classes": self.classes,
-            "modules": self.modules,
-        }, indent=2)
+        return json.dumps(
+            {
+                "functions": self.functions,
+                "classes": self.classes,
+                "modules": self.modules,
+            },
+            indent=2,
+        )
 
 
 class DocGenerator:
-    def __init__(self, config: Optional[DocConfig] = None, provider=None) -> None:
+    def __init__(self, config: DocConfig | None = None, provider=None) -> None:
         self.config = config or DocConfig()
         self.provider = provider
 
@@ -225,7 +236,9 @@ class DocGenerator:
 
         return "\n".join(sections)
 
-    def generate_function_doc(self, source: str, function_name: str, include_body: bool = False) -> str:
+    def generate_function_doc(
+        self, source: str, function_name: str, include_body: bool = False
+    ) -> str:
         functions = _extract_functions(source, True)
         doc_comments = parse_doc_comments(source)
 
@@ -241,7 +254,9 @@ class DocGenerator:
                     for p in fn["params"]:
                         pname = p["name"]
                         ptype = f": {p['type']}" if p.get("type") else ""
-                        pdefault = f" = {p['default']}" if p.get("default") is not None else ""
+                        pdefault = (
+                            f" = {p['default']}" if p.get("default") is not None else ""
+                        )
                         pdoc = p.get("doc", "")
                         pd = f" — {pdoc}" if pdoc else ""
                         out.append(f"- `{pname}{ptype}{pdefault}`{pd}")
@@ -291,7 +306,7 @@ class DocGenerator:
 
         return f"Class '{class_name}' not found"
 
-    def generate_api_docs(self, sources: Dict[str, str]) -> str:
+    def generate_api_docs(self, sources: dict[str, str]) -> str:
         api = ApiReference()
 
         for file_path, source in sources.items():
@@ -300,7 +315,7 @@ class DocGenerator:
             functions = _extract_functions(source, self.config.include_private)
             classes = _extract_classes(source)
 
-            mod_entry: Dict[str, Any] = {
+            mod_entry: dict[str, Any] = {
                 "name": module_name,
                 "doc": doc_comments.get(module_name, ""),
                 "path": file_path,
@@ -308,7 +323,7 @@ class DocGenerator:
             api.modules.append(mod_entry)
 
             for fn in functions:
-                fn_entry: Dict[str, Any] = {
+                fn_entry: dict[str, Any] = {
                     "name": fn["name"],
                     "params": fn.get("params", []),
                     "return_type": fn.get("return_type", ""),
@@ -319,7 +334,7 @@ class DocGenerator:
                 api.functions.append(fn_entry)
 
             for cls in classes:
-                cls_entry: Dict[str, Any] = cls.copy()
+                cls_entry: dict[str, Any] = cls.copy()
                 cls_entry["doc"] = doc_comments.get(cls["name"], "")
                 cls_entry["module"] = module_name
                 if cls.get("methods"):
@@ -333,11 +348,11 @@ class DocGenerator:
             return api.to_json()
         return api.to_markdown()
 
-    def generate_readme(self, sources: Dict[str, str], project_name: str) -> str:
+    def generate_readme(self, sources: dict[str, str], project_name: str) -> str:
         functions: list[dict] = []
         classes: list[dict] = []
 
-        for file_path, source in sources.items():
+        for _file_path, source in sources.items():
             functions.extend(_extract_functions(source, False))
             classes.extend(_extract_classes(source))
 
@@ -380,11 +395,11 @@ class DocGenerator:
         out.append("```\n")
 
         out.append("---\n")
-        out.append(f"*Generated by Zoya Documentation Generator*\n")
+        out.append("*Generated by Zoya Documentation Generator*\n")
 
         return "\n".join(out)
 
-    def generate_changelog(self, version: str, changes: List[str]) -> str:
+    def generate_changelog(self, version: str, changes: list[str]) -> str:
         today = datetime.now().strftime("%Y-%m-%d")
         out: list[str] = [
             "# Changelog\n",
@@ -398,7 +413,11 @@ class DocGenerator:
         for change in changes:
             if change.lower().startswith("fix") or change.lower().startswith("bug"):
                 fix.append(f"- {change}")
-            elif change.lower().startswith("chore") or change.lower().startswith("docs") or change.lower().startswith("test"):
+            elif (
+                change.lower().startswith("chore")
+                or change.lower().startswith("docs")
+                or change.lower().startswith("test")
+            ):
                 chore.append(f"- {change}")
             else:
                 feat.append(f"- {change}")
@@ -420,14 +439,14 @@ class DocGenerator:
 
         return "\n".join(out)
 
-    def _build_sections(self, source: str, file_path: str) -> List[DocSection]:
+    def _build_sections(self, source: str, file_path: str) -> list[DocSection]:
         doc_comments = parse_doc_comments(source)
         functions = _extract_functions(source, self.config.include_private)
         classes = _extract_classes(source)
         enums = _extract_enums(source)
         interfaces = _extract_interfaces(source)
 
-        sections: List[DocSection] = []
+        sections: list[DocSection] = []
         file_name = os.path.basename(file_path) if file_path else "source"
         mod_section = DocSection(title=f"Module: `{file_name}`", level=1)
         sections.append(mod_section)
@@ -490,7 +509,7 @@ class DocGenerator:
 
         return sections
 
-    def _to_json(self, sections: List[DocSection]) -> str:
+    def _to_json(self, sections: list[DocSection]) -> str:
         def section_to_dict(s: DocSection) -> dict:
             return {
                 "title": s.title,
@@ -498,24 +517,27 @@ class DocGenerator:
                 "level": s.level,
                 "children": [section_to_dict(c) for c in s.children],
             }
+
         return json.dumps([section_to_dict(s) for s in sections], indent=2)
 
 
-def parse_doc_comments(source: str) -> Dict[str, str]:
+def parse_doc_comments(source: str) -> dict[str, str]:
     lines = source.split("\n")
-    docs: Dict[str, str] = {}
+    docs: dict[str, str] = {}
     i = 0
 
     while i < len(lines):
         line = lines[i]
-        stripped = line.strip()
+        line.strip()
 
         comment_lines: list[str] = []
         j = i
         while j < len(lines):
             cl = lines[j].strip()
             if cl.startswith("//") or cl.startswith("#"):
-                comment_lines.append(cl[2:].strip() if cl.startswith("//") else cl[1:].strip())
+                comment_lines.append(
+                    cl[2:].strip() if cl.startswith("//") else cl[1:].strip()
+                )
                 j += 1
             elif cl == "":
                 j += 1
@@ -529,7 +551,9 @@ def parse_doc_comments(source: str) -> Dict[str, str]:
                 fn_match = re.match(r"^fn\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
                 cls_match = re.match(r"^class\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
                 enum_match = re.match(r"^enum\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
-                iface_match = re.match(r"^interface\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
+                iface_match = re.match(
+                    r"^interface\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line
+                )
                 import_match = re.match(r'^import\s+"([^"]+)"', next_line)
 
                 target = None
@@ -554,9 +578,11 @@ def parse_doc_comments(source: str) -> Dict[str, str]:
     return docs
 
 
-def _extract_functions(source: str, include_private: bool = False) -> List[Dict[str, Any]]:
+def _extract_functions(
+    source: str, include_private: bool = False
+) -> list[dict[str, Any]]:
     lines = source.split("\n")
-    functions: List[Dict[str, Any]] = []
+    functions: list[dict[str, Any]] = []
     i = 0
 
     while i < len(lines):
@@ -581,7 +607,7 @@ def _extract_functions(source: str, include_private: bool = False) -> List[Dict[
                     continue
                 pname = p
                 ptype = ""
-                pdefault: Optional[str] = None
+                pdefault: str | None = None
                 if "::" in p:
                     parts = p.split("::")
                     pname = parts[0].strip()
@@ -596,11 +622,13 @@ def _extract_functions(source: str, include_private: bool = False) -> List[Dict[
                     eq_parts = p.split("=")
                     pname = eq_parts[0].strip()
                     pdefault = eq_parts[1].strip()
-                params.append({
-                    "name": pname,
-                    "type": ptype,
-                    "default": pdefault,
-                })
+                params.append(
+                    {
+                        "name": pname,
+                        "type": ptype,
+                        "default": pdefault,
+                    }
+                )
 
         brace_count = 1
         body_lines: list[str] = []
@@ -628,28 +656,33 @@ def _extract_functions(source: str, include_private: bool = False) -> List[Dict[
                 else:
                     return_type = "?"
 
-        functions.append({
-            "name": name,
-            "params": params,
-            "return_type": return_type,
-            "body": "\n".join(body_lines),
-            "line": i + 1,
-            "doc": "",
-        })
+        functions.append(
+            {
+                "name": name,
+                "params": params,
+                "return_type": return_type,
+                "body": "\n".join(body_lines),
+                "line": i + 1,
+                "doc": "",
+            }
+        )
 
         i = j
 
     return functions
 
 
-def _extract_classes(source: str) -> List[Dict[str, Any]]:
+def _extract_classes(source: str) -> list[dict[str, Any]]:
     lines = source.split("\n")
-    classes: List[Dict[str, Any]] = []
+    classes: list[dict[str, Any]] = []
     i = 0
 
     while i < len(lines):
         line = lines[i]
-        m = re.match(r"^\s*class\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+extends\s+([a-zA-Z_][a-zA-Z0-9_]*))?\s*\{", line)
+        m = re.match(
+            r"^\s*class\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\s+extends\s+([a-zA-Z_][a-zA-Z0-9_]*))?\s*\{",
+            line,
+        )
         if not m:
             i += 1
             continue
@@ -669,14 +702,21 @@ def _extract_classes(source: str) -> List[Dict[str, Any]]:
             if brace_count > 0:
                 body_lines.append(bl)
 
-                field_m = re.match(r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*::?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*;?\s*$", bl)
+                field_m = re.match(
+                    r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*::?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*;?\s*$",
+                    bl,
+                )
                 if field_m:
-                    fields.append({
-                        "name": field_m.group(1),
-                        "type": field_m.group(2),
-                    })
+                    fields.append(
+                        {
+                            "name": field_m.group(1),
+                            "type": field_m.group(2),
+                        }
+                    )
 
-                method_m = re.match(r"^\s*fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)", bl)
+                method_m = re.match(
+                    r"^\s*fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)", bl
+                )
                 if method_m:
                     mn = method_m.group(1)
                     raw_params = method_m.group(2).strip()
@@ -689,23 +729,25 @@ def _extract_classes(source: str) -> List[Dict[str, Any]]:
                     methods.append({"name": mn, "params": mparams, "return_type": ""})
             j += 1
 
-        classes.append({
-            "name": name,
-            "parent": parent,
-            "methods": methods,
-            "fields": fields,
-            "body": "\n".join(body_lines),
-            "source_lines": [line] + body_lines,
-        })
+        classes.append(
+            {
+                "name": name,
+                "parent": parent,
+                "methods": methods,
+                "fields": fields,
+                "body": "\n".join(body_lines),
+                "source_lines": [line] + body_lines,
+            }
+        )
 
         i = j
 
     return classes
 
 
-def _extract_enums(source: str) -> List[Dict[str, Any]]:
+def _extract_enums(source: str) -> list[dict[str, Any]]:
     lines = source.split("\n")
-    enums: List[Dict[str, Any]] = []
+    enums: list[dict[str, Any]] = []
     i = 0
 
     while i < len(lines):
@@ -731,9 +773,9 @@ def _extract_enums(source: str) -> List[Dict[str, Any]]:
     return enums
 
 
-def _extract_interfaces(source: str) -> List[Dict[str, Any]]:
+def _extract_interfaces(source: str) -> list[dict[str, Any]]:
     lines = source.split("\n")
-    interfaces: List[Dict[str, Any]] = []
+    interfaces: list[dict[str, Any]] = []
     i = 0
 
     while i < len(lines):
@@ -777,4 +819,3 @@ def _escape_html(text: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
-

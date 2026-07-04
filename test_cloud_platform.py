@@ -1,16 +1,19 @@
-import sys
-sys.path.insert(0, r"C:\Users\hp\zoya3")
-
-import unittest
-import time
-import tempfile
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import os
+import tempfile
+import time
+import unittest
 
 
 class TestAuth(unittest.TestCase):
 
     def setUp(self):
         from zoya.cloud.auth import AuthService
+
         self.auth = AuthService()
         self.user = self.auth.register("alice@test.com", "secret123", "alice")
         self.auth.login("alice@test.com", "secret123")
@@ -29,11 +32,14 @@ class TestAuth(unittest.TestCase):
         self.assertIn("user", u.roles)
 
     def test_register_with_metadata(self):
-        u = self.auth.register("meta@test.com", "pass", "meta_user", metadata={"theme": "dark"})
+        u = self.auth.register(
+            "meta@test.com", "pass", "meta_user", metadata={"theme": "dark"}
+        )
         self.assertEqual(u.metadata, {"theme": "dark"})
 
     def test_register_with_require_email_verification(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.require_email_verification = True
         svc = AuthService(cfg)
@@ -43,12 +49,14 @@ class TestAuth(unittest.TestCase):
 
     def test_duplicate_email_raises_error(self):
         from zoya.cloud.auth import AuthError
+
         with self.assertRaises(AuthError) as ctx:
             self.auth.register("alice@test.com", "other", "bob")
         self.assertEqual(ctx.exception.code, "DUPLICATE_EMAIL")
 
     def test_duplicate_username_raises_error(self):
         from zoya.cloud.auth import AuthError
+
         with self.assertRaises(AuthError) as ctx:
             self.auth.register("bob@test.com", "secret", "alice")
         self.assertEqual(ctx.exception.code, "DUPLICATE_USERNAME")
@@ -63,6 +71,7 @@ class TestAuth(unittest.TestCase):
 
     def test_login_with_wrong_password_raises_error(self):
         from zoya.cloud.auth import AuthError
+
         self.auth.logout()
         with self.assertRaises(AuthError) as ctx:
             self.auth.login("alice@test.com", "wrongpass")
@@ -70,6 +79,7 @@ class TestAuth(unittest.TestCase):
 
     def test_login_with_wrong_email_raises_error(self):
         from zoya.cloud.auth import AuthError
+
         self.auth.logout()
         with self.assertRaises(AuthError) as ctx:
             self.auth.login("nobody@test.com", "secret123")
@@ -77,6 +87,7 @@ class TestAuth(unittest.TestCase):
 
     def test_login_with_provider_works_for_configured_providers(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.oauth_providers = ["google", "github"]
         svc = AuthService(cfg)
@@ -87,12 +98,14 @@ class TestAuth(unittest.TestCase):
 
     def test_login_with_provider_unsupported_raises_error(self):
         from zoya.cloud.auth import AuthError
+
         with self.assertRaises(AuthError) as ctx:
             self.auth.login_with_provider("unsupported", "token")
         self.assertEqual(ctx.exception.code, "UNSUPPORTED_PROVIDER")
 
     def test_login_with_provider_auto_creates_user(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.oauth_providers = ["github"]
         svc = AuthService(cfg)
@@ -103,6 +116,7 @@ class TestAuth(unittest.TestCase):
 
     def test_login_with_provider_existing_user(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.oauth_providers = ["google"]
         svc = AuthService(cfg)
@@ -120,7 +134,8 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(u.roles, ["guest"])
 
     def test_login_anonymously_disabled_raises_error(self):
-        from zoya.cloud.auth import AuthConfig, AuthService, AuthError
+        from zoya.cloud.auth import AuthConfig, AuthError, AuthService
+
         cfg = AuthConfig()
         cfg.allow_anonymous = False
         svc = AuthService(cfg)
@@ -158,7 +173,9 @@ class TestAuth(unittest.TestCase):
         self.assertFalse(self.auth.is_authenticated())
 
     def test_update_profile_updates_allowed_fields(self):
-        self.auth.update_profile({"display_name": "Alice M", "avatar_url": "http://av.at/1"})
+        self.auth.update_profile(
+            {"display_name": "Alice M", "avatar_url": "http://av.at/1"}
+        )
         u = self.auth.get_current_user()
         self.assertEqual(u.display_name, "Alice M")
         self.assertEqual(u.avatar_url, "http://av.at/1")
@@ -170,6 +187,7 @@ class TestAuth(unittest.TestCase):
 
     def test_update_profile_raises_when_not_authenticated(self):
         from zoya.cloud.auth import AuthError
+
         self.auth.logout()
         with self.assertRaises(AuthError) as ctx:
             self.auth.update_profile({"display_name": "X"})
@@ -183,12 +201,14 @@ class TestAuth(unittest.TestCase):
 
     def test_change_password_with_wrong_old_password_raises(self):
         from zoya.cloud.auth import AuthError
+
         with self.assertRaises(AuthError) as ctx:
             self.auth.change_password("wrongold", "newpass")
         self.assertEqual(ctx.exception.code, "INVALID_PASSWORD")
 
     def test_change_password_for_oauth_user_raises(self):
-        from zoya.cloud.auth import AuthConfig, AuthService, AuthError
+        from zoya.cloud.auth import AuthConfig, AuthError, AuthService
+
         cfg = AuthConfig()
         cfg.oauth_providers = ["google"]
         svc = AuthService(cfg)
@@ -199,6 +219,7 @@ class TestAuth(unittest.TestCase):
 
     def test_verify_email_flow(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.require_email_verification = True
         svc = AuthService(cfg)
@@ -212,6 +233,7 @@ class TestAuth(unittest.TestCase):
 
     def test_verify_email_with_wrong_token_returns_false(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.require_email_verification = True
         svc = AuthService(cfg)
@@ -222,14 +244,17 @@ class TestAuth(unittest.TestCase):
 
     def test_verify_email_not_authenticated_raises(self):
         from zoya.cloud.auth import AuthError
+
         self.auth.logout()
         with self.assertRaises(AuthError):
             self.auth.verify_email("token")
 
     def test_on_auth_state_change_callback_fires(self):
         results = []
+
         def cb(user):
             results.append(user)
+
         self.auth.on_auth_state_change(cb)
         self.auth.logout()
         self.assertEqual(len(results), 1)
@@ -246,12 +271,13 @@ class TestAuth(unittest.TestCase):
         self.auth.reset_password("unknown@test.com")
 
     def test_delete_account_removes_user(self):
-        uid = self.auth.get_current_user().id
+        self.auth.get_current_user().id
         self.auth.delete_account()
         self.assertIsNone(self.auth.get_current_user())
         self.assertFalse(self.auth.is_authenticated())
         self.auth.logout()
         from zoya.cloud.auth import AuthError
+
         with self.assertRaises(AuthError):
             self.auth.login("alice@test.com", "secret123")
 
@@ -263,6 +289,7 @@ class TestAuth(unittest.TestCase):
 
     def test_refresh_token_without_session_raises(self):
         from zoya.cloud.auth import AuthError
+
         self.auth.logout()
         with self.assertRaises(AuthError) as ctx:
             self.auth.refresh_token()
@@ -275,18 +302,21 @@ class TestAuth(unittest.TestCase):
 
     def test_send_verification_email_already_verified_raises(self):
         from zoya.cloud.auth import AuthError
+
         with self.assertRaises(AuthError) as ctx:
             self.auth.send_verification_email()
         self.assertEqual(ctx.exception.code, "ALREADY_VERIFIED")
 
     def test_send_verification_email_not_authenticated_raises(self):
         from zoya.cloud.auth import AuthError
+
         self.auth.logout()
         with self.assertRaises(AuthError):
             self.auth.send_verification_email()
 
     def test_max_sessions_evicts_oldest(self):
         from zoya.cloud.auth import AuthConfig, AuthService
+
         cfg = AuthConfig()
         cfg.max_sessions = 2
         svc = AuthService(cfg)
@@ -319,6 +349,7 @@ class TestDatabase(unittest.TestCase):
 
     def setUp(self):
         from zoya.cloud.database import DatabaseService
+
         self.db = DatabaseService("http://localhost", "test_key")
 
     def test_create_adds_document_with_id_and_created_at(self):
@@ -352,12 +383,14 @@ class TestDatabase(unittest.TestCase):
 
     def test_update_raises_for_missing_document(self):
         from zoya.cloud.database import DatabaseError
+
         with self.assertRaises(DatabaseError) as ctx:
             self.db.update("users", "missing", {"x": 1})
         self.assertEqual(ctx.exception.code, "NOT_FOUND")
 
     def test_update_raises_for_deleted_document(self):
         from zoya.cloud.database import DatabaseError
+
         created = self.db.create("users", {"name": "Test"})
         self.db.delete("users", created["id"], soft=True)
         with self.assertRaises(DatabaseError) as ctx:
@@ -377,6 +410,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_delete_raises_for_missing_document(self):
         from zoya.cloud.database import DatabaseError
+
         with self.assertRaises(DatabaseError) as ctx:
             self.db.delete("users", "nonexistent")
         self.assertEqual(ctx.exception.code, "NOT_FOUND")
@@ -391,75 +425,128 @@ class TestDatabase(unittest.TestCase):
 
     def test_query_with_equals_filter(self):
         from zoya.cloud.database import QueryFilter, QueryOptions
+
         self.db.create("items", {"type": "a", "val": 1})
         self.db.create("items", {"type": "b", "val": 2})
         self.db.create("items", {"type": "a", "val": 3})
-        result = self.db.query("items", QueryOptions(filters=[QueryFilter(field="type", operator="==", value="a")]))
+        result = self.db.query(
+            "items",
+            QueryOptions(filters=[QueryFilter(field="type", operator="==", value="a")]),
+        )
         self.assertEqual(result.total, 2)
 
     def test_query_with_not_equals_filter(self):
         from zoya.cloud.database import QueryFilter, QueryOptions
+
         self.db.create("items", {"type": "a"})
         self.db.create("items", {"type": "b"})
-        result = self.db.query("items", QueryOptions(filters=[QueryFilter(field="type", operator="!=", value="a")]))
+        result = self.db.query(
+            "items",
+            QueryOptions(filters=[QueryFilter(field="type", operator="!=", value="a")]),
+        )
         self.assertEqual(result.total, 1)
 
     def test_query_with_comparison_filters(self):
         from zoya.cloud.database import QueryFilter, QueryOptions
+
         for v in range(1, 6):
             self.db.create("nums", {"val": v})
-        gt = self.db.query("nums", QueryOptions(filters=[QueryFilter(field="val", operator=">", value=3)]))
+        gt = self.db.query(
+            "nums",
+            QueryOptions(filters=[QueryFilter(field="val", operator=">", value=3)]),
+        )
         self.assertEqual(gt.total, 2)
-        lt = self.db.query("nums", QueryOptions(filters=[QueryFilter(field="val", operator="<", value=3)]))
+        lt = self.db.query(
+            "nums",
+            QueryOptions(filters=[QueryFilter(field="val", operator="<", value=3)]),
+        )
         self.assertEqual(lt.total, 2)
-        gte = self.db.query("nums", QueryOptions(filters=[QueryFilter(field="val", operator=">=", value=3)]))
+        gte = self.db.query(
+            "nums",
+            QueryOptions(filters=[QueryFilter(field="val", operator=">=", value=3)]),
+        )
         self.assertEqual(gte.total, 3)
-        lte = self.db.query("nums", QueryOptions(filters=[QueryFilter(field="val", operator="<=", value=3)]))
+        lte = self.db.query(
+            "nums",
+            QueryOptions(filters=[QueryFilter(field="val", operator="<=", value=3)]),
+        )
         self.assertEqual(lte.total, 3)
 
     def test_query_with_in_filter(self):
         from zoya.cloud.database import QueryFilter, QueryOptions
+
         self.db.create("items", {"name": "alpha"})
         self.db.create("items", {"name": "beta"})
         self.db.create("items", {"name": "gamma"})
-        result = self.db.query("items", QueryOptions(filters=[QueryFilter(field="name", operator="in", value=["alpha", "gamma"])]))
+        result = self.db.query(
+            "items",
+            QueryOptions(
+                filters=[
+                    QueryFilter(field="name", operator="in", value=["alpha", "gamma"])
+                ]
+            ),
+        )
         self.assertEqual(result.total, 2)
 
     def test_query_with_contains_filter(self):
         from zoya.cloud.database import QueryFilter, QueryOptions
+
         self.db.create("items", {"name": "hello world"})
         self.db.create("items", {"name": "hello there"})
         self.db.create("items", {"name": "goodbye"})
-        result = self.db.query("items", QueryOptions(filters=[QueryFilter(field="name", operator="contains", value="hello")]))
+        result = self.db.query(
+            "items",
+            QueryOptions(
+                filters=[QueryFilter(field="name", operator="contains", value="hello")]
+            ),
+        )
         self.assertEqual(result.total, 2)
 
     def test_query_with_starts_ends_filter(self):
         from zoya.cloud.database import QueryFilter, QueryOptions
+
         self.db.create("items", {"name": "hello world"})
         self.db.create("items", {"name": "goodbye"})
-        s = self.db.query("items", QueryOptions(filters=[QueryFilter(field="name", operator="startsWith", value="good")]))
+        s = self.db.query(
+            "items",
+            QueryOptions(
+                filters=[QueryFilter(field="name", operator="startsWith", value="good")]
+            ),
+        )
         self.assertEqual(s.total, 1)
-        e = self.db.query("items", QueryOptions(filters=[QueryFilter(field="name", operator="endsWith", value="world")]))
+        e = self.db.query(
+            "items",
+            QueryOptions(
+                filters=[QueryFilter(field="name", operator="endsWith", value="world")]
+            ),
+        )
         self.assertEqual(e.total, 1)
 
     def test_query_with_sorting_asc(self):
-        from zoya.cloud.database import QueryOrder, QueryOptions
+        from zoya.cloud.database import QueryOptions, QueryOrder
+
         for v in [3, 1, 2]:
             self.db.create("nums", {"val": v})
-        result = self.db.query("nums", QueryOptions(orders=[QueryOrder(field="val", direction="asc")]))
+        result = self.db.query(
+            "nums", QueryOptions(orders=[QueryOrder(field="val", direction="asc")])
+        )
         vals = [d["val"] for d in result.data]
         self.assertEqual(vals, [1, 2, 3])
 
     def test_query_with_sorting_desc(self):
-        from zoya.cloud.database import QueryOrder, QueryOptions
+        from zoya.cloud.database import QueryOptions, QueryOrder
+
         for v in [1, 3, 2]:
             self.db.create("nums", {"val": v})
-        result = self.db.query("nums", QueryOptions(orders=[QueryOrder(field="val", direction="desc")]))
+        result = self.db.query(
+            "nums", QueryOptions(orders=[QueryOrder(field="val", direction="desc")])
+        )
         vals = [d["val"] for d in result.data]
         self.assertEqual(vals, [3, 2, 1])
 
     def test_query_with_pagination(self):
         from zoya.cloud.database import QueryOptions
+
         for i in range(10):
             self.db.create("items", {"idx": i})
         page1 = self.db.query("items", QueryOptions(limit=3, offset=0))
@@ -475,6 +562,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_query_with_empty_collection(self):
         from zoya.cloud.database import QueryOptions
+
         result = self.db.query("empty", QueryOptions(limit=10))
         self.assertEqual(result.total, 0)
         self.assertEqual(len(result.data), 0)
@@ -513,10 +601,13 @@ class TestDatabase(unittest.TestCase):
 
     def test_count_with_filters(self):
         from zoya.cloud.database import QueryFilter
+
         self.db.create("items", {"type": "a"})
         self.db.create("items", {"type": "b"})
         self.db.create("items", {"type": "a"})
-        count = self.db.count("items", filters=[QueryFilter(field="type", operator="==", value="a")])
+        count = self.db.count(
+            "items", filters=[QueryFilter(field="type", operator="==", value="a")]
+        )
         self.assertEqual(count, 2)
 
     def test_count_empty_collection(self):
@@ -531,13 +622,17 @@ class TestDatabase(unittest.TestCase):
 
     def test_create_collection_with_schema(self):
         from zoya.cloud.database import CollectionSchema
-        schema = CollectionSchema(name="books", fields={"title": "string", "pages": "number"})
+
+        schema = CollectionSchema(
+            name="books", fields={"title": "string", "pages": "number"}
+        )
         self.db.create_collection(schema)
         self.assertIn("books", self.db._schemas)
         self.assertIn("books", self.db._collections)
 
     def test_create_collection_duplicate_raises(self):
         from zoya.cloud.database import CollectionSchema, DatabaseError
+
         schema1 = CollectionSchema(name="dup", fields={"v": "string"})
         schema2 = CollectionSchema(name="dup", fields={"v": "string"})
         self.db.create_collection(schema1)
@@ -547,6 +642,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_list_collections(self):
         from zoya.cloud.database import CollectionSchema
+
         self.db.create_collection(CollectionSchema(name="a", fields={"v": "string"}))
         self.db.create_collection(CollectionSchema(name="b", fields={"v": "string"}))
         cols = self.db.list_collections()
@@ -555,6 +651,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_delete_collection(self):
         from zoya.cloud.database import CollectionSchema
+
         self.db.create_collection(CollectionSchema(name="temp", fields={"v": "string"}))
         self.db.create("temp", {"x": 1})
         self.db.delete_collection("temp")
@@ -563,6 +660,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_delete_collection_missing_raises(self):
         from zoya.cloud.database import DatabaseError
+
         with self.assertRaises(DatabaseError) as ctx:
             self.db.delete_collection("nonexistent")
         self.assertEqual(ctx.exception.code, "NOT_FOUND")
@@ -585,12 +683,14 @@ class TestDatabase(unittest.TestCase):
 
     def test_transaction_commit_invalid_raises(self):
         from zoya.cloud.database import DatabaseError
+
         with self.assertRaises(DatabaseError) as ctx:
             self.db.commit_transaction("invalid")
         self.assertEqual(ctx.exception.code, "TRANSACTION_NOT_FOUND")
 
     def test_transaction_rollback_invalid_raises(self):
         from zoya.cloud.database import DatabaseError
+
         with self.assertRaises(DatabaseError):
             self.db.rollback_transaction("invalid")
 
@@ -606,7 +706,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_find_by_ids(self):
         d1 = self.db.create("items", {"x": 1})
-        d2 = self.db.create("items", {"x": 2})
+        self.db.create("items", {"x": 2})
         d3 = self.db.create("items", {"x": 3})
         results = self.db.find_by_ids("items", [d1["id"], d3["id"], "missing"])
         self.assertEqual(len(results), 2)
@@ -622,18 +722,25 @@ class TestDatabase(unittest.TestCase):
 
     def test_first_returns_matching_document(self):
         from zoya.cloud.database import QueryFilter
+
         self.db.create("items", {"code": "a"})
         self.db.create("items", {"code": "b"})
-        doc = self.db.first("items", QueryFilter(field="code", operator="==", value="a"))
+        doc = self.db.first(
+            "items", QueryFilter(field="code", operator="==", value="a")
+        )
         self.assertEqual(doc["code"], "a")
 
     def test_first_returns_none_when_no_match(self):
         from zoya.cloud.database import QueryFilter
-        doc = self.db.first("items", QueryFilter(field="code", operator="==", value="z"))
+
+        doc = self.db.first(
+            "items", QueryFilter(field="code", operator="==", value="z")
+        )
         self.assertIsNone(doc)
 
     def test_query_with_include_deleted(self):
         from zoya.cloud.database import QueryOptions
+
         d = self.db.create("items", {"x": 1})
         self.db.delete("items", d["id"], soft=True)
         result = self.db.query("items")
@@ -660,6 +767,7 @@ class TestStorage(unittest.TestCase):
 
     def setUp(self):
         from zoya.cloud.storage import StorageService
+
         self.store = StorageService("http://localhost", "test_key")
 
     def test_upload_stores_data_and_returns_result(self):
@@ -679,6 +787,7 @@ class TestStorage(unittest.TestCase):
 
     def test_download_missing_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError) as ctx:
             self.store.download("nonexistent.txt")
         self.assertEqual(ctx.exception.code, "OBJECT_NOT_FOUND")
@@ -699,6 +808,7 @@ class TestStorage(unittest.TestCase):
 
     def test_get_metadata_returns_storage_object(self):
         from zoya.cloud.storage import UploadOptions
+
         opts = UploadOptions(metadata={"author": "test"}, content_type="text/plain")
         self.store.upload(b"data", "meta/file.txt", opts)
         meta = self.store.get_metadata("meta/file.txt")
@@ -709,6 +819,7 @@ class TestStorage(unittest.TestCase):
 
     def test_get_metadata_missing_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError):
             self.store.get_metadata("no.txt")
 
@@ -745,6 +856,7 @@ class TestStorage(unittest.TestCase):
 
     def test_copy_missing_source_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError):
             self.store.copy("no.txt", "dst.txt")
 
@@ -764,6 +876,7 @@ class TestStorage(unittest.TestCase):
 
     def test_get_signed_url_missing_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError):
             self.store.get_signed_url("no.txt")
 
@@ -774,6 +887,7 @@ class TestStorage(unittest.TestCase):
 
     def test_get_public_url_missing_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError):
             self.store.get_public_url("no.txt")
 
@@ -791,29 +905,34 @@ class TestStorage(unittest.TestCase):
 
     def test_create_existing_bucket_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError) as ctx:
             self.store.create_bucket("default")
         self.assertEqual(ctx.exception.code, "BUCKET_EXISTS")
 
     def test_delete_default_bucket_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError) as ctx:
             self.store.delete_bucket("default")
         self.assertEqual(ctx.exception.code, "BUCKET_PROTECTED")
 
     def test_missing_bucket_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError) as ctx:
             self.store.upload(b"x", "p", bucket="nobucket")
         self.assertEqual(ctx.exception.code, "BUCKET_NOT_FOUND")
 
     def test_delete_missing_bucket_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError):
             self.store.delete_bucket("nobucket")
 
     def test_upload_with_public_option(self):
         from zoya.cloud.storage import UploadOptions
+
         result = self.store.upload(b"data", "public.txt", UploadOptions(public=True))
         self.assertIn("public/", result.url)
 
@@ -835,6 +954,7 @@ class TestStorage(unittest.TestCase):
 
     def test_upload_from_missing_file_raises(self):
         from zoya.cloud.storage import StorageError
+
         with self.assertRaises(StorageError) as ctx:
             self.store.upload_from_file(r"C:\nonexistent\file.txt", "dest.txt")
         self.assertEqual(ctx.exception.code, "FILE_NOT_FOUND")
@@ -877,7 +997,12 @@ class TestStorage(unittest.TestCase):
 
     def test_upload_with_custom_options(self):
         from zoya.cloud.storage import UploadOptions
-        opts = UploadOptions(content_type="application/json", cache_control="public, max-age=3600", metadata={"key": "val"})
+
+        opts = UploadOptions(
+            content_type="application/json",
+            cache_control="public, max-age=3600",
+            metadata={"key": "val"},
+        )
         result = self.store.upload(b'{"a":1}', "data.json", opts)
         self.assertEqual(result.content_type, "application/json")
         self.assertFalse(result.url.startswith("public"))
@@ -887,6 +1012,7 @@ class TestRealtime(unittest.TestCase):
 
     def setUp(self):
         from zoya.cloud.realtime import RealtimeService
+
         self.rt = RealtimeService("http://localhost", "test_key")
 
     def test_connect_sets_connected(self):
@@ -909,8 +1035,10 @@ class TestRealtime(unittest.TestCase):
     def test_subscribe_adds_callback(self):
         self.rt.connect()
         events = []
+
         def cb(event):
             events.append(event)
+
         self.rt.subscribe("channel1", cb)
         self.rt.publish("channel1", "hello")
         self.assertEqual(len(events), 1)
@@ -919,8 +1047,10 @@ class TestRealtime(unittest.TestCase):
     def test_unsubscribe_removes_callback(self):
         self.rt.connect()
         events = []
+
         def cb(event):
             events.append(event)
+
         self.rt.subscribe("ch", cb)
         self.rt.unsubscribe("ch", cb)
         self.rt.publish("ch", "data")
@@ -929,10 +1059,13 @@ class TestRealtime(unittest.TestCase):
     def test_unsubscribe_all_removes_channel(self):
         self.rt.connect()
         events = []
+
         def cb1(e):
             events.append("a")
+
         def cb2(e):
             events.append("b")
+
         self.rt.subscribe("ch", cb1)
         self.rt.subscribe("ch", cb2)
         self.rt.unsubscribe("ch")
@@ -945,8 +1078,10 @@ class TestRealtime(unittest.TestCase):
     def test_publish_dispatches_to_subscribers(self):
         self.rt.connect()
         received = []
+
         def cb(event):
             received.append(event.data)
+
         self.rt.subscribe("test_channel", cb)
         self.rt.publish("test_channel", {"msg": "hi"})
         self.assertEqual(len(received), 1)
@@ -955,14 +1090,17 @@ class TestRealtime(unittest.TestCase):
     def test_publish_only_dispatches_to_channel_subscribers(self):
         self.rt.connect()
         received = []
+
         def cb(event):
             received.append(event.data)
+
         self.rt.subscribe("alpha", cb)
         self.rt.publish("beta", "should_not_arrive")
         self.assertEqual(len(received), 0)
 
     def test_publish_raises_when_not_connected(self):
         from zoya.cloud.realtime import RealtimeError
+
         with self.assertRaises(RealtimeError) as ctx:
             self.rt.publish("ch", "data")
         self.assertEqual(ctx.exception.code, "NOT_CONNECTED")
@@ -978,6 +1116,7 @@ class TestRealtime(unittest.TestCase):
 
     def test_update_presence_raises_when_not_connected(self):
         from zoya.cloud.realtime import RealtimeError
+
         with self.assertRaises(RealtimeError):
             self.rt.update_presence("online")
 
@@ -1012,16 +1151,20 @@ class TestRealtime(unittest.TestCase):
     def test_on_event_global_callback(self):
         self.rt.connect()
         events = []
+
         def cb(e):
             events.append(e.type.value)
+
         self.rt.on_event(cb)
         self.rt.publish("ch", "data")
         self.assertIn("message", events)
 
     def test_on_event_connect_disconnect(self):
         events = []
+
         def cb(e):
             events.append(e.type.value)
+
         self.rt.on_event(cb)
         self.rt.connect()
         self.rt.disconnect()
@@ -1031,11 +1174,15 @@ class TestRealtime(unittest.TestCase):
     def test_on_error_global_callback(self):
         self.rt.connect()
         errors = []
+
         def cb(err):
             errors.append(err)
+
         self.rt.on_error(cb)
+
         def bad_cb(e):
             raise ValueError("bad!")
+
         self.rt.subscribe("ch", bad_cb)
         self.rt.publish("ch", "data")
         self.assertEqual(len(errors), 1)
@@ -1050,8 +1197,10 @@ class TestRealtime(unittest.TestCase):
         self.rt.connect()
         self.rt.subscribe("room", lambda e: None)
         presences = []
+
         def cb(p_list):
             presences.extend(p_list)
+
         self.rt.on_presence_change("room", cb)
         self.rt.update_presence("busy", user_id="u1", username="User1")
         self.assertEqual(len(presences), 1)
@@ -1060,8 +1209,10 @@ class TestRealtime(unittest.TestCase):
     def test_presence_callback_not_invoked_for_unsubscribed_channel(self):
         self.rt.connect()
         presences = []
+
         def cb(p_list):
             presences.extend(p_list)
+
         self.rt.on_presence_change("room_a", cb)
         self.rt.subscribe("room_b", lambda e: None)
         self.rt.update_presence("online", user_id="u1", username="U1")
@@ -1072,8 +1223,13 @@ class TestLeaderboard(unittest.TestCase):
 
     def setUp(self):
         from zoya.cloud.leaderboard import (
-            LeaderboardService, LeaderboardDefinition, SortOrder, UpdateStrategy, ResetPeriod,
+            LeaderboardDefinition,
+            LeaderboardService,
+            ResetPeriod,
+            SortOrder,
+            UpdateStrategy,
         )
+
         self.lb = LeaderboardService("http://localhost", "key")
         self.defn = LeaderboardDefinition(
             id="rank1",
@@ -1087,11 +1243,13 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_create_leaderboard(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition
+
         self.lb.create_leaderboard(LeaderboardDefinition(id="newlb", name="New"))
         self.assertIn("newlb", [d.id for d in self.lb.list_leaderboards()])
 
     def test_create_duplicate_raises(self):
         from zoya.cloud.leaderboard import LeaderboardError
+
         with self.assertRaises(LeaderboardError) as ctx:
             self.lb.create_leaderboard(self.defn)
         self.assertEqual(ctx.exception.code, "CONFLICT")
@@ -1110,27 +1268,43 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_submit_score_with_latest_strategy(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition, UpdateStrategy
-        self.lb.create_leaderboard(LeaderboardDefinition(id="latest", name="Latest", update_strategy=UpdateStrategy.LATEST))
+
+        self.lb.create_leaderboard(
+            LeaderboardDefinition(
+                id="latest", name="Latest", update_strategy=UpdateStrategy.LATEST
+            )
+        )
         self.lb.submit_score("latest", "user_bob", 10.0)
         e = self.lb.submit_score("latest", "user_bob", 99.0)
         self.assertEqual(e.score, 99.0)
 
     def test_submit_score_with_sum_strategy(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition, UpdateStrategy
-        self.lb.create_leaderboard(LeaderboardDefinition(id="sumlb", name="Sum", update_strategy=UpdateStrategy.SUM))
+
+        self.lb.create_leaderboard(
+            LeaderboardDefinition(
+                id="sumlb", name="Sum", update_strategy=UpdateStrategy.SUM
+            )
+        )
         self.lb.submit_score("sumlb", "user_bob", 10.0)
         e = self.lb.submit_score("sumlb", "user_bob", 20.0)
         self.assertEqual(e.score, 30.0)
 
     def test_submit_score_with_average_strategy(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition, UpdateStrategy
-        self.lb.create_leaderboard(LeaderboardDefinition(id="avglb", name="Avg", update_strategy=UpdateStrategy.AVERAGE))
+
+        self.lb.create_leaderboard(
+            LeaderboardDefinition(
+                id="avglb", name="Avg", update_strategy=UpdateStrategy.AVERAGE
+            )
+        )
         self.lb.submit_score("avglb", "user_bob", 10.0)
         e = self.lb.submit_score("avglb", "user_bob", 20.0)
         self.assertEqual(e.score, 15.0)
 
     def test_submit_score_missing_leaderboard_raises(self):
         from zoya.cloud.leaderboard import LeaderboardError
+
         with self.assertRaises(LeaderboardError) as ctx:
             self.lb.submit_score("nonexistent", "user_alice", 10)
         self.assertEqual(ctx.exception.code, "NOT_FOUND")
@@ -1141,7 +1315,9 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_submit_score_merges_metadata(self):
         self.lb.submit_score("rank1", "user_alice", 100, metadata={"level": 5})
-        e = self.lb.submit_score("rank1", "user_alice", 200, metadata={"class": "warrior"})
+        e = self.lb.submit_score(
+            "rank1", "user_alice", 200, metadata={"class": "warrior"}
+        )
         self.assertIsNotNone(e.metadata)
         self.assertEqual(e.metadata["level"], 5)
         self.assertEqual(e.metadata["class"], "warrior")
@@ -1158,7 +1334,12 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_get_scores_asc_order(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition, SortOrder
-        self.lb.create_leaderboard(LeaderboardDefinition(id="asc_lb", name="Ascending", sort_order=SortOrder.ASC))
+
+        self.lb.create_leaderboard(
+            LeaderboardDefinition(
+                id="asc_lb", name="Ascending", sort_order=SortOrder.ASC
+            )
+        )
         self.lb.submit_score("asc_lb", "user_bob", 100.0)
         self.lb.submit_score("asc_lb", "user_alice", 50.0)
         scores = self.lb.get_scores("asc_lb")
@@ -1166,13 +1347,16 @@ class TestLeaderboard(unittest.TestCase):
         self.assertEqual(scores[1].user_id, "user_bob")
 
     def test_get_scores_with_pagination(self):
-        for i, uid in enumerate(["user_alice", "user_bob", "user_charlie", "user_diana", "user_eve"]):
+        for i, uid in enumerate(
+            ["user_alice", "user_bob", "user_charlie", "user_diana", "user_eve"]
+        ):
             self.lb.submit_score("rank1", uid, float(i * 10))
         page = self.lb.get_scores("rank1", limit=2, offset=0)
         self.assertEqual(len(page), 2)
 
     def test_get_scores_empty_leaderboard(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition
+
         self.lb.create_leaderboard(LeaderboardDefinition(id="empty", name="Empty"))
         scores = self.lb.get_scores("empty")
         self.assertEqual(len(scores), 0)
@@ -1221,11 +1405,13 @@ class TestLeaderboard(unittest.TestCase):
         self.lb.delete_leaderboard("rank1")
         self.assertEqual(len(self.lb.list_leaderboards()), 0)
         from zoya.cloud.leaderboard import LeaderboardError
+
         with self.assertRaises(LeaderboardError):
             self.lb.submit_score("rank1", "user_alice", 10)
 
     def test_delete_missing_leaderboard_raises(self):
         from zoya.cloud.leaderboard import LeaderboardError
+
         with self.assertRaises(LeaderboardError) as ctx:
             self.lb.delete_leaderboard("nonexistent")
         self.assertEqual(ctx.exception.code, "NOT_FOUND")
@@ -1237,6 +1423,7 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_update_missing_leaderboard_raises(self):
         from zoya.cloud.leaderboard import LeaderboardError
+
         with self.assertRaises(LeaderboardError):
             self.lb.update_leaderboard("nonexistent", {})
 
@@ -1248,7 +1435,12 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_get_reset_schedule(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition, ResetPeriod
-        self.lb.create_leaderboard(LeaderboardDefinition(id="daily", name="Daily", reset_period=ResetPeriod.DAILY))
+
+        self.lb.create_leaderboard(
+            LeaderboardDefinition(
+                id="daily", name="Daily", reset_period=ResetPeriod.DAILY
+            )
+        )
         self.assertEqual(self.lb.get_reset_schedule("daily"), "daily")
         self.assertIsNone(self.lb.get_reset_schedule("rank1"))
 
@@ -1266,7 +1458,10 @@ class TestLeaderboard(unittest.TestCase):
 
     def test_max_entries_respected(self):
         from zoya.cloud.leaderboard import LeaderboardDefinition
-        self.lb.create_leaderboard(LeaderboardDefinition(id="limited", name="Limited", max_entries=2))
+
+        self.lb.create_leaderboard(
+            LeaderboardDefinition(id="limited", name="Limited", max_entries=2)
+        )
         uids = ["user_alice", "user_bob", "user_charlie"]
         for i, uid in enumerate(uids):
             self.lb.submit_score("limited", uid, float(i * 10))
@@ -1277,14 +1472,18 @@ class TestLeaderboard(unittest.TestCase):
 class TestMultiplayer(unittest.TestCase):
 
     def setUp(self):
-        from zoya.cloud.realtime import RealtimeService
         from zoya.cloud.multiplayer import MultiplayerService
+        from zoya.cloud.realtime import RealtimeService
+
         self.rt = RealtimeService("http://localhost", "key")
         self.mp = MultiplayerService("http://localhost", "key", self.rt)
 
     def _make_real_match(self):
-        from zoya.cloud.multiplayer import MatchConfig, Match, MatchStatus
-        import secrets, time
+        import secrets
+        import time
+
+        from zoya.cloud.multiplayer import Match, MatchConfig, MatchStatus
+
         match = Match(
             id=secrets.token_hex(8),
             players=["user_alice", "user_bob"],
@@ -1300,6 +1499,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_find_match_creates_match(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         self.mp._matchmaking_queue[:] = ["user_alice", "user_bob"]
         self.mp._matchmaking_users.update(["user_alice", "user_bob"])
         match = self.mp.find_match(MatchConfig(max_players=2, min_players=2))
@@ -1309,6 +1509,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_find_match_returns_pending_when_no_opponent(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         self.mp._matchmaking_queue.clear()
         self.mp._matchmaking_users.clear()
         match = self.mp.find_match(MatchConfig(max_players=2, min_players=2))
@@ -1316,6 +1517,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_cancel_matchmaking(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         self.mp.find_match(MatchConfig())
         self.mp.cancel_matchmaking()
         self.assertNotIn("user_alice", self.mp._matchmaking_queue)
@@ -1335,6 +1537,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_get_match_missing_raises(self):
         from zoya.cloud.multiplayer import MultiplayerError
+
         with self.assertRaises(MultiplayerError) as ctx:
             self.mp.get_match("nonexistent")
         self.assertEqual(ctx.exception.code, "MATCH_NOT_FOUND")
@@ -1348,22 +1551,26 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_leave_match_missing_raises(self):
         from zoya.cloud.multiplayer import MultiplayerError
+
         with self.assertRaises(MultiplayerError):
             self.mp.leave_match("nonexistent")
 
     def test_create_lobby(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("Test Lobby", MatchConfig())
         self.assertEqual(lobby.name, "Test Lobby")
         self.assertEqual(lobby.host_user_id, "user_alice")
 
     def test_create_lobby_appears_in_list(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         self.mp.create_lobby("Lobby1", MatchConfig())
         self.assertEqual(len(self.mp.list_lobbies()), 1)
 
     def test_join_lobby(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("Lobby", MatchConfig())
         self.mp.join_lobby(lobby.id)
         retrieved = self.mp.get_lobby(lobby.id)
@@ -1371,12 +1578,14 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_join_lobby_missing_raises(self):
         from zoya.cloud.multiplayer import MultiplayerError
+
         with self.assertRaises(MultiplayerError) as ctx:
             self.mp.join_lobby("nonexistent")
         self.assertEqual(ctx.exception.code, "LOBBY_NOT_FOUND")
 
     def test_leave_lobby(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("L", MatchConfig())
         self.mp.join_lobby(lobby.id)
         self.mp.leave_lobby(lobby.id)
@@ -1385,6 +1594,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_get_lobby(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("GetMe", MatchConfig())
         retrieved = self.mp.get_lobby(lobby.id)
         self.assertEqual(retrieved.id, lobby.id)
@@ -1392,6 +1602,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_get_lobby_returns_copy(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("L", MatchConfig())
         retrieved = self.mp.get_lobby(lobby.id)
         retrieved.name = "mutated"
@@ -1400,17 +1611,20 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_get_lobby_missing_raises(self):
         from zoya.cloud.multiplayer import MultiplayerError
+
         with self.assertRaises(MultiplayerError):
             self.mp.get_lobby("no")
 
     def test_list_lobbies(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         self.mp.create_lobby("A", MatchConfig())
         self.mp.create_lobby("B", MatchConfig())
         self.assertEqual(len(self.mp.list_lobbies()), 2)
 
     def test_set_ready(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("L", MatchConfig())
         self.mp.join_lobby(lobby.id)
         self.mp.set_ready(lobby.id, True)
@@ -1421,6 +1635,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_set_ready_user_not_in_lobby_raises(self):
         from zoya.cloud.multiplayer import MatchConfig, MultiplayerError
+
         lobby = self.mp.create_lobby("L", MatchConfig())
         with self.assertRaises(MultiplayerError) as ctx:
             self.mp.set_ready(lobby.id, True)
@@ -1428,6 +1643,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_start_match(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("L", MatchConfig(min_players=1))
         self.mp.join_lobby(lobby.id)
         self.mp.set_ready(lobby.id, True)
@@ -1437,6 +1653,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_start_match_not_enough_ready_raises(self):
         from zoya.cloud.multiplayer import MatchConfig, MultiplayerError
+
         lobby = self.mp.create_lobby("L", MatchConfig(min_players=2))
         self.mp.join_lobby(lobby.id)
         self.mp.set_ready(lobby.id, True)
@@ -1446,9 +1663,11 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_start_match_as_non_host_raises(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("L", MatchConfig())
         lobby.host_user_id = "someone_else"
         from zoya.cloud.multiplayer import MultiplayerError
+
         with self.assertRaises(MultiplayerError) as ctx:
             self.mp.start_match(lobby.id)
         self.assertEqual(ctx.exception.code, "NOT_HOST")
@@ -1482,6 +1701,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_invite_to_party_without_party_raises(self):
         from zoya.cloud.multiplayer import MultiplayerError
+
         self.mp.leave_party()
         with self.assertRaises(MultiplayerError) as ctx:
             self.mp.invite_to_party("user_bob")
@@ -1507,8 +1727,10 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_on_state_change_callback(self):
         received = []
+
         def cb(state):
             received.append(state)
+
         self.mp.on_state_change("match1", cb)
         self.mp.sync_state("match1", {"pos": [0, 0]})
         self.assertEqual(len(received), 1)
@@ -1516,8 +1738,10 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_send_event_and_on_event(self):
         received = []
+
         def cb(data):
             received.append(data)
+
         self.mp.on_event("match1", "move", cb)
         self.mp.send_event("match1", "move", {"x": 10})
         self.assertEqual(len(received), 1)
@@ -1528,8 +1752,10 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_send_event_wildcard_handler(self):
         received = []
+
         def cb(data):
             received.append(data)
+
         self.mp.on_event("match1", "*", cb)
         self.mp.send_event("match1", "any_event", {"k": "v"})
         self.assertEqual(len(received), 1)
@@ -1537,6 +1763,7 @@ class TestMultiplayer(unittest.TestCase):
 
     def test_get_lobby_returns_lobby_for_existing(self):
         from zoya.cloud.multiplayer import MatchConfig
+
         lobby = self.mp.create_lobby("test_lobby", MatchConfig())
         result = self.mp.get_lobby(lobby.id)
         self.assertEqual(result.id, lobby.id)
@@ -1546,6 +1773,7 @@ class TestAnalytics(unittest.TestCase):
 
     def setUp(self):
         from zoya.cloud.analytics import AnalyticsService
+
         self.analytics = AnalyticsService("http://localhost", "key")
 
     def tearDown(self):
@@ -1595,17 +1823,21 @@ class TestAnalytics(unittest.TestCase):
 
     def test_query_returns_count_metric(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("click", value=1.0)
         self.analytics.track("click", value=2.0)
         self.analytics.track("other", value=3.0)
         from zoya.cloud.analytics import AnalyticsQuery
-        result = self.analytics.query(AnalyticsQuery(
-            event="click",
-            start_date=now - 10,
-            end_date=now + 10,
-            metrics=["count", "sum", "avg", "min", "max"],
-        ))
+
+        result = self.analytics.query(
+            AnalyticsQuery(
+                event="click",
+                start_date=now - 10,
+                end_date=now + 10,
+                metrics=["count", "sum", "avg", "min", "max"],
+            )
+        )
         self.assertEqual(result.metrics["count"], 2)
         self.assertEqual(result.metrics["sum"], 3.0)
         self.assertEqual(result.metrics["avg"], 1.5)
@@ -1614,31 +1846,39 @@ class TestAnalytics(unittest.TestCase):
 
     def test_query_outside_date_range(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("click", value=1.0)
         from zoya.cloud.analytics import AnalyticsQuery
-        result = self.analytics.query(AnalyticsQuery(
-            event="click",
-            start_date=now + 1000,
-            end_date=now + 2000,
-            metrics=["count"],
-        ))
+
+        result = self.analytics.query(
+            AnalyticsQuery(
+                event="click",
+                start_date=now + 1000,
+                end_date=now + 2000,
+                metrics=["count"],
+            )
+        )
         self.assertEqual(result.metrics["count"], 0)
 
     def test_query_with_group_by_returns_breakdown(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("click", {"category": "A"}, value=1)
         self.analytics.track("click", {"category": "A"}, value=2)
         self.analytics.track("click", {"category": "B"}, value=5)
         from zoya.cloud.analytics import AnalyticsQuery
-        result = self.analytics.query(AnalyticsQuery(
-            event="click",
-            start_date=now - 10,
-            end_date=now + 10,
-            group_by="category",
-            metrics=["count", "sum"],
-        ))
+
+        result = self.analytics.query(
+            AnalyticsQuery(
+                event="click",
+                start_date=now - 10,
+                end_date=now + 10,
+                group_by="category",
+                metrics=["count", "sum"],
+            )
+        )
         self.assertIsNotNone(result.breakdown)
         self.assertIn("A", result.breakdown)
         self.assertIn("B", result.breakdown)
@@ -1649,28 +1889,36 @@ class TestAnalytics(unittest.TestCase):
 
     def test_query_group_by_unknown_field(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("click", {"category": "A"})
         from zoya.cloud.analytics import AnalyticsQuery
-        result = self.analytics.query(AnalyticsQuery(
-            event="click",
-            start_date=now - 10,
-            end_date=now + 10,
-            group_by="nonexistent",
-            metrics=["count"],
-        ))
+
+        result = self.analytics.query(
+            AnalyticsQuery(
+                event="click",
+                start_date=now - 10,
+                end_date=now + 10,
+                group_by="nonexistent",
+                metrics=["count"],
+            )
+        )
         self.assertIn("unknown", result.breakdown)
 
     def test_get_event_count(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("login")
         self.analytics.track("login")
         self.assertEqual(self.analytics.get_event_count("login", now - 10, now + 10), 2)
-        self.assertEqual(self.analytics.get_event_count("nonexistent", now - 10, now + 10), 0)
+        self.assertEqual(
+            self.analytics.get_event_count("nonexistent", now - 10, now + 10), 0
+        )
 
     def test_get_user_count(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("e1")
         count = self.analytics.get_user_count(now - 10, now + 10)
@@ -1687,6 +1935,7 @@ class TestAnalytics(unittest.TestCase):
 
     def test_get_retention_rate(self):
         import time as ttime
+
         now = ttime.time()
         self.analytics.track("install")
         rate = self.analytics.get_retention_rate(now - 86400, days_since_onboarding=1)
@@ -1694,8 +1943,11 @@ class TestAnalytics(unittest.TestCase):
 
     def test_get_retention_rate_no_data(self):
         import time as ttime
+
         now = ttime.time()
-        rate = self.analytics.get_retention_rate(now + 86400 * 10, days_since_onboarding=1)
+        rate = self.analytics.get_retention_rate(
+            now + 86400 * 10, days_since_onboarding=1
+        )
         self.assertEqual(rate, 0.0)
 
     def test_get_sessions_returns_user_sessions(self):
@@ -1710,7 +1962,9 @@ class TestAnalytics(unittest.TestCase):
     def test_get_dashboard_returns_requested_metrics(self):
         self.analytics.track("e1")
         self.analytics.start_session()
-        dashboard = self.analytics.get_dashboard(["total_events", "active_sessions", "total_sessions"])
+        dashboard = self.analytics.get_dashboard(
+            ["total_events", "active_sessions", "total_sessions"]
+        )
         self.assertIn("total_events", dashboard)
         self.assertIn("active_sessions", dashboard)
         self.assertIn("total_sessions", dashboard)
@@ -1773,13 +2027,14 @@ class TestAnalytics(unittest.TestCase):
 class TestCloudClient(unittest.TestCase):
 
     def test_import_all_modules(self):
+        import zoya.cloud.analytics as analytics_mod
         import zoya.cloud.auth as auth_mod
         import zoya.cloud.database as db_mod
-        import zoya.cloud.storage as store_mod
-        import zoya.cloud.realtime as rt_mod
         import zoya.cloud.leaderboard as lb_mod
         import zoya.cloud.multiplayer as mp_mod
-        import zoya.cloud.analytics as analytics_mod
+        import zoya.cloud.realtime as rt_mod
+        import zoya.cloud.storage as store_mod
+
         self.assertTrue(hasattr(auth_mod, "AuthService"))
         self.assertTrue(hasattr(auth_mod, "AuthUser"))
         self.assertTrue(hasattr(auth_mod, "AuthSession"))
@@ -1808,13 +2063,13 @@ class TestCloudClient(unittest.TestCase):
         self.assertTrue(hasattr(analytics_mod, "AnalyticsError"))
 
     def test_all_services_can_be_constructed(self):
+        from zoya.cloud.analytics import AnalyticsService
         from zoya.cloud.auth import AuthService
         from zoya.cloud.database import DatabaseService
-        from zoya.cloud.storage import StorageService
-        from zoya.cloud.realtime import RealtimeService
         from zoya.cloud.leaderboard import LeaderboardService
         from zoya.cloud.multiplayer import MultiplayerService
-        from zoya.cloud.analytics import AnalyticsService
+        from zoya.cloud.realtime import RealtimeService
+        from zoya.cloud.storage import StorageService
 
         auth = AuthService()
         db = DatabaseService("http://localhost:54321", "api_key")
@@ -1833,13 +2088,13 @@ class TestCloudClient(unittest.TestCase):
         self.assertIsNotNone(analytics)
 
     def test_end_to_end_multi_service_flow(self):
-        from zoya.cloud.realtime import RealtimeService
-        from zoya.cloud.multiplayer import MultiplayerService
+        from zoya.cloud.analytics import AnalyticsService
         from zoya.cloud.auth import AuthService
         from zoya.cloud.database import DatabaseService
-        from zoya.cloud.storage import StorageService
         from zoya.cloud.leaderboard import LeaderboardService
-        from zoya.cloud.analytics import AnalyticsService
+        from zoya.cloud.multiplayer import MultiplayerService
+        from zoya.cloud.realtime import RealtimeService
+        from zoya.cloud.storage import StorageService
 
         rt = RealtimeService("http://localhost:54321", "key")
         auth = AuthService()
@@ -1847,7 +2102,7 @@ class TestCloudClient(unittest.TestCase):
         store = StorageService("http://localhost:54321", "key")
         lb = LeaderboardService("http://localhost:54321", "key")
         analytics = AnalyticsService("http://localhost:54321", "key")
-        mp = MultiplayerService("http://localhost:54321", "key", rt)
+        MultiplayerService("http://localhost:54321", "key", rt)
 
         rt.connect()
         self.assertTrue(rt.is_connected())
@@ -1871,15 +2126,23 @@ class TestCloudClient(unittest.TestCase):
         self.assertFalse(rt.is_connected())
 
     def test_error_hierarchy(self):
+        from zoya.cloud.analytics import AnalyticsError
         from zoya.cloud.auth import AuthError
         from zoya.cloud.database import DatabaseError
-        from zoya.cloud.storage import StorageError
-        from zoya.cloud.realtime import RealtimeError
         from zoya.cloud.leaderboard import LeaderboardError
         from zoya.cloud.multiplayer import MultiplayerError
-        from zoya.cloud.analytics import AnalyticsError
+        from zoya.cloud.realtime import RealtimeError
+        from zoya.cloud.storage import StorageError
 
-        for exc_cls in [AuthError, DatabaseError, StorageError, RealtimeError, LeaderboardError, MultiplayerError, AnalyticsError]:
+        for exc_cls in [
+            AuthError,
+            DatabaseError,
+            StorageError,
+            RealtimeError,
+            LeaderboardError,
+            MultiplayerError,
+            AnalyticsError,
+        ]:
             e = exc_cls("test", "TEST_CODE")
             self.assertIsInstance(e, Exception)
             self.assertEqual(str(e), "test")

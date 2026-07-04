@@ -1,10 +1,12 @@
 """Test the Zoya 4.0 desktop framework."""
 
+import os
 import sys
-sys.path.insert(0, r"C:\Users\hp\zoya3")
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from zoya.desktop import Window, Widget, create_desktop_app
+    from zoya.desktop import Widget, Window, create_desktop_app
 
     print("[OK] All desktop imports succeeded")
 

@@ -4,7 +4,8 @@ Provides middleware components for the web framework.
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable, Awaitable, Dict, Any
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 
 class BaseMiddleware(ABC):
@@ -16,17 +17,19 @@ class BaseMiddleware(ABC):
     @abstractmethod
     async def __call__(
         self,
-        request: Dict[str, Any],
-        call_next: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        request: dict[str, Any],
+        call_next: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+    ) -> dict[str, Any]:
         """Process the request and return a response."""
 
     def to_handler(
-        self, next_handler: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]]
-    ) -> Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]]:
+        self, next_handler: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
+    ) -> Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]:
         """Wrap this middleware around the next handler."""
-        async def wrapped(request: Dict[str, Any]) -> Dict[str, Any]:
+
+        async def wrapped(request: dict[str, Any]) -> dict[str, Any]:
             return await self(request, next_handler)
+
         return wrapped
 
 
@@ -35,9 +38,9 @@ class LoggingMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        request: Dict[str, Any],
-        call_next: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        request: dict[str, Any],
+        call_next: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+    ) -> dict[str, Any]:
         print(f"Request: {request}")
         response = await call_next(request)
         print(f"Response: {response}")
@@ -47,14 +50,14 @@ class LoggingMiddleware(BaseMiddleware):
 class AuthMiddleware(BaseMiddleware):
     """Middleware for authentication."""
 
-    def __init__(self, is_authenticated: Callable[[Dict[str, Any]], bool]) -> None:
+    def __init__(self, is_authenticated: Callable[[dict[str, Any]], bool]) -> None:
         self.is_authenticated = is_authenticated
 
     async def __call__(
         self,
-        request: Dict[str, Any],
-        call_next: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        request: dict[str, Any],
+        call_next: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+    ) -> dict[str, Any]:
         if not self.is_authenticated(request):
             return {"error": "Unauthorized", "status": 401}
         return await call_next(request)
@@ -65,9 +68,9 @@ class ErrorHandlingMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        request: Dict[str, Any],
-        call_next: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
-    ) -> Dict[str, Any]:
+        request: dict[str, Any],
+        call_next: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
+    ) -> dict[str, Any]:
         try:
             return await call_next(request)
         except Exception as exc:

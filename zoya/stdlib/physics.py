@@ -46,7 +46,9 @@ def load_module(interpreter: Any) -> Any:
     def distance(x1: float, y1: float, x2: float, y2: float) -> float:
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
-    def distance_3d(x1: float, y1: float, z1: float, x2: float, y2: float, z2: float) -> float:
+    def distance_3d(
+        x1: float, y1: float, z1: float, x2: float, y2: float, z2: float
+    ) -> float:
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
     def clamp(value: float, min_val: float, max_val: float) -> float:
@@ -71,4 +73,5 @@ def load_module(interpreter: Any) -> Any:
     }
 
     from zoya.interpreter import ZoyaModule
+
     return ZoyaModule("physics", funcs)

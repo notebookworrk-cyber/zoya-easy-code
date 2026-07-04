@@ -17,8 +17,8 @@ TEST_FILES = [
     "test_enterprise_robotics.py",
 ]
 
+
 def main():
-    total = 0
     passed = 0
     failed = 0
     start = time.time()
@@ -35,7 +35,11 @@ def main():
             if result.stderr.strip():
                 summary = result.stderr.strip().split("\n")[-1]
             else:
-                summary = result.stdout.strip().split("\n")[-1] if result.stdout.strip() else "OK"
+                summary = (
+                    result.stdout.strip().split("\n")[-1]
+                    if result.stdout.strip()
+                    else "OK"
+                )
             print(f"  PASS  {file}  ({summary})")
         else:
             failed += 1
@@ -46,8 +50,11 @@ def main():
     elapsed = time.time() - start
     print()
     print(f"  {'='*50}")
-    print(f"  Results: {passed + failed} suites | {passed} passed, {failed} failed | {elapsed:.1f}s")
+    print(
+        f"  Results: {passed + failed} suites | {passed} passed, {failed} failed | {elapsed:.1f}s"
+    )
     return 1 if failed else 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

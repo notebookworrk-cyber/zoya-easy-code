@@ -5,19 +5,22 @@ and a set of built-in tools including calculator, web search, file I/O,
 Python execution, and shell commands.
 """
 
-from typing import List, Dict, Any, Optional, Callable
-from abc import ABC, abstractmethod
-import math
-import json
-import re
 import ast
-import os
-import threading
+import builtins
 import io
+import json
+import math
+import os
+import re
+import threading
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import Any
 
 
 class ToolError(Exception):
     """Base exception for tool operations."""
+
     pass
 
 
@@ -32,17 +35,16 @@ class Tool(ABC):
         self,
         name: str = "",
         description: str = "",
-        parameters: Optional[Dict[str, Any]] = None,
+        parameters: dict[str, Any] | None = None,
     ):
         self.name = name or getattr(self.__class__, "name", self.__class__.__name__)
         self.description = description or getattr(self.__class__, "description", "")
         self.parameters = parameters or getattr(self.__class__, "parameters", {})
 
     @abstractmethod
-    def execute(self, **kwargs) -> Any:
-        ...
+    def execute(self, **kwargs) -> Any: ...
 
-    def to_openai_format(self) -> Dict[str, Any]:
+    def to_openai_format(self) -> dict[str, Any]:
         return {
             "type": "function",
             "function": {
@@ -52,7 +54,7 @@ class Tool(ABC):
             },
         }
 
-    def to_anthropic_format(self) -> Dict[str, Any]:
+    def to_anthropic_format(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "description": self.description,
@@ -68,7 +70,7 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self._tools: Dict[str, Tool] = {}
+        self._tools: dict[str, Tool] = {}
 
     def register(self, tool: Tool) -> None:
         if tool.name in self._tools:
@@ -83,16 +85,16 @@ class ToolRegistry:
             )
         return self._tools[name]
 
-    def list(self) -> List[Tool]:
+    def list(self) -> list[Tool]:
         return list(self._tools.values())
 
     def execute(self, name: str, **kwargs) -> Any:
         return self.get(name).execute(**kwargs)
 
-    def to_openai_tools(self) -> List[Dict[str, Any]]:
+    def to_openai_tools(self) -> builtins.list[dict[str, Any]]:
         return [tool.to_openai_format() for tool in self._tools.values()]
 
-    def to_anthropic_tools(self) -> List[Dict[str, Any]]:
+    def to_anthropic_tools(self) -> builtins.list[dict[str, Any]]:
         return [tool.to_anthropic_format() for tool in self._tools.values()]
 
 
@@ -110,10 +112,12 @@ def tool(name: str = None, description: str = None):
     Returns:
         A Tool instance wrapping the decorated function.
     """
+
     def decorator(func: Callable) -> Tool:
         import inspect
+
         sig = inspect.signature(func)
-        parameters: Dict[str, Any] = {
+        parameters: dict[str, Any] = {
             "type": "object",
             "properties": {},
             "required": [],
@@ -158,6 +162,7 @@ def tool(name: str = None, description: str = None):
                 return func(**kwargs)
 
         return _FunctionTool()
+
     return decorator
 
 
@@ -196,11 +201,22 @@ class Calculator(Tool):
         try:
             tree = ast.parse(expression.strip(), mode="eval")
             allowed_types = {
-                ast.Expression, ast.BinOp, ast.UnaryOp,
-                ast.Add, ast.Sub, ast.Mult, ast.Div,
-                ast.FloorDiv, ast.Mod, ast.Pow,
-                ast.USub, ast.UAdd,
-                ast.Constant, ast.Call, ast.Name, ast.Load,
+                ast.Expression,
+                ast.BinOp,
+                ast.UnaryOp,
+                ast.Add,
+                ast.Sub,
+                ast.Mult,
+                ast.Div,
+                ast.FloorDiv,
+                ast.Mod,
+                ast.Pow,
+                ast.USub,
+                ast.UAdd,
+                ast.Constant,
+                ast.Call,
+                ast.Name,
+                ast.Load,
             }
             for node in ast.walk(tree):
                 if type(node) not in allowed_types:
@@ -216,7 +232,7 @@ class Calculator(Tool):
                                 f"Only math module functions are available."
                             )
 
-            safe_globals: Dict[str, Any] = {"__builtins__": {}}
+            safe_globals: dict[str, Any] = {"__builtins__": {}}
             safe_globals.update(
                 (name, getattr(math, name))
                 for name in dir(math)
@@ -228,7 +244,7 @@ class Calculator(Tool):
         except ToolError:
             raise
         except Exception as e:
-            raise ToolError(f"Calculator evaluation failed: {e}")
+            raise ToolError(f"Calculator evaluation failed: {e}") from e
 
 
 class WebSearchTool(Tool):
@@ -254,7 +270,7 @@ class WebSearchTool(Tool):
         "required": ["query"],
     }
 
-    def __init__(self, search_func: Optional[Callable[[str], Any]] = None):
+    def __init__(self, search_func: Callable[[str], Any] | None = None):
         super().__init__()
         self._search_func = search_func
 
@@ -264,20 +280,22 @@ class WebSearchTool(Tool):
                 result = self._search_func(query)
                 return json.dumps(result)
             except Exception as e:
-                raise ToolError(f"Web search failed: {e}")
-        return json.dumps({
-            "results": [
-                {
-                    "title": f"Mock result for: {query}",
-                    "url": f"https://example.com/search?q={query}",
-                    "snippet": (
-                        f"This is a mock search result for '{query}'. "
-                        "Configure a real search function via the "
-                        "WebSearchTool constructor to use this tool."
-                    ),
-                }
-            ]
-        })
+                raise ToolError(f"Web search failed: {e}") from e
+        return json.dumps(
+            {
+                "results": [
+                    {
+                        "title": f"Mock result for: {query}",
+                        "url": f"https://example.com/search?q={query}",
+                        "snippet": (
+                            f"This is a mock search result for '{query}'. "
+                            "Configure a real search function via the "
+                            "WebSearchTool constructor to use this tool."
+                        ),
+                    }
+                ]
+            }
+        )
 
 
 class FileReadTool(Tool):
@@ -296,7 +314,7 @@ class FileReadTool(Tool):
         "required": ["path"],
     }
 
-    def __init__(self, allowed_base_path: Optional[str] = None):
+    def __init__(self, allowed_base_path: str | None = None):
         super().__init__()
         self._allowed_base_path = allowed_base_path
 
@@ -318,10 +336,10 @@ class FileReadTool(Tool):
         if not os.path.isfile(abs_path):
             raise ToolError(f"Path is not a file: {path}")
         try:
-            with open(abs_path, "r", encoding="utf-8") as f:
+            with open(abs_path, encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
-            raise ToolError(f"Failed to read file: {e}")
+            raise ToolError(f"Failed to read file: {e}") from e
 
 
 class FileWriteTool(Tool):
@@ -344,7 +362,7 @@ class FileWriteTool(Tool):
         "required": ["path", "content"],
     }
 
-    def __init__(self, allowed_base_path: Optional[str] = None):
+    def __init__(self, allowed_base_path: str | None = None):
         super().__init__()
         self._allowed_base_path = allowed_base_path
 
@@ -365,13 +383,15 @@ class FileWriteTool(Tool):
             os.makedirs(os.path.dirname(abs_path), exist_ok=True)
             with open(abs_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            return json.dumps({
-                "status": "written",
-                "path": path,
-                "bytes": len(content),
-            })
+            return json.dumps(
+                {
+                    "status": "written",
+                    "path": path,
+                    "bytes": len(content),
+                }
+            )
         except Exception as e:
-            raise ToolError(f"Failed to write file: {e}")
+            raise ToolError(f"Failed to write file: {e}") from e
 
 
 class PythonExecuteTool(Tool):
@@ -406,47 +426,113 @@ class PythonExecuteTool(Tool):
     }
 
     BLOCKED_IMPORTS = [
-        "os", "subprocess", "sys", "shutil", "signal", "ctypes",
-        "socket", "http", "urllib", "requests", "importlib",
-        "importlib_metadata", "atexit", "code", "codeop",
-        "compileall", "distutils", "gc", "inspect", "linecache",
-        "multiprocessing", "pickle", "pkgutil", "platform",
-        "pprint", "pstats", "resource", "runpy", "sysconfig",
-        "tabnanny", "tempfile", "threading", "traceback",
-        "tracemalloc", "unittest", "warnings", "weakref",
-        "webbrowser", "zipimport", "zipfile", "tarfile",
-        "argparse", "getopt", "optparse",
+        "os",
+        "subprocess",
+        "sys",
+        "shutil",
+        "signal",
+        "ctypes",
+        "socket",
+        "http",
+        "urllib",
+        "requests",
+        "importlib",
+        "importlib_metadata",
+        "atexit",
+        "code",
+        "codeop",
+        "compileall",
+        "distutils",
+        "gc",
+        "inspect",
+        "linecache",
+        "multiprocessing",
+        "pickle",
+        "pkgutil",
+        "platform",
+        "pprint",
+        "pstats",
+        "resource",
+        "runpy",
+        "sysconfig",
+        "tabnanny",
+        "tempfile",
+        "threading",
+        "traceback",
+        "tracemalloc",
+        "unittest",
+        "warnings",
+        "weakref",
+        "webbrowser",
+        "zipimport",
+        "zipfile",
+        "tarfile",
+        "argparse",
+        "getopt",
+        "optparse",
     ]
 
     ALLOWED_BUILTINS = {
-        "abs": abs, "all": all, "any": any, "ascii": ascii,
-        "bool": bool, "bytearray": bytearray, "bytes": bytes,
-        "callable": callable, "chr": chr, "complex": complex,
-        "dict": dict, "dir": dir, "divmod": divmod,
+        "abs": abs,
+        "all": all,
+        "any": any,
+        "ascii": ascii,
+        "bool": bool,
+        "bytearray": bytearray,
+        "bytes": bytes,
+        "callable": callable,
+        "chr": chr,
+        "complex": complex,
+        "dict": dict,
+        "dir": dir,
+        "divmod": divmod,
         "enumerate": enumerate,
-        "filter": filter, "float": float, "format": format,
+        "filter": filter,
+        "float": float,
+        "format": format,
         "frozenset": frozenset,
-        "getattr": getattr, "globals": globals,
-        "hasattr": hasattr, "hash": hash, "hex": hex,
-        "id": id, "input": input, "int": int,
-        "isinstance": isinstance, "issubclass": issubclass,
+        "getattr": getattr,
+        "globals": globals,
+        "hasattr": hasattr,
+        "hash": hash,
+        "hex": hex,
+        "id": id,
+        "input": input,
+        "int": int,
+        "isinstance": isinstance,
+        "issubclass": issubclass,
         "iter": iter,
-        "len": len, "list": list, "locals": locals,
-        "map": map, "max": max, "min": min,
+        "len": len,
+        "list": list,
+        "locals": locals,
+        "map": map,
+        "max": max,
+        "min": min,
         "next": next,
-        "object": object, "oct": oct, "ord": ord,
-        "pow": pow, "print": print,
-        "range": range, "repr": repr, "reversed": repr,
+        "object": object,
+        "oct": oct,
+        "ord": ord,
+        "pow": pow,
+        "print": print,
+        "range": range,
+        "repr": repr,
+        "reversed": repr,
         "round": round,
-        "set": set, "slice": slice, "sorted": sorted,
-        "str": str, "sum": sum,
-        "tuple": tuple, "type": type,
+        "set": set,
+        "slice": slice,
+        "sorted": sorted,
+        "str": str,
+        "sum": sum,
+        "tuple": tuple,
+        "type": type,
         "vars": vars,
         "zip": zip,
     }
 
     ALLOWED_MODULES = {
-        "math": math, "json": json, "re": re,
+        "math": math,
+        "json": json,
+        "re": re,
     }
 
     def __init__(self):
@@ -456,7 +542,7 @@ class PythonExecuteTool(Tool):
         try:
             tree = ast.parse(code)
         except SyntaxError as e:
-            raise ToolError(f"Invalid Python syntax: {e}")
+            raise ToolError(f"Invalid Python syntax: {e}") from e
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -480,7 +566,11 @@ class PythonExecuteTool(Tool):
                 if isinstance(node.func, ast.Name) and node.func.id == "__import__":
                     if node.args:
                         try:
-                            mod = node.args[0].value if isinstance(node.args[0], ast.Constant) else ""
+                            mod = (
+                                node.args[0].value
+                                if isinstance(node.args[0], ast.Constant)
+                                else ""
+                            )
                             if mod in self.BLOCKED_IMPORTS:
                                 raise ToolError(
                                     f"Import of '{mod}' is not allowed "
@@ -492,19 +582,20 @@ class PythonExecuteTool(Tool):
     def execute(self, code: str, timeout: int = 5) -> str:
         timeout = min(max(timeout, 1), 30)
         self._check_imports(code)
-        result: Dict[str, str] = {"stdout": "", "error": ""}
+        result: dict[str, str] = {"stdout": "", "error": ""}
         event = threading.Event()
 
         def run_code():
             try:
                 compiled = compile(code, "<exec>", "exec")
-                safe_globals: Dict[str, Any] = {
+                safe_globals: dict[str, Any] = {
                     "__builtins__": self.ALLOWED_BUILTINS,
                     "__name__": "__main__",
                 }
                 safe_globals.update(self.ALLOWED_MODULES)
                 stdout_capture = io.StringIO()
                 import sys as _sys
+
                 old_stdout = _sys.stdout
                 old_stderr = _sys.stderr
                 try:
@@ -527,9 +618,7 @@ class PythonExecuteTool(Tool):
         thread.join(timeout=timeout)
 
         if thread.is_alive():
-            raise ToolError(
-                f"Code execution timed out after {timeout} seconds"
-            )
+            raise ToolError(f"Code execution timed out after {timeout} seconds")
 
         if result["error"]:
             return json.dumps({"error": result["error"]})
@@ -559,9 +648,7 @@ class ShellTool(Tool):
             },
             "timeout": {
                 "type": "integer",
-                "description": (
-                    "Maximum execution time in seconds (default: 30)"
-                ),
+                "description": ("Maximum execution time in seconds (default: 30)"),
             },
         },
         "required": ["command"],
@@ -578,6 +665,7 @@ class ShellTool(Tool):
                 "Initialize ShellTool with allow_shell=True to enable."
             )
         import subprocess
+
         try:
             result = subprocess.run(
                 command,
@@ -593,13 +681,15 @@ class ShellTool(Tool):
                 output_parts.append(result.stderr)
             if output_parts:
                 return "".join(output_parts)
-            return json.dumps({
-                "status": "completed",
-                "returncode": result.returncode,
-            })
+            return json.dumps(
+                {
+                    "status": "completed",
+                    "returncode": result.returncode,
+                }
+            )
         except subprocess.TimeoutExpired:
             raise ToolError(
                 f"Shell command timed out after {timeout} seconds"
-            )
+            ) from None
         except Exception as e:
-            raise ToolError(f"Shell command failed: {e}")
+            raise ToolError(f"Shell command failed: {e}") from e

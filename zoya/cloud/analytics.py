@@ -1,16 +1,18 @@
+import secrets
+import threading
+import time
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Set
-import secrets, time, threading
+from typing import Any
 
 
 @dataclass
 class AnalyticsEvent:
     name: str
-    properties: Dict[str, Any] = field(default_factory=dict)
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
+    properties: dict[str, Any] = field(default_factory=dict)
+    user_id: str | None = None
+    session_id: str | None = None
     timestamp: float = 0.0
-    value: Optional[float] = None
+    value: float | None = None
 
 
 @dataclass
@@ -18,17 +20,17 @@ class AnalyticsQuery:
     event: str
     start_date: float
     end_date: float
-    group_by: Optional[str] = None
-    metrics: List[str] = field(default_factory=lambda: ["count"])
+    group_by: str | None = None
+    metrics: list[str] = field(default_factory=lambda: ["count"])
 
 
 @dataclass
 class AnalyticsResult:
     event: str
-    metrics: Dict[str, float] = field(default_factory=dict)
-    breakdown: Optional[Dict[str, Dict[str, float]]] = None
+    metrics: dict[str, float] = field(default_factory=dict)
+    breakdown: dict[str, dict[str, float]] | None = None
     total: int = 0
-    period: Optional[Dict[str, float]] = None
+    period: dict[str, float] | None = None
 
 
 @dataclass
@@ -36,15 +38,15 @@ class UserSession:
     session_id: str
     user_id: str
     start_time: float = 0.0
-    end_time: Optional[float] = None
+    end_time: float | None = None
     duration: float = 0.0
     page_views: int = 0
     events_count: int = 0
-    device: Optional[str] = None
-    os: Optional[str] = None
-    browser: Optional[str] = None
-    ip: Optional[str] = None
-    country: Optional[str] = None
+    device: str | None = None
+    os: str | None = None
+    browser: str | None = None
+    ip: str | None = None
+    country: str | None = None
 
 
 class AnalyticsError(Exception):
@@ -58,12 +60,12 @@ class AnalyticsService:
         self.base_url = base_url
         self.api_key = api_key
         self._session_id: str = secrets.token_hex(16)
-        self._events: List[AnalyticsEvent] = []
-        self._sessions: Dict[str, UserSession] = {}
-        self._active_sessions: Dict[str, UserSession] = {}
-        self._opted_out: Set[str] = set()
+        self._events: list[AnalyticsEvent] = []
+        self._sessions: dict[str, UserSession] = {}
+        self._active_sessions: dict[str, UserSession] = {}
+        self._opted_out: set[str] = set()
         self._flush_interval: float = 30.0
-        self._flush_timer: Optional[threading.Timer] = None
+        self._flush_timer: threading.Timer | None = None
         self._start_flush_timer()
 
     def _start_flush_timer(self) -> None:
@@ -76,8 +78,8 @@ class AnalyticsService:
     def track(
         self,
         event: str,
-        properties: Optional[Dict[str, Any]] = None,
-        value: Optional[float] = None,
+        properties: dict[str, Any] | None = None,
+        value: float | None = None,
     ) -> None:
         if self._session_id in self._opted_out:
             return
@@ -93,9 +95,7 @@ class AnalyticsService:
         if self._session_id in self._active_sessions:
             self._active_sessions[self._session_id].events_count += 1
 
-    def track_page_view(
-        self, page: str, duration: Optional[float] = None
-    ) -> None:
+    def track_page_view(self, page: str, duration: float | None = None) -> None:
         self.track("page_view", {"page": page, "duration": duration})
         if self._session_id in self._active_sessions:
             self._active_sessions[self._session_id].page_views += 1
@@ -103,9 +103,7 @@ class AnalyticsService:
     def track_error(self, error: str, fatal: bool = False) -> None:
         self.track("error", {"error": error, "fatal": fatal})
 
-    def track_user_action(
-        self, action: str, target: Optional[str] = None
-    ) -> None:
+    def track_user_action(self, action: str, target: str | None = None) -> None:
         self.track("user_action", {"action": action, "target": target})
 
     def start_session(self) -> None:
@@ -143,14 +141,12 @@ class AnalyticsService:
             and query.start_date <= e.timestamp <= query.end_date
         ]
 
-        metrics: Dict[str, float] = {}
+        metrics: dict[str, float] = {}
         for m in query.metrics:
             if m == "count":
                 metrics["count"] = float(len(filtered))
             elif m == "sum":
-                metrics["sum"] = sum(
-                    e.value for e in filtered if e.value is not None
-                )
+                metrics["sum"] = sum(e.value for e in filtered if e.value is not None)
             elif m == "avg":
                 values = [e.value for e in filtered if e.value is not None]
                 metrics["avg"] = sum(values) / len(values) if values else 0.0
@@ -161,9 +157,9 @@ class AnalyticsService:
                 values = [e.value for e in filtered if e.value is not None]
                 metrics["max"] = max(values) if values else 0.0
 
-        breakdown: Optional[Dict[str, Dict[str, float]]] = None
+        breakdown: dict[str, dict[str, float]] | None = None
         if query.group_by:
-            groups: Dict[str, List[AnalyticsEvent]] = {}
+            groups: dict[str, list[AnalyticsEvent]] = {}
             for e in filtered:
                 key = str(e.properties.get(query.group_by, "unknown"))
                 if key not in groups:
@@ -171,14 +167,12 @@ class AnalyticsService:
                 groups[key].append(e)
             breakdown = {}
             for key, group in groups.items():
-                bm: Dict[str, float] = {}
+                bm: dict[str, float] = {}
                 for m in query.metrics:
                     if m == "count":
                         bm["count"] = float(len(group))
                     elif m == "sum":
-                        bm["sum"] = sum(
-                            e.value for e in group if e.value is not None
-                        )
+                        bm["sum"] = sum(e.value for e in group if e.value is not None)
                     elif m == "avg":
                         vals = [e.value for e in group if e.value is not None]
                         bm["avg"] = sum(vals) / len(vals) if vals else 0.0
@@ -192,14 +186,11 @@ class AnalyticsService:
             period={"start": query.start_date, "end": query.end_date},
         )
 
-    def get_event_count(
-        self, event: str, start_date: float, end_date: float
-    ) -> int:
+    def get_event_count(self, event: str, start_date: float, end_date: float) -> int:
         return sum(
             1
             for e in self._events
-            if e.name == event
-            and start_date <= e.timestamp <= end_date
+            if e.name == event and start_date <= e.timestamp <= end_date
         )
 
     def get_user_count(self, start_date: float, end_date: float) -> int:
@@ -217,9 +208,7 @@ class AnalyticsService:
                 user_ids.add(e.user_id)
         return len(user_ids)
 
-    def get_retention_rate(
-        self, cohort: float, days_since_onboarding: int
-    ) -> float:
+    def get_retention_rate(self, cohort: float, days_since_onboarding: int) -> float:
         cutoff = cohort + days_since_onboarding * 86400
         cohort_users = set()
         retained = 0
@@ -233,20 +222,14 @@ class AnalyticsService:
                     break
         return retained / len(cohort_users) if cohort_users else 0.0
 
-    def get_sessions(
-        self, user_id: str, limit: int = 10
-    ) -> List[UserSession]:
-        user_sessions = [
-            s
-            for s in self._sessions.values()
-            if s.user_id == user_id
-        ]
+    def get_sessions(self, user_id: str, limit: int = 10) -> list[UserSession]:
+        user_sessions = [s for s in self._sessions.values() if s.user_id == user_id]
         user_sessions.sort(key=lambda s: s.start_time, reverse=True)
         return user_sessions[:limit]
 
-    def get_dashboard(self, metrics: List[str]) -> Dict[str, float]:
-        result: Dict[str, float] = {}
-        now = time.time()
+    def get_dashboard(self, metrics: list[str]) -> dict[str, float]:
+        result: dict[str, float] = {}
+        time.time()
         for m in metrics:
             if m == "total_events":
                 result[m] = float(len(self._events))
@@ -269,12 +252,8 @@ class AnalyticsService:
     def delete_user_data(self, user_id: str) -> None:
         self._events = [e for e in self._events if e.user_id != user_id]
         self._sessions = {
-            sid: s
-            for sid, s in self._sessions.items()
-            if s.user_id != user_id
+            sid: s for sid, s in self._sessions.items() if s.user_id != user_id
         }
         self._active_sessions = {
-            sid: s
-            for sid, s in self._active_sessions.items()
-            if s.user_id != user_id
+            sid: s for sid, s in self._active_sessions.items() if s.user_id != user_id
         }

@@ -4,9 +4,9 @@ from typing import Any
 
 
 def load_module(interpreter: Any) -> Any:
-    from zoya.interpreter import ZoyaModule
-
     import xml.etree.ElementTree as _ET
+
+    from zoya.interpreter import ZoyaModule
 
     def parse(text: str) -> Any:
         try:
