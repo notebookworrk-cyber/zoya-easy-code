@@ -5,8 +5,8 @@ support for path parameters and middleware.
 """
 
 import re
-from typing import Callable, Dict, List, Tuple, Any, Optional
-
+from collections.abc import Callable
+from typing import Any
 
 Handler = Callable[..., Any]
 
@@ -19,7 +19,7 @@ class Route:
         self.regex = pattern
         self.handler = handler
 
-    def match(self, path: str) -> Tuple[bool, Dict[str, str]]:
+    def match(self, path: str) -> tuple[bool, dict[str, str]]:
         m = self.regex.match(path)
         return (True, m.groupdict()) if m else (False, {})
 
@@ -28,14 +28,14 @@ class Router:
     """Router for Zoya 4.0 with route registration, matching and middleware."""
 
     def __init__(self) -> None:
-        self._routes: List[Route] = []
-        self._middleware: List[Callable[[Handler], Handler]] = []
+        self._routes: list[Route] = []
+        self._middleware: list[Callable[[Handler], Handler]] = []
 
     def use(self, middleware: Callable[[Handler], Handler]) -> None:
         """Register a middleware that wraps the next handler."""
         self._middleware.append(middleware)
 
-    def route(self, method: str, path: str, handler: Optional[Handler] = None) -> Any:
+    def route(self, method: str, path: str, handler: Handler | None = None) -> Any:
         """Register a route. Can be used as a decorator or directly."""
         method = method.upper()
         pattern = re.compile("^" + self._escape_path(path) + "$")
@@ -52,7 +52,7 @@ class Router:
 
     def _escape_path(self, path: str) -> str:
         """Convert path string to a regex pattern, supporting {name} placeholders."""
-        parts: List[str] = []
+        parts: list[str] = []
         i = 0
         while i < len(path):
             if path[i] == "{":
@@ -79,7 +79,7 @@ class Router:
         # Return None handler if no match
         return lambda: "Not Found"
 
-    def match(self, method: str, path: str) -> Tuple[Handler, Dict[str, str]]:
+    def match(self, method: str, path: str) -> tuple[Handler, dict[str, str]]:
         """Find a matching route; raises KeyError if none."""
         method = method.upper()
         for route in self._routes:

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import builtins
 import json
 import re
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypedDict
-
-from .embeddings import TextEmbedding
+from collections.abc import Callable, Iterator
+from typing import Any, TypedDict
 
 
 class Tool:
@@ -28,27 +28,27 @@ class Tool:
 
 class ToolRegistry:
     def __init__(self) -> None:
-        self._tools: Dict[str, Tool] = {}
+        self._tools: dict[str, Tool] = {}
 
     def register(self, tool: Tool) -> None:
         if not isinstance(tool, Tool):
             raise ValueError("Must register a Tool instance")
         self._tools[tool.name] = tool
 
-    def register_all(self, tools: List[Tool]) -> None:
+    def register_all(self, tools: builtins.list[Tool]) -> None:
         for tool in tools:
             self.register(tool)
 
-    def get(self, name: str) -> Optional[Tool]:
+    def get(self, name: str) -> Tool | None:
         return self._tools.get(name)
 
-    def list(self) -> List[Tool]:
+    def list(self) -> builtins.list[Tool]:
         return list(self._tools.values())
 
     def descriptions(self) -> str:
         if not self._tools:
             return "No tools available."
-        lines: List[str] = []
+        lines: list[str] = []
         for tool in self._tools.values():
             lines.append(f"- {tool.name}: {tool.description}")
         return "\n".join(lines)
@@ -65,12 +65,12 @@ class ToolRegistry:
 
 class AgentMemory:
     def __init__(self) -> None:
-        self._messages: List[Dict[str, str]] = []
+        self._messages: list[dict[str, str]] = []
 
     def add(self, role: str, content: str) -> None:
         self._messages.append({"role": role, "content": content})
 
-    def get_history(self) -> List[Dict[str, str]]:
+    def get_history(self) -> list[dict[str, str]]:
         return list(self._messages)
 
     def clear(self) -> None:
@@ -79,7 +79,7 @@ class AgentMemory:
     def __len__(self) -> int:
         return len(self._messages)
 
-    def __iter__(self) -> Iterator[Dict[str, str]]:
+    def __iter__(self) -> Iterator[dict[str, str]]:
         return iter(self._messages)
 
 
@@ -111,14 +111,16 @@ class Agent:
         if not isinstance(self.memory, AgentMemory):
             raise AgentError("memory must be an AgentMemory instance")
 
-        self.system_prompt = config.get("system_prompt", "You are a helpful AI assistant.")
+        self.system_prompt = config.get(
+            "system_prompt", "You are a helpful AI assistant."
+        )
         self.max_iterations = config.get("max_iterations", 10)
         self.temperature = config.get("temperature", 0.7)
         self.max_tokens = config.get("max_tokens", 1024)
 
     def _build_prompt(self, prompt: str) -> str:
         tool_descriptions = self.tools.descriptions()
-        history_lines: List[str] = []
+        history_lines: list[str] = []
         for msg in self.memory.get_history():
             role = msg["role"].capitalize()
             history_lines.append(f"{role}: {msg['content']}")
@@ -146,7 +148,7 @@ class Agent:
         ]
         return "\n".join(parts)
 
-    def _parse_tool_call(self, response: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    def _parse_tool_call(self, response: str) -> tuple[str, dict[str, Any]] | None:
         action_match = re.search(
             r"Action:\s*(\w[\w_-]*)\s*\n\s*Action Input:\s*(\{.*?\}|`[^`]+`|.+?)(?=\n|$)",
             response,
@@ -199,12 +201,12 @@ class Agent:
     def run(self, prompt: str) -> str:
         self.memory.add("user", prompt)
 
-        for iteration in range(self.max_iterations):
+        for _iteration in range(self.max_iterations):
             full_prompt = self._build_prompt(prompt)
             response = self._call_llm(full_prompt)
 
             if response.startswith("Answer:"):
-                answer = response[len("Answer:"):].strip()
+                answer = response[len("Answer:") :].strip()
                 self.memory.add("assistant", answer)
                 return answer
 
@@ -235,7 +237,6 @@ class Agent:
         return "Error: Max iterations reached without final answer."
 
     def stream(self, prompt: str) -> Iterator[str]:
-        from ..interpreter import interpret
 
         self.memory.add("user", prompt)
 
@@ -244,7 +245,7 @@ class Agent:
             response = self._call_llm(full_prompt)
 
             if response.startswith("Answer:"):
-                answer = response[len("Answer:"):].strip()
+                answer = response[len("Answer:") :].strip()
                 self.memory.add("assistant", answer)
                 yield answer
                 return
@@ -302,7 +303,7 @@ def create_agent(provider=None, tools=None, memory=None, **kwargs) -> Agent:
 
 
 class PlanningAgent(Agent):
-    def _create_plan(self, task: str) -> List[str]:
+    def _create_plan(self, task: str) -> list[str]:
         plan_prompt = (
             f"{self.system_prompt}\n\n"
             f"Break the following task into a numbered list of steps.\n"
@@ -312,7 +313,7 @@ class PlanningAgent(Agent):
         )
         response = self._call_llm(plan_prompt)
 
-        steps: List[str] = []
+        steps: list[str] = []
         for line in response.strip().split("\n"):
             line = line.strip()
             match = re.match(r"(?:Step\s*(\d+)[:.)\s]*)(.*)", line, re.IGNORECASE)
@@ -337,7 +338,10 @@ class PlanningAgent(Agent):
 
     def run(self, prompt: str) -> str:
         steps = self._create_plan(prompt)
-        context_parts: List[str] = [f"Task: {prompt}", f"Plan:\n" + "\n".join(f"{i+1}. {s}" for i, s in enumerate(steps))]
+        context_parts: list[str] = [
+            f"Task: {prompt}",
+            "Plan:\n" + "\n".join(f"{i+1}. {s}" for i, s in enumerate(steps)),
+        ]
 
         for i, step in enumerate(steps):
             result = self._execute_step(step, "\n".join(context_parts))

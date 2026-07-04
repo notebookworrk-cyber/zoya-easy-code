@@ -1,18 +1,19 @@
+import os
 import sys
-sys.path.insert(0, r"C:\Users\hp\zoya3")
 
-import unittest
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import math
-import random
+import unittest
 
 from zoya.stdlib.scientific import linear, ml
-from zoya.stdlib.scientific import statistics as stats
 from zoya.stdlib.scientific import optimization as opt
-
+from zoya.stdlib.scientific import statistics as stats
 
 # =============================================================================
 # Linear Algebra Tests
 # =============================================================================
+
 
 class TestMatrixConstruction(unittest.TestCase):
     """zeros, identity"""
@@ -235,11 +236,11 @@ class TestNormsAndProducts(unittest.TestCase):
         self.assertAlmostEqual(linear.norm([1.0, -2.0, 3.0], p=1), 6.0)
 
     def test_norm_inf(self):
-        self.assertAlmostEqual(linear.norm([1.0, -5.0, 3.0], p=float('inf')), 5.0)
+        self.assertAlmostEqual(linear.norm([1.0, -5.0, 3.0], p=float("inf")), 5.0)
 
     def test_norm_l3(self):
         n = linear.norm([2.0, 2.0, 2.0], p=3)
-        self.assertAlmostEqual(n, (8 + 8 + 8) ** (1/3), places=10)
+        self.assertAlmostEqual(n, (8 + 8 + 8) ** (1 / 3), places=10)
 
     def test_dot(self):
         self.assertAlmostEqual(linear.dot([1.0, 2.0, 3.0], [4.0, 5.0, 6.0]), 32.0)
@@ -364,6 +365,7 @@ class TestSVDRaises(unittest.TestCase):
 # Statistics Tests
 # =============================================================================
 
+
 class TestCentralTendency(unittest.TestCase):
     """mean, median, mode, mad"""
 
@@ -443,7 +445,9 @@ class TestDistributionShape(unittest.TestCase):
     """skewness, kurtosis"""
 
     def test_skewness_symmetric(self):
-        self.assertAlmostEqual(stats.skewness([1.0, 2.0, 3.0, 4.0, 5.0]), 0.0, places=10)
+        self.assertAlmostEqual(
+            stats.skewness([1.0, 2.0, 3.0, 4.0, 5.0]), 0.0, places=10
+        )
 
     def test_skewness_positive(self):
         s = stats.skewness([1.0, 2.0, 2.0, 3.0, 10.0])
@@ -474,7 +478,7 @@ class TestCorrelationAndRegression(unittest.TestCase):
     def test_covariance(self):
         x = [1.0, 2.0, 3.0]
         y = [4.0, 5.0, 6.0]
-        self.assertAlmostEqual(stats.covariance(x, y, ddof=0), 2/3, places=10)
+        self.assertAlmostEqual(stats.covariance(x, y, ddof=0), 2 / 3, places=10)
 
     def test_covariance_length_mismatch(self):
         with self.assertRaises(ValueError):
@@ -578,6 +582,7 @@ class TestScalingAndOutliers(unittest.TestCase):
 # Optimization Tests
 # =============================================================================
 
+
 def _quad_1d(x):
     return (x[0] - 3.0) ** 2
 
@@ -602,23 +607,29 @@ class TestGradientBased(unittest.TestCase):
     """gradient_descent, adam"""
 
     def test_gradient_descent_1d(self):
-        result = opt.gradient_descent(_quad_1d, _quad_1d_grad, [10.0], lr=0.1, max_iter=500)
+        result = opt.gradient_descent(
+            _quad_1d, _quad_1d_grad, [10.0], lr=0.1, max_iter=500
+        )
         self.assertAlmostEqual(result[0], 3.0, places=3)
 
     def test_gradient_descent_2d(self):
-        result = opt.gradient_descent(_quad_2d, _quad_2d_grad, [0.0, 0.0], lr=0.1, max_iter=500)
+        result = opt.gradient_descent(
+            _quad_2d, _quad_2d_grad, [0.0, 0.0], lr=0.1, max_iter=500
+        )
         self.assertAlmostEqual(result[0], 1.0, places=3)
         self.assertAlmostEqual(result[1], 2.0, places=3)
 
     def test_gradient_descent_with_momentum(self):
-        result = opt.gradient_descent(_quad_2d, _quad_2d_grad, [5.0, 5.0],
-                                       lr=0.1, momentum=0.5, max_iter=500)
+        result = opt.gradient_descent(
+            _quad_2d, _quad_2d_grad, [5.0, 5.0], lr=0.1, momentum=0.5, max_iter=500
+        )
         self.assertAlmostEqual(result[0], 1.0, places=3)
         self.assertAlmostEqual(result[1], 2.0, places=3)
 
     def test_gradient_descent_converges_to_tol(self):
-        result = opt.gradient_descent(_quad_1d, _quad_1d_grad, [10.0],
-                                       lr=0.1, max_iter=500, tol=1e-6)
+        result = opt.gradient_descent(
+            _quad_1d, _quad_1d_grad, [10.0], lr=0.1, max_iter=500, tol=1e-6
+        )
         self.assertAlmostEqual(result[0], 3.0, places=4)
 
     def test_adam_1d(self):
@@ -637,36 +648,44 @@ class TestNewtonMethods(unittest.TestCase):
     def test_newton_method_sqrt2(self):
         def f(x):
             return x * x - 2.0
+
         def df(x):
             return 2.0 * x
+
         root = opt.newton_method(f, df, 1.5)
         self.assertAlmostEqual(root, math.sqrt(2.0), places=8)
 
     def test_newton_method_at_root(self):
         def f(x):
             return x - 5.0
+
         def df(x):
             return 1.0
+
         root = opt.newton_method(f, df, 5.0)
         self.assertAlmostEqual(root, 5.0)
 
     def test_newton_method_derivative_zero(self):
         def f(x):
             return x * x - 2.0
+
         def df(x):
             return 2.0 * x
+
         with self.assertRaises(ValueError):
             opt.newton_method(f, df, 0.0)
 
     def test_newton_method_nd_quadratic(self):
-        result = opt.newton_method_nd(_quad_2d, _quad_2d_grad, _quad_2d_hess,
-                                      [0.0, 0.0])
+        result = opt.newton_method_nd(
+            _quad_2d, _quad_2d_grad, _quad_2d_hess, [0.0, 0.0]
+        )
         self.assertAlmostEqual(result[0], 1.0, places=8)
         self.assertAlmostEqual(result[1], 2.0, places=8)
 
     def test_newton_method_nd_convergence(self):
-        result = opt.newton_method_nd(_quad_2d, _quad_2d_grad, _quad_2d_hess,
-                                      [10.0, -5.0])
+        result = opt.newton_method_nd(
+            _quad_2d, _quad_2d_grad, _quad_2d_hess, [10.0, -5.0]
+        )
         self.assertAlmostEqual(result[0], 1.0, places=8)
         self.assertAlmostEqual(result[1], 2.0, places=8)
 
@@ -684,9 +703,11 @@ class TestLineSearchAndCG(unittest.TestCase):
 
     def test_conjugate_gradient_quadratic(self):
         def quad_f(x):
-            return x[0]**2 + x[1]**2
+            return x[0] ** 2 + x[1] ** 2
+
         def quad_grad(x):
             return [2.0 * x[0], 2.0 * x[1]]
+
         result = opt.conjugate_gradient(quad_f, quad_grad, [5.0, 5.0], tol=1e-6)
         self.assertAlmostEqual(result[0], 0.0, places=4)
         self.assertAlmostEqual(result[1], 0.0, places=4)
@@ -696,6 +717,7 @@ class TestNelderMead(unittest.TestCase):
     def test_nelder_mead_quadratic(self):
         def f(x):
             return (x[0] - 4.0) ** 2 + (x[1] + 3.0) ** 2
+
         result = opt.nelder_mead(f, [0.0, 0.0])
         self.assertAlmostEqual(result[0], 4.0, places=3)
         self.assertAlmostEqual(result[1], -3.0, places=2)
@@ -703,6 +725,7 @@ class TestNelderMead(unittest.TestCase):
     def test_nelder_mead_1d(self):
         def f(x):
             return (x[0] - 7.0) ** 2
+
         result = opt.nelder_mead(f, [0.0])
         self.assertAlmostEqual(result[0], 7.0, places=3)
 
@@ -711,30 +734,53 @@ class TestMinimizeDispatcher(unittest.TestCase):
     """minimize"""
 
     def test_minimize_gradient_descent(self):
-        result = opt.minimize(_quad_2d, [0.0, 0.0], method="gradient_descent",
-                              grad=_quad_2d_grad, lr=0.1, max_iter=500)
+        result = opt.minimize(
+            _quad_2d,
+            [0.0, 0.0],
+            method="gradient_descent",
+            grad=_quad_2d_grad,
+            lr=0.1,
+            max_iter=500,
+        )
         self.assertAlmostEqual(result[0], 1.0, places=3)
 
     def test_minimize_adam(self):
-        result = opt.minimize(_quad_2d, [-2.0, 3.0], method="adam",
-                              grad=_quad_2d_grad, lr=0.5, max_iter=500)
+        result = opt.minimize(
+            _quad_2d,
+            [-2.0, 3.0],
+            method="adam",
+            grad=_quad_2d_grad,
+            lr=0.5,
+            max_iter=500,
+        )
         self.assertAlmostEqual(result[0], 1.0, places=2)
 
     def test_minimize_newton(self):
-        result = opt.minimize(_quad_2d, [5.0, 5.0], method="newton",
-                              grad=_quad_2d_grad, hess=_quad_2d_hess)
+        result = opt.minimize(
+            _quad_2d,
+            [5.0, 5.0],
+            method="newton",
+            grad=_quad_2d_grad,
+            hess=_quad_2d_hess,
+        )
         self.assertAlmostEqual(result[0], 1.0, places=8)
         self.assertAlmostEqual(result[1], 2.0, places=8)
 
     def test_minimize_conjugate_gradient(self):
-        result = opt.minimize(_quad_2d, [3.0, 3.0], method="conjugate_gradient",
-                              grad=_quad_2d_grad, tol=1e-6)
+        result = opt.minimize(
+            _quad_2d,
+            [3.0, 3.0],
+            method="conjugate_gradient",
+            grad=_quad_2d_grad,
+            tol=1e-6,
+        )
         self.assertAlmostEqual(result[0], 1.0, places=3)
         self.assertAlmostEqual(result[1], 2.0, places=3)
 
     def test_minimize_nelder_mead(self):
         def f(x):
             return (x[0] - 1.5) ** 2 + (x[1] + 0.5) ** 2
+
         result = opt.minimize(f, [0.0, 0.0], method="nelder_mead")
         self.assertAlmostEqual(result[0], 1.5, places=3)
         self.assertAlmostEqual(result[1], -0.5, places=3)
@@ -752,6 +798,7 @@ class TestMinimizeDispatcher(unittest.TestCase):
 # Machine Learning Tests
 # =============================================================================
 
+
 class TestLinearModels(unittest.TestCase):
     """LinearRegression, RidgeRegression, LassoRegression"""
 
@@ -765,7 +812,7 @@ class TestLinearModels(unittest.TestCase):
         model = ml.LinearRegression()
         model.fit(self.X, self.y)
         preds = model.predict(self.X)
-        for p, t in zip(preds, self.y):
+        for p, t in zip(preds, self.y, strict=False):
             self.assertAlmostEqual(p, t, places=8)
 
     def test_linear_regression_score_perfect(self):
@@ -847,8 +894,7 @@ class TestLogisticRegression(unittest.TestCase):
 
 class TestKMeans(unittest.TestCase):
     def test_kmeans_two_clusters(self):
-        X = [[0.0, 0.0], [0.1, 0.1], [0.2, 0.2],
-             [5.0, 5.0], [5.1, 5.1], [5.2, 5.2]]
+        X = [[0.0, 0.0], [0.1, 0.1], [0.2, 0.2], [5.0, 5.0], [5.1, 5.1], [5.2, 5.2]]
         model = ml.KMeans(n_clusters=2, random_state=42, max_iter=100)
         model.fit(X)
         self.assertEqual(len(model.cluster_centers_), 2)
@@ -995,7 +1041,7 @@ class TestTrainTestSplit(unittest.TestCase):
         y = [0, 0, 1, 1, 0, 1]
         r1 = ml.train_test_split(X, y, test_size=0.33, random_state=42)
         r2 = ml.train_test_split(X, y, test_size=0.33, random_state=42)
-        for a, b in zip(r1, r2):
+        for a, b in zip(r1, r2, strict=False):
             self.assertEqual(a, b)
 
 
@@ -1019,7 +1065,7 @@ class TestMetrics(unittest.TestCase):
     def test_recall(self):
         y_true = [0, 1, 0, 1, 1]
         y_pred = [0, 1, 0, 0, 1]
-        self.assertAlmostEqual(ml.recall_score(y_true, y_pred), 2/3)
+        self.assertAlmostEqual(ml.recall_score(y_true, y_pred), 2 / 3)
 
     def test_recall_no_positives(self):
         self.assertEqual(ml.recall_score([0, 0, 0], [0, 0, 0]), 0.0)
@@ -1027,7 +1073,7 @@ class TestMetrics(unittest.TestCase):
     def test_f1(self):
         y_true = [0, 1, 0, 1, 1]
         y_pred = [0, 1, 0, 0, 1]
-        expected = 2 * (1.0 * 2/3) / (1.0 + 2/3)
+        expected = 2 * (1.0 * 2 / 3) / (1.0 + 2 / 3)
         self.assertAlmostEqual(ml.f1_score(y_true, y_pred), expected)
 
     def test_f1_no_positives(self):
@@ -1078,8 +1124,9 @@ class TestLBFGS(unittest.TestCase):
 # SGD
 class TestStochasticGradientDescent(unittest.TestCase):
     def test_sgd_quadratic(self):
-        result = opt.stochastic_gradient_descent(_quad_1d, _quad_1d_grad, [10.0],
-                                                  lr=0.1, max_iter=500)
+        result = opt.stochastic_gradient_descent(
+            _quad_1d, _quad_1d_grad, [10.0], lr=0.1, max_iter=500
+        )
         self.assertAlmostEqual(result[0], 3.0, places=3)
 
 

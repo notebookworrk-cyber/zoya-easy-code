@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import copy
 import uuid
-from typing import Any, Dict, Iterator, List, Optional, Tuple, TypedDict
+from typing import Any, TypedDict
 
 from .embeddings import TextEmbedding, cosine_similarity
 
 
 class Document(TypedDict, total=False):
     text: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     id: str
 
 
@@ -28,9 +27,9 @@ class DocumentChunker:
         self.chunk_size = chunk_size
         self.overlap = overlap
 
-    def _split_into_sentences(self, text: str) -> List[str]:
-        sentences: List[str] = []
-        current: List[str] = []
+    def _split_into_sentences(self, text: str) -> list[str]:
+        sentences: list[str] = []
+        current: list[str] = []
         for char in text:
             current.append(char)
             if char in ".!?\n" and len("".join(current).strip()) > 0:
@@ -43,7 +42,9 @@ class DocumentChunker:
             sentences.append(remaining)
         return sentences
 
-    def chunk(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> List[Document]:
+    def chunk(
+        self, text: str, metadata: dict[str, Any] | None = None
+    ) -> list[Document]:
         if not isinstance(text, str) or not text.strip():
             return []
 
@@ -52,8 +53,8 @@ class DocumentChunker:
         if not sentences:
             return []
 
-        chunks: List[Document] = []
-        current_chunk: List[str] = []
+        chunks: list[Document] = []
+        current_chunk: list[str] = []
         current_size = 0
 
         for sentence in sentences:
@@ -61,14 +62,15 @@ class DocumentChunker:
 
             if current_size + sentence_len > self.chunk_size and current_chunk:
                 chunk_text = " ".join(current_chunk)
-                chunks.append(Document(
-                    text=chunk_text,
-                    metadata=dict(meta),
-                    id=str(uuid.uuid4()),
-                ))
+                chunks.append(
+                    Document(
+                        text=chunk_text,
+                        metadata=dict(meta),
+                        id=str(uuid.uuid4()),
+                    )
+                )
 
-                overlap_text = ""
-                overlap_sentences: List[str] = []
+                overlap_sentences: list[str] = []
                 overlap_size = 0
                 for s in reversed(current_chunk):
                     s_len = len(s)
@@ -84,29 +86,31 @@ class DocumentChunker:
 
         if current_chunk:
             chunk_text = " ".join(current_chunk)
-            chunks.append(Document(
-                text=chunk_text,
-                metadata=dict(meta),
-                id=str(uuid.uuid4()),
-            ))
+            chunks.append(
+                Document(
+                    text=chunk_text,
+                    metadata=dict(meta),
+                    id=str(uuid.uuid4()),
+                )
+            )
 
         return chunks
 
-    def chunk_documents(self, docs: List[Tuple[str, Dict[str, Any]]]) -> List[Document]:
-        all_chunks: List[Document] = []
+    def chunk_documents(self, docs: list[tuple[str, dict[str, Any]]]) -> list[Document]:
+        all_chunks: list[Document] = []
         for text, metadata in docs:
             all_chunks.extend(self.chunk(text, metadata))
         return all_chunks
 
 
 class RAGIndex:
-    def __init__(self, embedding_model: Optional[TextEmbedding] = None) -> None:
+    def __init__(self, embedding_model: TextEmbedding | None = None) -> None:
         self._embedding_model = embedding_model or TextEmbedding()
-        self._documents: Dict[str, Document] = {}
-        self._embeddings: Dict[str, List[float]] = {}
-        self._all_texts: List[str] = []
+        self._documents: dict[str, Document] = {}
+        self._embeddings: dict[str, list[float]] = {}
+        self._all_texts: list[str] = []
 
-    def add_document(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> str:
+    def add_document(self, text: str, metadata: dict[str, Any] | None = None) -> str:
         if not isinstance(text, str) or not text.strip():
             raise RAGError("Document text must be a non-empty string")
 
@@ -128,7 +132,7 @@ class RAGIndex:
         self._embeddings[doc_id] = embedding
         return doc_id
 
-    def add_documents(self, docs: List[Document]) -> None:
+    def add_documents(self, docs: list[Document]) -> None:
         if not docs:
             return
 
@@ -156,9 +160,11 @@ class RAGIndex:
 
         for doc_id, doc in list(self._documents.items()):
             if doc_id not in self._embeddings:
-                self._embeddings[doc_id] = self._embedding_model.embed(doc.get("text", ""))
+                self._embeddings[doc_id] = self._embedding_model.embed(
+                    doc.get("text", "")
+                )
 
-    def search(self, query: str, k: int = 5) -> List[Tuple[Document, float]]:
+    def search(self, query: str, k: int = 5) -> list[tuple[Document, float]]:
         if not self._documents:
             return []
         if not isinstance(query, str) or not query.strip():
@@ -171,7 +177,7 @@ class RAGIndex:
 
         query_embedding = self._embedding_model.embed(query)
 
-        scored: List[Tuple[str, float]] = []
+        scored: list[tuple[str, float]] = []
         for doc_id, doc_embedding in self._embeddings.items():
             score = cosine_similarity(query_embedding, doc_embedding)
             scored.append((doc_id, score))
@@ -179,7 +185,7 @@ class RAGIndex:
         scored.sort(key=lambda x: x[1], reverse=True)
         top_k = scored[:k]
 
-        results: List[Tuple[Document, float]] = []
+        results: list[tuple[Document, float]] = []
         for doc_id, score in top_k:
             if doc_id in self._documents:
                 results.append((self._documents[doc_id], score))
@@ -214,7 +220,7 @@ class RAGIndex:
 
 
 class RAGRetriever:
-    def __init__(self, index: RAGIndex, system_prompt: Optional[str] = None) -> None:
+    def __init__(self, index: RAGIndex, system_prompt: str | None = None) -> None:
         if not isinstance(index, RAGIndex):
             raise RAGError("index must be a RAGIndex instance")
         self._index = index
@@ -223,11 +229,11 @@ class RAGRetriever:
             "Use them to answer the user's question accurately."
         )
 
-    def format_context(self, docs: List[Tuple[Document, float]]) -> str:
+    def format_context(self, docs: list[tuple[Document, float]]) -> str:
         if not docs:
             return "No relevant documents found."
 
-        parts: List[str] = ["Retrieved context:"]
+        parts: list[str] = ["Retrieved context:"]
         for i, (doc, score) in enumerate(docs, 1):
             source = doc.get("metadata", {}).get("source", "unknown")
             parts.append(f"[{i}] (relevance: {score:.4f}, source: {source})")
@@ -239,21 +245,13 @@ class RAGRetriever:
     def query(self, query: str, k: int = 5) -> str:
         docs = self._index.search(query, k=k)
         context = self.format_context(docs)
-        return (
-            f"{self._system_prompt}\n\n"
-            f"{context}\n"
-            f"User question: {query}"
-        )
+        return f"{self._system_prompt}\n\n" f"{context}\n" f"User question: {query}"
 
-    def query_with_sources(self, query: str, k: int = 5) -> Tuple[str, List[Document]]:
+    def query_with_sources(self, query: str, k: int = 5) -> tuple[str, list[Document]]:
         results = self._index.search(query, k=k)
         context = self.format_context(results)
 
-        sources: List[Document] = [doc for doc, _ in results]
+        sources: list[Document] = [doc for doc, _ in results]
 
-        prompt = (
-            f"{self._system_prompt}\n\n"
-            f"{context}\n"
-            f"User question: {query}"
-        )
+        prompt = f"{self._system_prompt}\n\n" f"{context}\n" f"User question: {query}"
         return prompt, sources

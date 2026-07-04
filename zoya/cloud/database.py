@@ -1,7 +1,8 @@
+import copy
+import secrets
+import time
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Literal, Tuple
-import secrets, time, copy
-
+from typing import Any, Literal
 
 FieldType = Literal[
     "string", "number", "boolean", "date", "object", "array", "reference"
@@ -27,26 +28,26 @@ class QueryOrder:
 
 @dataclass
 class QueryOptions:
-    filters: Optional[List[QueryFilter]] = None
-    orders: Optional[List[QueryOrder]] = None
+    filters: list[QueryFilter] | None = None
+    orders: list[QueryOrder] | None = None
     limit: int = 50
     offset: int = 0
-    select: Optional[List[str]] = None
+    select: list[str] | None = None
     include_deleted: bool = False
 
 
 @dataclass
 class CollectionSchema:
     name: str
-    fields: Dict[str, FieldType]
-    indexes: List[List[str]] = field(default_factory=list)
+    fields: dict[str, FieldType]
+    indexes: list[list[str]] = field(default_factory=list)
     timestamps: bool = True
     soft_delete: bool = True
 
 
 @dataclass
 class QueryResult:
-    data: List[Dict[str, Any]]
+    data: list[dict[str, Any]]
     total: int
     offset: int
     limit: int
@@ -70,10 +71,10 @@ class StoredDocument:
     def __init__(
         self,
         id: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         created_at: float,
         updated_at: float,
-        deleted_at: Optional[float] = None,
+        deleted_at: float | None = None,
     ):
         self.id = id
         self.data = data
@@ -91,13 +92,29 @@ def _matches_filter(doc: StoredDocument, filter: QueryFilter) -> bool:
     elif filter.operator == "!=":
         return value != fv
     elif filter.operator == ">":
-        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value > fv
+        return (
+            isinstance(value, (int, float))
+            and isinstance(fv, (int, float))
+            and value > fv
+        )
     elif filter.operator == "<":
-        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value < fv
+        return (
+            isinstance(value, (int, float))
+            and isinstance(fv, (int, float))
+            and value < fv
+        )
     elif filter.operator == ">=":
-        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value >= fv
+        return (
+            isinstance(value, (int, float))
+            and isinstance(fv, (int, float))
+            and value >= fv
+        )
     elif filter.operator == "<=":
-        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value <= fv
+        return (
+            isinstance(value, (int, float))
+            and isinstance(fv, (int, float))
+            and value <= fv
+        )
     elif filter.operator == "in":
         return isinstance(fv, list) and value in fv
     elif filter.operator == "contains":
@@ -128,30 +145,26 @@ class DatabaseService:
     def __init__(self, base_url: str, api_key: str):
         self._base_url = base_url
         self._api_key = api_key
-        self._collections: Dict[str, Dict[str, StoredDocument]] = {}
-        self._schemas: Dict[str, CollectionSchema] = {}
-        self._active_transactions: Dict[
-            str, Dict[str, Dict[str, StoredDocument]]
-        ] = {}
+        self._collections: dict[str, dict[str, StoredDocument]] = {}
+        self._schemas: dict[str, CollectionSchema] = {}
+        self._active_transactions: dict[str, dict[str, dict[str, StoredDocument]]] = {}
 
     def _ensure_collection(self, collection: str) -> None:
         if collection not in self._collections:
             self._collections[collection] = {}
 
-    def create(
-        self, collection: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def create(self, collection: str, data: dict[str, Any]) -> dict[str, Any]:
         self._ensure_collection(collection)
         col = self._collections[collection]
         doc_id = secrets.token_hex(8)
         now = time.time()
-        doc = StoredDocument(id=doc_id, data=copy.deepcopy(data), created_at=now, updated_at=now)
+        doc = StoredDocument(
+            id=doc_id, data=copy.deepcopy(data), created_at=now, updated_at=now
+        )
         col[doc_id] = doc
         return {"id": doc_id, **data, "created_at": now}
 
-    def read(
-        self, collection: str, id: str
-    ) -> Optional[Dict[str, Any]]:
+    def read(self, collection: str, id: str) -> dict[str, Any] | None:
         self._ensure_collection(collection)
         col = self._collections[collection]
         doc = col.get(id)
@@ -161,9 +174,7 @@ class DatabaseService:
             return None
         return {"id": doc.id, **copy.deepcopy(doc.data)}
 
-    def update(
-        self, collection: str, id: str, data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def update(self, collection: str, id: str, data: dict[str, Any]) -> dict[str, Any]:
         self._ensure_collection(collection)
         col = self._collections[collection]
         doc = col.get(id)
@@ -187,7 +198,7 @@ class DatabaseService:
             col.pop(id, None)
 
     def query(
-        self, collection: str, options: Optional[QueryOptions] = None
+        self, collection: str, options: QueryOptions | None = None
     ) -> QueryResult:
         self._ensure_collection(collection)
         col = self._collections[collection]
@@ -224,9 +235,7 @@ class DatabaseService:
             has_more=(offset + limit < total),
         )
 
-    def find_by_ids(
-        self, collection: str, ids: List[str]
-    ) -> List[Dict[str, Any]]:
+    def find_by_ids(self, collection: str, ids: list[str]) -> list[dict[str, Any]]:
         self._ensure_collection(collection)
         col = self._collections[collection]
         results = []
@@ -236,20 +245,16 @@ class DatabaseService:
                 results.append({"id": doc.id, **copy.deepcopy(doc.data)})
         return results
 
-    def first(
-        self, collection: str, filter: QueryFilter
-    ) -> Optional[Dict[str, Any]]:
-        result = self.query(
-            collection, QueryOptions(filters=[filter], limit=1)
-        )
+    def first(self, collection: str, filter: QueryFilter) -> dict[str, Any] | None:
+        result = self.query(collection, QueryOptions(filters=[filter], limit=1))
         return result.data[0] if result.data else None
 
     def batch_create(
-        self, collection: str, items: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, collection: str, items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         return [self.create(collection, item) for item in items]
 
-    def batch_delete(self, collection: str, ids: List[str]) -> int:
+    def batch_delete(self, collection: str, ids: list[str]) -> int:
         count = 0
         for doc_id in ids:
             try:
@@ -259,9 +264,7 @@ class DatabaseService:
                 continue
         return count
 
-    def count(
-        self, collection: str, filters: Optional[List[QueryFilter]] = None
-    ) -> int:
+    def count(self, collection: str, filters: list[QueryFilter] | None = None) -> int:
         result = self.query(collection, QueryOptions(filters=filters))
         return result.total
 
@@ -280,7 +283,7 @@ class DatabaseService:
         if schema.name not in self._collections:
             self._collections[schema.name] = {}
 
-    def list_collections(self) -> List[str]:
+    def list_collections(self) -> list[str]:
         return list(self._schemas.keys())
 
     def delete_collection(self, name: str) -> None:
@@ -291,11 +294,9 @@ class DatabaseService:
 
     def begin_transaction(self) -> str:
         txn_id = secrets.token_hex(8)
-        snapshot: Dict[str, Dict[str, StoredDocument]] = {}
+        snapshot: dict[str, dict[str, StoredDocument]] = {}
         for col_name, col_data in self._collections.items():
-            snapshot[col_name] = {
-                k: copy.deepcopy(v) for k, v in col_data.items()
-            }
+            snapshot[col_name] = {k: copy.deepcopy(v) for k, v in col_data.items()}
         self._active_transactions[txn_id] = snapshot
         return txn_id
 

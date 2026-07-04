@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import pytest
 from zoya.lexer import Token, tokenize
-from zoya.errors import LexError
 
 
 def _check_token(tok: Token, kind: str, value: str, line: int = 1, col: int = 1):
@@ -78,17 +76,43 @@ def test_ident():
 
 def test_keywords():
     keywords = [
-        ("fn", "FN"), ("return", "RETURN"), ("if", "IF"), ("else", "ELSE"),
-        ("while", "WHILE"), ("loop", "LOOP"), ("for", "FOR"), ("break", "BREAK"),
-        ("continue", "CONTINUE"), ("import", "IMPORT"), ("switch", "SWITCH"),
-        ("case", "CASE"), ("default", "DEFAULT"), ("try", "TRY"), ("catch", "CATCH"),
-        ("finally", "FINALLY"), ("throw", "THROW"), ("match", "MATCH"),
-        ("enum", "ENUM"), ("class", "CLASS"), ("interface", "INTERFACE"),
-        ("extends", "EXTENDS"), ("implements", "IMPLEMENTS"), ("abstract", "ABSTRACT"),
-        ("static", "STATIC"), ("new", "NEW"), ("this", "THIS"), ("super", "SUPER"),
-        ("lambda", "LAMBDA"), ("async", "ASYNC"), ("await", "AWAIT"),
-        ("and", "AND"), ("or", "OR"), ("not", "NOT"),
-        ("true", "TRUE"), ("false", "FALSE"), ("in", "IN"),
+        ("fn", "FN"),
+        ("return", "RETURN"),
+        ("if", "IF"),
+        ("else", "ELSE"),
+        ("while", "WHILE"),
+        ("loop", "LOOP"),
+        ("for", "FOR"),
+        ("break", "BREAK"),
+        ("continue", "CONTINUE"),
+        ("import", "IMPORT"),
+        ("switch", "SWITCH"),
+        ("case", "CASE"),
+        ("default", "DEFAULT"),
+        ("try", "TRY"),
+        ("catch", "CATCH"),
+        ("finally", "FINALLY"),
+        ("throw", "THROW"),
+        ("match", "MATCH"),
+        ("enum", "ENUM"),
+        ("class", "CLASS"),
+        ("interface", "INTERFACE"),
+        ("extends", "EXTENDS"),
+        ("implements", "IMPLEMENTS"),
+        ("abstract", "ABSTRACT"),
+        ("static", "STATIC"),
+        ("new", "NEW"),
+        ("this", "THIS"),
+        ("super", "SUPER"),
+        ("lambda", "LAMBDA"),
+        ("async", "ASYNC"),
+        ("await", "AWAIT"),
+        ("and", "AND"),
+        ("or", "OR"),
+        ("not", "NOT"),
+        ("true", "TRUE"),
+        ("false", "FALSE"),
+        ("in", "IN"),
     ]
     for keyword, expected_kind in keywords:
         tokens = tokenize(keyword)
@@ -97,9 +121,18 @@ def test_keywords():
 
 def test_operators():
     ops = [
-        ("+", "PLUS"), ("-", "MINUS"), ("*", "MUL"), ("/", "DIV"),
-        (">", "GT"), ("<", "LT"), ("==", "EQ"), ("!=", "NE"),
-        (">=", "GTE"), ("<=", "LTE"), ("**", "POW"), ("%", "MOD"),
+        ("+", "PLUS"),
+        ("-", "MINUS"),
+        ("*", "MUL"),
+        ("/", "DIV"),
+        (">", "GT"),
+        ("<", "LT"),
+        ("==", "EQ"),
+        ("!=", "NE"),
+        (">=", "GTE"),
+        ("<=", "LTE"),
+        ("**", "POW"),
+        ("%", "MOD"),
     ]
     for op_str, expected_kind in ops:
         tokens = tokenize(op_str)
@@ -108,9 +141,18 @@ def test_operators():
 
 def test_delimiters():
     delims = [
-        ("(", "LPAREN"), (")", "RPAREN"), ("{", "LBRACE"), ("}", "RBRACE"),
-        ("[", "LBRACKET"), ("]", "RBRACKET"), (",", "COMMA"), (":", "COLON"),
-        (";", "SEMICOLON"), (".", "DOT"), ("->", "ARROW"), ("::", "DOUBLE_COLON"),
+        ("(", "LPAREN"),
+        (")", "RPAREN"),
+        ("{", "LBRACE"),
+        ("}", "RBRACE"),
+        ("[", "LBRACKET"),
+        ("]", "RBRACKET"),
+        (",", "COMMA"),
+        (":", "COLON"),
+        (";", "SEMICOLON"),
+        (".", "DOT"),
+        ("->", "ARROW"),
+        ("::", "DOUBLE_COLON"),
     ]
     for delim_str, expected_kind in delims:
         tokens = tokenize(delim_str)
@@ -158,14 +200,26 @@ def test_mismatch_token():
 
 
 def test_multi_line_program():
-    source = 'fn add(a, b) {\n    return a + b\n}\n'
+    source = "fn add(a, b) {\n    return a + b\n}\n"
     tokens = tokenize(source)
     kinds = [t.kind for t in tokens if t.kind not in ("SKIP",)]
     assert kinds == [
-        "FN", "IDENT", "LPAREN", "IDENT", "COMMA", "IDENT", "RPAREN",
-        "LBRACE", "NEWLINE",
-        "RETURN", "IDENT", "PLUS", "IDENT", "NEWLINE",
-        "RBRACE", "NEWLINE",
+        "FN",
+        "IDENT",
+        "LPAREN",
+        "IDENT",
+        "COMMA",
+        "IDENT",
+        "RPAREN",
+        "LBRACE",
+        "NEWLINE",
+        "RETURN",
+        "IDENT",
+        "PLUS",
+        "IDENT",
+        "NEWLINE",
+        "RBRACE",
+        "NEWLINE",
         "EOF",
     ]
 
@@ -184,7 +238,16 @@ def test_list_literal():
     source = "[1, 2, 3]"
     tokens = tokenize(source)
     kinds = [t.kind for t in tokens if t.kind != "SKIP"]
-    assert kinds == ["LBRACKET", "NUMBER", "COMMA", "NUMBER", "COMMA", "NUMBER", "RBRACKET", "EOF"]
+    assert kinds == [
+        "LBRACKET",
+        "NUMBER",
+        "COMMA",
+        "NUMBER",
+        "COMMA",
+        "NUMBER",
+        "RBRACKET",
+        "EOF",
+    ]
 
 
 def test_dict_literal():
@@ -222,7 +285,7 @@ def test_try_catch():
 
 
 def test_switch_statement():
-    source = "switch x {\n    case 1 {\n        print \"one\"\n    }\n}\n"
+    source = 'switch x {\n    case 1 {\n        print "one"\n    }\n}\n'
     tokens = tokenize(source)
     kinds = [t.kind for t in tokens if t.kind not in ("SKIP",)]
     assert "SWITCH" in kinds

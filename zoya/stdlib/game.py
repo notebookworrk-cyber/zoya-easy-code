@@ -26,10 +26,13 @@ def load_module(interpreter: Any) -> Any:
         if _pygame is None:
             try:
                 import pygame as _pygame
+
                 _pygame.init()
                 _pygame.font.init()
             except ImportError:
-                raise ImportError("pygame-ce is required. Install: pip install pygame-ce")
+                raise ImportError(
+                    "pygame-ce is required. Install: pip install pygame-ce"
+                ) from None
 
     def window(title: str, width: int, height: int) -> None:
         nonlocal _screen, _clock, _running
@@ -60,7 +63,9 @@ def load_module(interpreter: Any) -> Any:
         _sprites.append(sprite_data)
         return sprite_data
 
-    def rect(x: float, y: float, w: float, h: float, color: Any = (255, 255, 255)) -> dict[str, Any]:
+    def rect(
+        x: float, y: float, w: float, h: float, color: Any = (255, 255, 255)
+    ) -> dict[str, Any]:
         c = _to_color(color)
         sprite_data = {
             "type": "rect",
@@ -75,7 +80,9 @@ def load_module(interpreter: Any) -> Any:
         _sprites.append(sprite_data)
         return sprite_data
 
-    def circle(x: float, y: float, radius: float, color: Any = (255, 255, 255)) -> dict[str, Any]:
+    def circle(
+        x: float, y: float, radius: float, color: Any = (255, 255, 255)
+    ) -> dict[str, Any]:
         c = _to_color(color)
         sprite_data = {
             "type": "circle",
@@ -88,7 +95,9 @@ def load_module(interpreter: Any) -> Any:
         _sprites.append(sprite_data)
         return sprite_data
 
-    def text(content: str, x: float, y: float, size: int = 24, color: Any = (255, 255, 255)) -> dict[str, Any]:
+    def text(
+        content: str, x: float, y: float, size: int = 24, color: Any = (255, 255, 255)
+    ) -> dict[str, Any]:
         _init()
         c = _to_color(color)
         font = _pygame.font.Font(None, size) if _pygame else None
@@ -113,7 +122,12 @@ def load_module(interpreter: Any) -> Any:
             _pygame.draw.rect(
                 _screen,
                 sprite_obj["color"],
-                (sprite_obj["x"], sprite_obj["y"], sprite_obj["width"], sprite_obj["height"]),
+                (
+                    sprite_obj["x"],
+                    sprite_obj["y"],
+                    sprite_obj["width"],
+                    sprite_obj["height"],
+                ),
             )
         elif sprite_obj.get("type") == "circle":
             _pygame.draw.circle(
@@ -174,18 +188,38 @@ def load_module(interpreter: Any) -> Any:
         if not _pygame:
             return False
         key_map = {
-            "up": _pygame.K_UP, "down": _pygame.K_DOWN,
-            "left": _pygame.K_LEFT, "right": _pygame.K_RIGHT,
-            "space": _pygame.K_SPACE, "enter": _pygame.K_RETURN,
-            "escape": _pygame.K_ESCAPE, "a": _pygame.K_a,
-            "b": _pygame.K_b, "c": _pygame.K_c, "d": _pygame.K_d,
-            "e": _pygame.K_e, "f": _pygame.K_f, "g": _pygame.K_g,
-            "h": _pygame.K_h, "i": _pygame.K_i, "j": _pygame.K_j,
-            "k": _pygame.K_k, "l": _pygame.K_l, "m": _pygame.K_m,
-            "n": _pygame.K_n, "o": _pygame.K_o, "p": _pygame.K_p,
-            "q": _pygame.K_q, "r": _pygame.K_r, "s": _pygame.K_s,
-            "t": _pygame.K_t, "u": _pygame.K_u, "v": _pygame.K_v,
-            "w": _pygame.K_w, "x": _pygame.K_x, "y": _pygame.K_y,
+            "up": _pygame.K_UP,
+            "down": _pygame.K_DOWN,
+            "left": _pygame.K_LEFT,
+            "right": _pygame.K_RIGHT,
+            "space": _pygame.K_SPACE,
+            "enter": _pygame.K_RETURN,
+            "escape": _pygame.K_ESCAPE,
+            "a": _pygame.K_a,
+            "b": _pygame.K_b,
+            "c": _pygame.K_c,
+            "d": _pygame.K_d,
+            "e": _pygame.K_e,
+            "f": _pygame.K_f,
+            "g": _pygame.K_g,
+            "h": _pygame.K_h,
+            "i": _pygame.K_i,
+            "j": _pygame.K_j,
+            "k": _pygame.K_k,
+            "l": _pygame.K_l,
+            "m": _pygame.K_m,
+            "n": _pygame.K_n,
+            "o": _pygame.K_o,
+            "p": _pygame.K_p,
+            "q": _pygame.K_q,
+            "r": _pygame.K_r,
+            "s": _pygame.K_s,
+            "t": _pygame.K_t,
+            "u": _pygame.K_u,
+            "v": _pygame.K_v,
+            "w": _pygame.K_w,
+            "x": _pygame.K_x,
+            "y": _pygame.K_y,
             "z": _pygame.K_z,
         }
         kc = key_map.get(key.lower())

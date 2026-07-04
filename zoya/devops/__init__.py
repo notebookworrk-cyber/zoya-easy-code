@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from .ci import (
     PipelineConfig,
@@ -20,7 +20,7 @@ from .deploy import (
 __version__ = "0.1.0"
 
 
-def create_pipeline(config: Dict[str, Any]) -> PipelineConfig:
+def create_pipeline(config: dict[str, Any]) -> PipelineConfig:
     """Factory — create a PipelineConfig from a dictionary."""
     return PipelineConfig(
         name=config.get("name", ""),
@@ -31,7 +31,7 @@ def create_pipeline(config: Dict[str, Any]) -> PipelineConfig:
     )
 
 
-def create_deployment(config: Dict[str, Any]) -> DeploymentConfig:
+def create_deployment(config: dict[str, Any]) -> DeploymentConfig:
     """Factory — create a DeploymentConfig from a dictionary."""
     return DeploymentConfig(
         name=config.get("name", ""),

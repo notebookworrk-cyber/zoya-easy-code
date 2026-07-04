@@ -1,11 +1,10 @@
 __version__ = "0.1.0"
 
-import time
 import json
+import time
 import uuid
-from typing import Dict, List, Optional, Any
 from collections import defaultdict
-from datetime import datetime
+from typing import Any
 
 
 class EnterpriseError(Exception):
@@ -17,13 +16,13 @@ class Tenant:
         self.id: str = uuid.uuid4().hex[:12]
         self.name: str = name
         self.plan: str = plan
-        self.settings: Dict[str, Any] = {}
+        self.settings: dict[str, Any] = {}
         self.created_at: float = time.time()
         self.is_active: bool = True
         self.max_users: int = 10
         self.max_storage_gb: int = 5
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -45,21 +44,25 @@ class RBACManager:
     }
 
     def __init__(self):
-        self._roles: Dict[str, List[str]] = dict(self._built_in_roles)
-        self._assignments: Dict[str, Dict[str, str]] = defaultdict(dict)
+        self._roles: dict[str, list[str]] = dict(self._built_in_roles)
+        self._assignments: dict[str, dict[str, str]] = defaultdict(dict)
 
-    def create_role(self, name: str, permissions: List[str]) -> None:
+    def create_role(self, name: str, permissions: list[str]) -> None:
         if name in self._roles:
             raise EnterpriseError(f"Role '{name}' already exists")
         self._roles[name] = list(permissions)
 
-    def get_role(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_role(self, name: str) -> dict[str, Any] | None:
         perms = self._roles.get(name)
         if perms is None:
             return None
-        return {"name": name, "permissions": perms, "built_in": name in self._built_in_roles}
+        return {
+            "name": name,
+            "permissions": perms,
+            "built_in": name in self._built_in_roles,
+        }
 
-    def update_role(self, name: str, permissions: List[str]) -> None:
+    def update_role(self, name: str, permissions: list[str]) -> None:
         if name not in self._roles:
             raise EnterpriseError(f"Role '{name}' does not exist")
         self._roles[name] = list(permissions)
@@ -81,7 +84,7 @@ class RBACManager:
     def remove_role(self, user_id: str, tenant_id: str) -> None:
         self._assignments[user_id].pop(tenant_id, None)
 
-    def get_user_roles(self, user_id: str) -> List[str]:
+    def get_user_roles(self, user_id: str) -> list[str]:
         return list(self._assignments.get(user_id, {}).values())
 
     def check_permission(self, user_id: str, permission: str, tenant_id: str) -> bool:
@@ -93,11 +96,9 @@ class RBACManager:
             return True
         if permission in permissions:
             return True
-        if permission == "read" and "read" in permissions:
-            return True
-        return False
+        return bool(permission == "read" and "read" in permissions)
 
-    def list_roles(self) -> List[str]:
+    def list_roles(self) -> list[str]:
         return list(self._roles.keys())
 
 
@@ -109,7 +110,7 @@ class AuditLog:
         tenant_id: str,
         action: str,
         resource: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         ip_address: str = "",
         severity: str = "info",
     ):
@@ -119,12 +120,12 @@ class AuditLog:
         self.tenant_id: str = tenant_id
         self.action: str = action
         self.resource: str = resource
-        self.details: Dict[str, Any] = details or {}
+        self.details: dict[str, Any] = details or {}
         self.ip_address: str = ip_address
         self.timestamp: float = time.time()
         self.severity: str = severity
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "event": self.event,
@@ -141,7 +142,7 @@ class AuditLog:
 
 class AuditLogger:
     def __init__(self):
-        self._logs: List[AuditLog] = []
+        self._logs: list[AuditLog] = []
 
     def log(
         self,
@@ -150,7 +151,7 @@ class AuditLogger:
         tenant_id: str,
         action: str,
         resource: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         severity: str = "info",
     ) -> AuditLog:
         entry = AuditLog(
@@ -165,7 +166,7 @@ class AuditLogger:
         self._logs.append(entry)
         return entry
 
-    def query(self, filters: Dict[str, Any]) -> List[AuditLog]:
+    def query(self, filters: dict[str, Any]) -> list[AuditLog]:
         result = list(self._logs)
         for key, value in filters.items():
             if key == "user_id":
@@ -186,13 +187,13 @@ class AuditLogger:
                 result = [e for e in result if e.resource == value]
         return result
 
-    def get_by_user(self, user_id: str, limit: int = 50) -> List[AuditLog]:
+    def get_by_user(self, user_id: str, limit: int = 50) -> list[AuditLog]:
         return [e for e in self._logs if e.user_id == user_id][-limit:]
 
-    def get_by_tenant(self, tenant_id: str, limit: int = 50) -> List[AuditLog]:
+    def get_by_tenant(self, tenant_id: str, limit: int = 50) -> list[AuditLog]:
         return [e for e in self._logs if e.tenant_id == tenant_id][-limit:]
 
-    def get_recent(self, limit: int = 50) -> List[AuditLog]:
+    def get_recent(self, limit: int = 50) -> list[AuditLog]:
         return self._logs[-limit:]
 
     def export(self, format: str = "json") -> str:
@@ -215,21 +216,21 @@ class FeatureFlags:
     }
 
     def __init__(self):
-        self._global_flags: Dict[str, bool] = dict(self._default_flags)
-        self._tenant_flags: Dict[str, Dict[str, bool]] = defaultdict(dict)
+        self._global_flags: dict[str, bool] = dict(self._default_flags)
+        self._tenant_flags: dict[str, dict[str, bool]] = defaultdict(dict)
 
-    def set_flag(self, name: str, enabled: bool, tenant_id: Optional[str] = None) -> None:
+    def set_flag(self, name: str, enabled: bool, tenant_id: str | None = None) -> None:
         if tenant_id is None:
             self._global_flags[name] = enabled
         else:
             self._tenant_flags[tenant_id][name] = enabled
 
-    def is_enabled(self, name: str, tenant_id: Optional[str] = None) -> bool:
+    def is_enabled(self, name: str, tenant_id: str | None = None) -> bool:
         if tenant_id is not None and name in self._tenant_flags.get(tenant_id, {}):
             return self._tenant_flags[tenant_id][name]
         return self._global_flags.get(name, False)
 
-    def get_all(self, tenant_id: Optional[str] = None) -> Dict[str, bool]:
+    def get_all(self, tenant_id: str | None = None) -> dict[str, bool]:
         flags = dict(self._global_flags)
         if tenant_id is not None:
             flags.update(self._tenant_flags.get(tenant_id, {}))
@@ -240,10 +241,10 @@ class FeatureFlags:
         for tf in self._tenant_flags.values():
             tf.pop(name, None)
 
-    def list_flags(self) -> List[str]:
+    def list_flags(self) -> list[str]:
         return list(self._global_flags.keys())
 
-    def reset(self, tenant_id: Optional[str] = None) -> None:
+    def reset(self, tenant_id: str | None = None) -> None:
         if tenant_id is None:
             self._global_flags = dict(self._default_flags)
             self._tenant_flags.clear()
@@ -254,21 +255,22 @@ class FeatureFlags:
 class SSOProvider:
     _valid_names = {"google", "github", "microsoft", "okta", "custom"}
 
-    def __init__(self, name: str, config: Optional[Dict[str, str]] = None):
+    def __init__(self, name: str, config: dict[str, str] | None = None):
         if name not in self._valid_names:
-            raise EnterpriseError(f"Invalid SSO provider: {name}. Valid: {sorted(self._valid_names)}")
+            raise EnterpriseError(
+                f"Invalid SSO provider: {name}. Valid: {sorted(self._valid_names)}"
+            )
         self.name: str = name
-        self.config: Dict[str, str] = config or {}
+        self.config: dict[str, str] = config or {}
         self.is_configured: bool = bool(
             self.config.get("client_id") and self.config.get("client_secret")
         )
 
-    def validate_config(self) -> List[str]:
+    def validate_config(self) -> list[str]:
         errors = []
         required = {"client_id", "client_secret"}
-        if self.name != "custom":
-            if "issuer" not in self.config:
-                required.add("issuer")
+        if self.name != "custom" and "issuer" not in self.config:
+            required.add("issuer")
         for field in required:
             if not self.config.get(field):
                 errors.append(f"Missing required field: {field}")
@@ -277,7 +279,7 @@ class SSOProvider:
 
 class SSOManager:
     def __init__(self):
-        self._providers: Dict[str, SSOProvider] = {}
+        self._providers: dict[str, SSOProvider] = {}
 
     def add_provider(self, provider: SSOProvider) -> None:
         self._providers[provider.name] = provider
@@ -285,10 +287,10 @@ class SSOManager:
     def remove_provider(self, name: str) -> None:
         self._providers.pop(name, None)
 
-    def get_provider(self, name: str) -> Optional[SSOProvider]:
+    def get_provider(self, name: str) -> SSOProvider | None:
         return self._providers.get(name)
 
-    def list_providers(self) -> List[SSOProvider]:
+    def list_providers(self) -> list[SSOProvider]:
         return list(self._providers.values())
 
     def generate_auth_url(self, provider: str, redirect_uri: str) -> str:
@@ -307,7 +309,7 @@ class SSOManager:
             f"scope=openid+profile+email"
         )
 
-    def handle_callback(self, provider: str, code: str) -> Dict[str, Any]:
+    def handle_callback(self, provider: str, code: str) -> dict[str, Any]:
         prov = self._providers.get(provider)
         if prov is None:
             raise EnterpriseError(f"SSO provider '{provider}' not configured")
@@ -329,19 +331,21 @@ class SSOManager:
 
 class TenantManager:
     def __init__(self):
-        self._tenants: Dict[str, Tenant] = {}
+        self._tenants: dict[str, Tenant] = {}
 
     def create_tenant(self, name: str, plan: str = "free") -> Tenant:
         if plan not in ("free", "pro", "enterprise"):
-            raise EnterpriseError(f"Invalid plan: {plan}. Must be free, pro, or enterprise")
+            raise EnterpriseError(
+                f"Invalid plan: {plan}. Must be free, pro, or enterprise"
+            )
         tenant = Tenant(name=name, plan=plan)
         self._tenants[tenant.id] = tenant
         return tenant
 
-    def get_tenant(self, tenant_id: str) -> Optional[Tenant]:
+    def get_tenant(self, tenant_id: str) -> Tenant | None:
         return self._tenants.get(tenant_id)
 
-    def update_tenant(self, tenant_id: str, updates: Dict[str, Any]) -> None:
+    def update_tenant(self, tenant_id: str, updates: dict[str, Any]) -> None:
         tenant = self._tenants.get(tenant_id)
         if tenant is None:
             raise EnterpriseError(f"Tenant '{tenant_id}' not found")
@@ -354,7 +358,7 @@ class TenantManager:
     def delete_tenant(self, tenant_id: str) -> None:
         self._tenants.pop(tenant_id, None)
 
-    def list_tenants(self) -> List[Tenant]:
+    def list_tenants(self) -> list[Tenant]:
         return list(self._tenants.values())
 
     def set_max_users(self, tenant_id: str, count: int) -> None:
@@ -369,7 +373,7 @@ class TenantManager:
             raise EnterpriseError(f"Tenant '{tenant_id}' not found")
         tenant.max_storage_gb = gb
 
-    def get_usage(self, tenant_id: str) -> Dict[str, Any]:
+    def get_usage(self, tenant_id: str) -> dict[str, Any]:
         tenant = self._tenants.get(tenant_id)
         if tenant is None:
             raise EnterpriseError(f"Tenant '{tenant_id}' not found")

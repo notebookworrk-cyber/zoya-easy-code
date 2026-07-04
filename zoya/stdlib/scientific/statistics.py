@@ -1,14 +1,12 @@
 """Zoya 4.0 Scientific Computing - Statistics module."""
 
-from typing import List, Tuple, Optional, Union, Callable
 import math
-import random
 
-Number = Union[int, float]
-Sequence = List[Number]
+Number = int | float
+Sequence = list[Number]
 
 
-def _validate(data: Sequence) -> List[float]:
+def _validate(data: Sequence) -> list[float]:
     """Validate and convert input to list of floats."""
     if not data:
         raise ValueError("Data cannot be empty")
@@ -30,7 +28,7 @@ def median(data: Sequence) -> float:
     return data[n // 2]
 
 
-def mode(data: Sequence) -> List[float]:
+def mode(data: Sequence) -> list[float]:
     """Mode(s) - most frequent value(s)."""
     data = _validate(data)
     counts = {}
@@ -63,7 +61,7 @@ def percentile(data: Sequence, q: float) -> float:
         return data[0]
     if q >= 100:
         return data[-1]
-    
+
     k = (n - 1) * q / 100
     f = math.floor(k)
     c = math.ceil(k)
@@ -115,7 +113,9 @@ def kurtosis(data: Sequence) -> float:
     if s == 0:
         return 0
     term = sum(((x - m) / s) ** 4 for x in data)
-    return (n * (n + 1) / ((n - 1) * (n - 2) * (n - 3))) * term - 3 * (n - 1) ** 2 / ((n - 2) * (n - 3))
+    return (n * (n + 1) / ((n - 1) * (n - 2) * (n - 3))) * term - 3 * (n - 1) ** 2 / (
+        (n - 2) * (n - 3)
+    )
 
 
 def covariance(x: Sequence, y: Sequence, ddof: int = 0) -> float:
@@ -140,12 +140,12 @@ def correlation(x: Sequence, y: Sequence) -> float:
     n = len(x)
     if n == 0:
         return 0
-    
+
     mx, my = mean(x), mean(y)
     num = sum((x[i] - mx) * (y[i] - my) for i in range(n))
     den_x = sum((xi - mx) ** 2 for xi in x)
     den_y = sum((yi - my) ** 2 for yi in y)
-    
+
     if den_x == 0 or den_y == 0:
         return 0
     return num / math.sqrt(den_x * den_y)
@@ -157,7 +157,7 @@ def spearman_correlation(x: Sequence, y: Sequence) -> float:
     y = _validate(y)
     if len(x) != len(y):
         raise ValueError("Sequences must be same length")
-    
+
     def ranks(seq):
         sorted_indices = sorted(range(len(seq)), key=lambda i: seq[i])
         r = [0] * len(seq)
@@ -168,34 +168,34 @@ def spearman_correlation(x: Sequence, y: Sequence) -> float:
             if ties > 1:
                 r[i] = sum(r[j] for j in range(len(seq)) if seq[j] == seq[i]) / ties
         return r
-    
+
     rx = ranks(x)
     ry = ranks(y)
     return correlation(rx, ry)
 
 
-def linear_regression(x: Sequence, y: Sequence) -> Tuple[float, float]:
+def linear_regression(x: Sequence, y: Sequence) -> tuple[float, float]:
     """Simple linear regression: y = a + bx. Returns (a, b)."""
     n = len(x)
     if n == 0:
         raise ValueError("Insufficient data")
-    
+
     mx = sum(x) / n
     my = sum(y) / n
-    
+
     num = sum((x[i] - mx) * (y[i] - my) for i in range(n))
     den = sum((x[i] - mx) ** 2 for i in range(n))
-    
+
     if den == 0:
         raise ValueError("Zero variance in x")
-    
+
     b = num / den
     a = my - b * mx
-    
+
     return a, b
 
 
-def z_score(data: Sequence) -> List[float]:
+def z_score(data: Sequence) -> list[float]:
     """Standardize to z-scores."""
     data = _validate(data)
     m, s = mean(data), std(data, ddof=1)
@@ -204,12 +204,14 @@ def z_score(data: Sequence) -> List[float]:
     return [(x - m) / s for x in data]
 
 
-def standardize(data: Sequence) -> List[float]:
+def standardize(data: Sequence) -> list[float]:
     """Standardize to zero mean, unit variance."""
     return z_score(data)
 
 
-def min_max_scale(data: Sequence, feature_range: Tuple[float, float] = (0, 1)) -> List[float]:
+def min_max_scale(
+    data: Sequence, feature_range: tuple[float, float] = (0, 1)
+) -> list[float]:
     """Min-max scaling."""
     data = _validate(data)
     mn, mx = min(data), max(data)
@@ -219,14 +221,14 @@ def min_max_scale(data: Sequence, feature_range: Tuple[float, float] = (0, 1)) -
     return [a + (x - mn) * (b - a) / (mx - mn) for x in data]
 
 
-def outlier_bounds(data: Sequence, k: float = 1.5) -> Tuple[float, float]:
+def outlier_bounds(data: Sequence, k: float = 1.5) -> tuple[float, float]:
     """Tukey's fence for outlier detection."""
     q1, q3 = percentile(data, 25), percentile(data, 75)
     i = iqr(data)
     return (q1 - k * i, q3 + k * i)
 
 
-def outliers(data: Sequence, k: float = 1.5) -> List[float]:
+def outliers(data: Sequence, k: float = 1.5) -> list[float]:
     """Find outliers using Tukey's fence."""
     data = _validate(data)
     lower, upper = outlier_bounds(data, k)

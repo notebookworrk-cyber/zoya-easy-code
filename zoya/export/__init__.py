@@ -4,8 +4,7 @@ import json
 import os
 import textwrap
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any
 
 __all__ = [
     "ExportTarget",
@@ -57,11 +56,11 @@ class ExportResult:
     def __init__(
         self,
         success: bool,
-        files: Optional[Dict[str, str]] = None,
+        files: dict[str, str] | None = None,
         output_dir: str = "",
-        errors: Optional[List[str]] = None,
-        warnings: Optional[List[str]] = None,
-        target: Optional[ExportTarget] = None,
+        errors: list[str] | None = None,
+        warnings: list[str] | None = None,
+        target: ExportTarget | None = None,
     ) -> None:
         self.success = success
         self.files = files or {}
@@ -72,10 +71,13 @@ class ExportResult:
 
 
 def generate_requirements(source: str) -> str:
-    reqs: Dict[str, str] = {
+    reqs: dict[str, str] = {
         "zoya": ">=0.1.0",
     }
-    lines = [f"{pkg}>={ver}" if ver.startswith(">=") else f"{pkg}{ver}" for pkg, ver in reqs.items()]
+    lines = [
+        f"{pkg}>={ver}" if ver.startswith(">=") else f"{pkg}{ver}"
+        for pkg, ver in reqs.items()
+    ]
     if "import flask" in source or "from flask" in source:
         lines.append("flask>=3.0.0")
     if "import django" in source or "from django" in source:
@@ -86,7 +88,7 @@ def generate_requirements(source: str) -> str:
 
 
 def generate_dockerfile(source: str) -> str:
-    return textwrap.dedent(f"""\
+    return textwrap.dedent("""\
     FROM python:3.12-slim
 
     WORKDIR /app
@@ -161,7 +163,7 @@ def generate_html_wrapper(code: str) -> str:
 
 class Exporter:
     def export(self, source: str, config: ExportConfig) -> ExportResult:
-        method_map: Dict[ExportTarget, Any] = {
+        method_map: dict[ExportTarget, Any] = {
             ExportTarget.WEB: self.export_web,
             ExportTarget.DESKTOP: self.export_desktop,
             ExportTarget.MOBILE: self.export_mobile,
@@ -175,7 +177,7 @@ class Exporter:
         return exporter(source, config)
 
     def export_web(self, source: str, config: ExportConfig) -> ExportResult:
-        files: Dict[str, str] = {}
+        files: dict[str, str] = {}
         name = os.path.splitext(config.entry_point)[0]
         files[f"{name}.html"] = generate_html_wrapper(source)
         files[config.entry_point] = source
@@ -191,7 +193,7 @@ class Exporter:
         return result
 
     def export_desktop(self, source: str, config: ExportConfig) -> ExportResult:
-        files: Dict[str, str] = {}
+        files: dict[str, str] = {}
         name = os.path.splitext(config.entry_point)[0]
         files[f"{name}.py"] = source
         files["run.py"] = textwrap.dedent(f"""\
@@ -217,8 +219,8 @@ class Exporter:
         return result
 
     def export_mobile(self, source: str, config: ExportConfig) -> ExportResult:
-        files: Dict[str, str] = {}
-        name = os.path.splitext(config.entry_point)[0]
+        files: dict[str, str] = {}
+        os.path.splitext(config.entry_point)[0]
         files["app/__init__.py"] = "# Zoya Mobile App\n"
         files["app/main.py"] = source
         files["app/main_view.py"] = textwrap.dedent("""\
@@ -250,7 +252,7 @@ class Exporter:
         return result
 
     def export_cli(self, source: str, config: ExportConfig) -> ExportResult:
-        files: Dict[str, str] = {}
+        files: dict[str, str] = {}
         name = os.path.splitext(config.entry_point)[0]
         files[f"{name}.py"] = source
         shebang = "#!/usr/bin/env python3\n\n"
@@ -278,7 +280,7 @@ class Exporter:
         return result
 
     def export_library(self, source: str, config: ExportConfig) -> ExportResult:
-        files: Dict[str, str] = {}
+        files: dict[str, str] = {}
         name = os.path.splitext(config.entry_point)[0]
         lib_dir = name.replace("-", "_")
         files[f"{lib_dir}/__init__.py"] = source
@@ -297,12 +299,12 @@ class Exporter:
         return result
 
     def export_docker(self, source: str, config: ExportConfig) -> ExportResult:
-        files: Dict[str, str] = {}
+        files: dict[str, str] = {}
         name = os.path.splitext(config.entry_point)[0]
         files[f"{name}.py"] = source
         files["Dockerfile"] = generate_dockerfile(source)
         files["requirements.txt"] = generate_requirements(source)
-        files["docker-compose.yml"] = textwrap.dedent(f"""\
+        files["docker-compose.yml"] = textwrap.dedent("""\
         version: "3.9"
         services:
           app:

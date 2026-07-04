@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from ..ast import (
-    ASTNode,
+from zoya.ast import (
     Assign,
     AssignAttr,
     AssignIndex,
+    ASTNode,
     BinOp,
     Block,
     Boolean,
@@ -33,8 +33,8 @@ from ..ast import (
     UnaryOp,
     While,
 )
-from ..lexer import tokenize
-from ..parser import parse
+from zoya.lexer import tokenize
+from zoya.parser import parse
 
 _OP_STR = {
     "PLUS": " + ",
@@ -113,7 +113,9 @@ def _format_expr(node: ASTNode) -> str:
         elems = ", ".join(_format_expr(e) for e in node.elements)
         return f"[{elems}]"
     if isinstance(node, Dict_):
-        pairs = ", ".join(f"{_format_expr(k)}: {_format_expr(v)}" for k, v in node.pairs)
+        pairs = ", ".join(
+            f"{_format_expr(k)}: {_format_expr(v)}" for k, v in node.pairs
+        )
         return f"{{{pairs}}}"
     if isinstance(node, InterpolatedString):
         return _format_interp_string(node)
@@ -173,9 +175,17 @@ def _format_stmt(node: ASTNode, indent: int = 0) -> str:
         lines.append(prefix + "}")
         if node.else_body:
             else_block = node.else_body
-            if isinstance(else_block, Block) and len(else_block.statements) == 1 and isinstance(else_block.statements[0], If):
-                lines[-1] += " else if " + _format_expr(else_block.statements[0].cond) + " {"
-                lines.append(_format_block_body(else_block.statements[0].body, indent + 1))
+            if (
+                isinstance(else_block, Block)
+                and len(else_block.statements) == 1
+                and isinstance(else_block.statements[0], If)
+            ):
+                lines[-1] += (
+                    " else if " + _format_expr(else_block.statements[0].cond) + " {"
+                )
+                lines.append(
+                    _format_block_body(else_block.statements[0].body, indent + 1)
+                )
                 lines.append(prefix + "}")
             else:
                 lines.append(prefix + "else {")
@@ -223,7 +233,25 @@ def _format_stmt(node: ASTNode, indent: int = 0) -> str:
         lines.append(prefix + "}")
         return "\n".join(lines) + "\n"
 
-    if isinstance(node, (Number, String, Boolean, Ident, BinOp, UnaryOp, Call, GetAttr, MethodCall, Index, Slice, List_, Dict_, InterpolatedString)):
+    if isinstance(
+        node,
+        (
+            Number,
+            String,
+            Boolean,
+            Ident,
+            BinOp,
+            UnaryOp,
+            Call,
+            GetAttr,
+            MethodCall,
+            Index,
+            Slice,
+            List_,
+            Dict_,
+            InterpolatedString,
+        ),
+    ):
         return prefix + _format_expr(node) + "\n"
 
     return prefix + _format_expr(node) + "\n"
@@ -236,7 +264,12 @@ def _format_block_body(node: ASTNode, indent: int) -> str:
 
 
 def _escape_string(value: str) -> str:
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t")
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\t", "\\t")
+    )
     return f'"{escaped}"'
 
 

@@ -1,21 +1,21 @@
-import sys
 import os
 import re
-import base64
+import sys
 import uuid as _uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
+import unittest
 
 from zoya.security import (
     AESCipher,
     Hasher,
     KeyGenerator,
-    Validator,
     Sanitizer,
-    __version__,
+    Validator,
     __all__,
+    __version__,
 )
-import unittest
 
 
 class TestAESCipher(unittest.TestCase):
@@ -65,20 +65,18 @@ class TestAESCipher(unittest.TestCase):
         key = "base64-check"
         encrypted = AESCipher.encrypt(plaintext, key)
         self.assertIsInstance(encrypted, str)
-        self.assertTrue(
-            re.match(r"^[A-Za-z0-9+/=]+$", encrypted)
-        )
+        self.assertTrue(re.match(r"^[A-Za-z0-9+/=]+$", encrypted))
 
     def test_decrypt_wrong_key_fails(self):
         plaintext = "secret message"
         key1 = "correct-key"
         key2 = "wrong-key"
         encrypted = AESCipher.encrypt(plaintext, key1)
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             AESCipher.decrypt(encrypted, key2)
 
     def test_decrypt_invalid_ciphertext_raises(self):
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             AESCipher.decrypt("!!!invalid!!!", "key")
 
     def test_same_plaintext_different_ciphertexts(self):
@@ -114,6 +112,7 @@ class TestHasher(unittest.TestCase):
 
     def test_md5_emits_warning(self):
         import warnings
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             Hasher.md5("test")

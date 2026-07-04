@@ -8,8 +8,13 @@ on:
 jobs:
   commit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Update streak log
         run: |
           echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') — automated streak commit" >> STREAK.md

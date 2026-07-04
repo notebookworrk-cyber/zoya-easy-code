@@ -10,8 +10,11 @@ def load_module(interpreter: Any) -> Any:
     def run(cmd: str | list[str]) -> dict[str, Any]:
         try:
             result = _subprocess.run(
-                cmd, shell=isinstance(cmd, str),
-                capture_output=True, text=True, timeout=60,
+                cmd,
+                shell=isinstance(cmd, str),
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             return {
                 "returncode": result.returncode,
@@ -24,8 +27,11 @@ def load_module(interpreter: Any) -> Any:
     def run_output(cmd: str | list[str]) -> dict[str, Any]:
         try:
             result = _subprocess.run(
-                cmd, shell=isinstance(cmd, str),
-                capture_output=True, text=True, timeout=60,
+                cmd,
+                shell=isinstance(cmd, str),
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             return {
                 "returncode": result.returncode,
@@ -38,8 +44,10 @@ def load_module(interpreter: Any) -> Any:
     def run_background(cmd: str | list[str]) -> dict[str, Any]:
         try:
             process = _subprocess.Popen(
-                cmd, shell=isinstance(cmd, str),
-                stdout=_subprocess.PIPE, stderr=_subprocess.PIPE,
+                cmd,
+                shell=isinstance(cmd, str),
+                stdout=_subprocess.PIPE,
+                stderr=_subprocess.PIPE,
                 text=True,
             )
             return {

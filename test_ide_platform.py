@@ -1,39 +1,59 @@
+import os
 import sys
-sys.path.insert(0, r"C:\Users\hp\zoya3")
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import unittest
 
 from zoya.ide.completion import (
-    CompletionEngine, CompletionContext, CompletionItem,
-    ZOYA_KEYWORDS, ZOYA_BUILTINS, ZOYA_SNIPPETS,
-    STRING_METHODS, LIST_METHODS, DICT_METHODS,
-)
-from zoya.ide.generation import CodeGenerator, GenerationConfig, CodeTemplate
-from zoya.ide.review import (
-    CodeReviewer, ReviewIssue, ReviewResult, REVIEW_RULES,
-)
-from zoya.ide.refactor import (
-    RefactoringEngine, RefactoringOperation, RefactoringSuggestion,
-    get_available_refactorings,
+    DICT_METHODS,
+    LIST_METHODS,
+    STRING_METHODS,
+    ZOYA_BUILTINS,
+    ZOYA_KEYWORDS,
+    CompletionContext,
+    CompletionEngine,
+    CompletionItem,
 )
 from zoya.ide.debug import (
-    DebugAssistant, DebugContext, DebugAnalysis, BugPattern, COMMON_BUG_PATTERNS,
+    COMMON_BUG_PATTERNS,
+    BugPattern,
+    DebugAnalysis,
+    DebugAssistant,
+    DebugContext,
 )
 from zoya.ide.docs import (
-    DocGenerator, DocConfig, DocSection, ApiReference, parse_doc_comments,
+    ApiReference,
+    DocConfig,
+    DocGenerator,
+    DocSection,
+    parse_doc_comments,
 )
-
+from zoya.ide.generation import CodeGenerator, CodeTemplate, GenerationConfig
+from zoya.ide.refactor import (
+    RefactoringEngine,
+    RefactoringOperation,
+    RefactoringSuggestion,
+    get_available_refactorings,
+)
+from zoya.ide.review import (
+    REVIEW_RULES,
+    CodeReviewer,
+    ReviewIssue,
+    ReviewResult,
+)
 
 # =============================================================================
 # completion.py tests
 # =============================================================================
+
 
 class TestCompletionEngine(unittest.TestCase):
     def setUp(self):
         self.engine = CompletionEngine()
         self.default_context = CompletionContext(
             file_path="test.zr",
-            source="fn main() {\n    print(\"hello\")\n}",
+            source='fn main() {\n    print("hello")\n}',
             line=2,
             col=5,
             prefix="",
@@ -205,7 +225,7 @@ class TestCompletionEngine(unittest.TestCase):
         self.assertEqual(CompletionEngine._infer_type("otherVar"), "variable")
 
     def test_parse_source_variables_let_and_const(self):
-        source = "let x = 5\nconst y = \"hello\""
+        source = 'let x = 5\nconst y = "hello"'
         vars = self.engine._parse_source_variables(source)
         self.assertIn("x", vars)
         self.assertIn("y", vars)
@@ -239,10 +259,40 @@ class TestCompletionEngine(unittest.TestCase):
         self.assertNotIn("if", labels)
 
     def test_all_zoya_keywords_present(self):
-        required = ["let", "const", "fn", "if", "else", "while", "for", "in", "loop",
-                     "return", "break", "continue", "print", "import", "class", "interface",
-                     "enum", "match", "switch", "case", "default", "try", "catch", "throw",
-                     "true", "false", "null", "and", "or", "not", "this", "super"]
+        required = [
+            "let",
+            "const",
+            "fn",
+            "if",
+            "else",
+            "while",
+            "for",
+            "in",
+            "loop",
+            "return",
+            "break",
+            "continue",
+            "print",
+            "import",
+            "class",
+            "interface",
+            "enum",
+            "match",
+            "switch",
+            "case",
+            "default",
+            "try",
+            "catch",
+            "throw",
+            "true",
+            "false",
+            "null",
+            "and",
+            "or",
+            "not",
+            "this",
+            "super",
+        ]
         for kw in required:
             self.assertIn(kw, ZOYA_KEYWORDS)
 
@@ -250,6 +300,7 @@ class TestCompletionEngine(unittest.TestCase):
 # =============================================================================
 # generation.py tests
 # =============================================================================
+
 
 class TestCodeGenerator(unittest.TestCase):
     def setUp(self):
@@ -269,7 +320,9 @@ class TestCodeGenerator(unittest.TestCase):
         self.assertIn("processUser", code)
 
     def test_generate_function_with_params(self):
-        code = self.generator.generate_function("add numbers", params=["a", "b"], name="add")
+        code = self.generator.generate_function(
+            "add numbers", params=["a", "b"], name="add"
+        )
         self.assertIn("fn", code)
 
     def test_generate_class_creates_class(self):
@@ -290,7 +343,7 @@ class TestCodeGenerator(unittest.TestCase):
         self.assertTrue(len(code) > 0)
 
     def test_explain_code_returns_explanation(self):
-        explanation = self.generator.explain_code("fn main() {\n    print(\"hi\")\n}")
+        explanation = self.generator.explain_code('fn main() {\n    print("hi")\n}')
         self.assertIsInstance(explanation, str)
         self.assertTrue(len(explanation) > 0)
 
@@ -382,18 +435,21 @@ class TestCodeTemplate(unittest.TestCase):
 # review.py tests
 # =============================================================================
 
+
 class TestCodeReviewer(unittest.TestCase):
     def setUp(self):
         self.reviewer = CodeReviewer()
 
     def test_review_returns_review_result(self):
-        result = self.reviewer.review("fn main() {\n    print(\"hi\")\n}")
+        result = self.reviewer.review('fn main() {\n    print("hi")\n}')
         self.assertIsInstance(result, ReviewResult)
 
     def test_review_result_error_warning_info_counts(self):
         issues = [
             ReviewIssue(severity="error", message="E1", line=1, col=1, rule_id="C004"),
-            ReviewIssue(severity="warning", message="W1", line=2, col=1, rule_id="S001"),
+            ReviewIssue(
+                severity="warning", message="W1", line=2, col=1, rule_id="S001"
+            ),
             ReviewIssue(severity="info", message="I1", line=3, col=1, rule_id="B001"),
         ]
         result = ReviewResult(issues=issues)
@@ -404,23 +460,31 @@ class TestCodeReviewer(unittest.TestCase):
     def test_review_result_total_property(self):
         issues = [
             ReviewIssue(severity="error", message="E1", line=1, col=1, rule_id="C004"),
-            ReviewIssue(severity="warning", message="W1", line=2, col=1, rule_id="S001"),
+            ReviewIssue(
+                severity="warning", message="W1", line=2, col=1, rule_id="S001"
+            ),
         ]
         result = ReviewResult(issues=issues)
         self.assertEqual(result.total, 2)
 
     def test_review_result_has_errors(self):
-        issues = [ReviewIssue(severity="error", message="E1", line=1, col=1, rule_id="C004")]
+        issues = [
+            ReviewIssue(severity="error", message="E1", line=1, col=1, rule_id="C004")
+        ]
         result = ReviewResult(issues=issues)
         self.assertTrue(result.has_errors())
 
     def test_review_result_no_errors(self):
-        issues = [ReviewIssue(severity="info", message="I1", line=1, col=1, rule_id="B001")]
+        issues = [
+            ReviewIssue(severity="info", message="I1", line=1, col=1, rule_id="B001")
+        ]
         result = ReviewResult(issues=issues)
         self.assertFalse(result.has_errors())
 
     def test_review_result_summary_with_issues(self):
-        issues = [ReviewIssue(severity="error", message="E1", line=1, col=1, rule_id="C004")]
+        issues = [
+            ReviewIssue(severity="error", message="E1", line=1, col=1, rule_id="C004")
+        ]
         result = ReviewResult(issues=issues)
         self.assertIn("error(s)", result.summary())
 
@@ -430,7 +494,9 @@ class TestCodeReviewer(unittest.TestCase):
 
     def test_review_result_add_method(self):
         result = ReviewResult()
-        issue = ReviewIssue(severity="warning", message="test", line=1, col=1, rule_id="S001")
+        issue = ReviewIssue(
+            severity="warning", message="test", line=1, col=1, rule_id="S001"
+        )
         result.add(issue)
         self.assertEqual(result.total, 1)
         self.assertEqual(result.warning_count, 1)
@@ -448,7 +514,7 @@ class TestCodeReviewer(unittest.TestCase):
         self.assertTrue(s003_found)
 
     def test_detects_missing_return_types_triggers_rule(self):
-        source = "fn main() {\n    print(\"done\")\n}"
+        source = 'fn main() {\n    print("done")\n}'
         result = self.reviewer.review(source)
         c002_found = any(i.rule_id == "C002" for i in result.issues)
         self.assertTrue(c002_found)
@@ -460,7 +526,7 @@ class TestCodeReviewer(unittest.TestCase):
         self.assertTrue(c002_found)
 
     def test_detects_deep_nesting(self):
-        source = "fn main() {\n    if (a) {\n        if (b) {\n            if (c) {\n                if (d) {\n                    if (e) {\n                        print(\"deep\")\n                    }\n                }\n            }\n        }\n    }\n}"
+        source = 'fn main() {\n    if (a) {\n        if (b) {\n            if (c) {\n                if (d) {\n                    if (e) {\n                        print("deep")\n                    }\n                }\n            }\n        }\n    }\n}'
         result = self.reviewer.review(source)
         c003_found = any(i.rule_id == "C003" for i in result.issues)
         self.assertTrue(c003_found)
@@ -478,7 +544,7 @@ class TestCodeReviewer(unittest.TestCase):
         self.assertTrue(c005_found)
 
     def test_hardcoded_value_check_runs_without_error(self):
-        source = "fn process() {\n    let apiKey = \"this_is_a_very_long_hardcoded_api_key_string\"\n}"
+        source = 'fn process() {\n    let apiKey = "this_is_a_very_long_hardcoded_api_key_string"\n}'
         result = self.reviewer.review(source)
         self.assertIsInstance(result, ReviewResult)
 
@@ -487,13 +553,25 @@ class TestCodeReviewer(unittest.TestCase):
         self.assertEqual(result.total, 0)
 
     def test_clean_code_has_no_issues(self):
-        source = "fn main() {\n    print(\"hello\")\n}"
+        source = 'fn main() {\n    print("hello")\n}'
         result = self.reviewer.review(source)
         self.assertIsInstance(result, ReviewResult)
 
     def test_review_rules_has_all_entries(self):
-        expected_ids = ["S001", "S002", "S003", "C001", "C002", "C003",
-                         "C004", "C005", "B001", "B002", "P001", "P002"]
+        expected_ids = [
+            "S001",
+            "S002",
+            "S003",
+            "C001",
+            "C002",
+            "C003",
+            "C004",
+            "C005",
+            "B001",
+            "B002",
+            "P001",
+            "P002",
+        ]
         for rid in expected_ids:
             self.assertIn(rid, REVIEW_RULES)
 
@@ -535,7 +613,7 @@ class TestCodeReviewer(unittest.TestCase):
         self.assertTrue(p001_found)
 
     def test_detects_unused_loop_var(self):
-        source = "for item in items {\n    print(\"hello\")\n}"
+        source = 'for item in items {\n    print("hello")\n}'
         result = self.reviewer.review(source)
         p002_found = any(i.rule_id == "P002" for i in result.issues)
         self.assertTrue(p002_found)
@@ -569,6 +647,7 @@ class TestCodeReviewer(unittest.TestCase):
 # refactor.py tests
 # =============================================================================
 
+
 class TestRefactoringEngine(unittest.TestCase):
     def setUp(self):
         self.engine = RefactoringEngine()
@@ -580,10 +659,10 @@ class TestRefactoringEngine(unittest.TestCase):
         self.assertNotIn("let x", result)
 
     def test_rename_variable_does_not_rename_function_calls(self):
-        source = "let len = 5\nprint(len(\"hi\"))"
+        source = 'let len = 5\nprint(len("hi"))'
         result = self.engine.rename_variable(source, "len", "length")
         self.assertIn("let length = 5", result)
-        self.assertIn("len(\"hi\")", result)
+        self.assertIn('len("hi")', result)
 
     def test_extract_function(self):
         source = "fn main() {\n    let x = 1\n    let y = 2\n    let z = x + y\n}"
@@ -609,18 +688,18 @@ class TestRefactoringEngine(unittest.TestCase):
     def test_convert_if_to_switch(self):
         source = (
             "if x == 1 {\n"
-            "    print(\"one\")\n"
+            '    print("one")\n'
             "} else if x == 2 {\n"
-            "    print(\"two\")\n"
+            '    print("two")\n'
             "} else {\n"
-            "    print(\"other\")\n"
+            '    print("other")\n'
             "}"
         )
         result = self.engine.convert_if_to_switch(source)
         self.assertIn("switch", result)
 
     def test_convert_if_to_switch_no_eq_returns_original(self):
-        source = "if x > 5 {\n    print(\"big\")\n}"
+        source = 'if x > 5 {\n    print("big")\n}'
         result = self.engine.convert_if_to_switch(source)
         self.assertNotIn("switch", result)
 
@@ -647,12 +726,12 @@ class TestRefactoringEngine(unittest.TestCase):
         self.assertEqual(result, source)
 
     def test_format_code_fixes_indentation(self):
-        source = "fn main() {\nprint(\"hi\")\n}"
+        source = 'fn main() {\nprint("hi")\n}'
         result = self.engine.format_code(source)
         self.assertIn("    print(", result)
 
     def test_format_code_handles_closing_brace(self):
-        source = "fn main() {\n    if true {\n        print(\"yes\")\n    }\n}"
+        source = 'fn main() {\n    if true {\n        print("yes")\n    }\n}'
         result = self.engine.format_code(source)
         self.assertIn("    if true {", result)
 
@@ -731,13 +810,13 @@ class TestGetAvailableRefactorings(unittest.TestCase):
     def test_if_chain_suggestion(self):
         source = (
             "if x == 1 {\n"
-            "    print(\"one\")\n"
+            '    print("one")\n'
             "} else if x == 2 {\n"
-            "    print(\"two\")\n"
+            '    print("two")\n'
             "} else if x == 3 {\n"
-            "    print(\"three\")\n"
+            '    print("three")\n'
             "} else {\n"
-            "    print(\"other\")\n"
+            '    print("other")\n'
             "}"
         )
         suggestions = get_available_refactorings(source)
@@ -758,7 +837,7 @@ class TestGetAvailableRefactorings(unittest.TestCase):
         self.assertIn("split_large_function", names)
 
     def test_add_type_annotations_suggestion(self):
-        source = "x = 42\ny = \"hello\""
+        source = 'x = 42\ny = "hello"'
         suggestions = get_available_refactorings(source)
         names = [s.name for s in suggestions]
         self.assertIn("add_type_annotations", names)
@@ -776,7 +855,9 @@ class TestGetAvailableRefactorings(unittest.TestCase):
         self.assertIn("simplify_boolean_expression", names)
 
     def test_refactoring_suggestion_structure(self):
-        s = RefactoringSuggestion(name="test", description="desc", lines=(1, 2), confidence=0.8)
+        s = RefactoringSuggestion(
+            name="test", description="desc", lines=(1, 2), confidence=0.8
+        )
         self.assertEqual(s.name, "test")
         self.assertEqual(s.confidence, 0.8)
         self.assertEqual(s.lines, (1, 2))
@@ -785,6 +866,7 @@ class TestGetAvailableRefactorings(unittest.TestCase):
 # =============================================================================
 # debug.py tests
 # =============================================================================
+
 
 class TestDebugAssistant(unittest.TestCase):
     def setUp(self):
@@ -846,7 +928,7 @@ class TestDebugAssistant(unittest.TestCase):
 
     def test_analyze_key_error(self):
         ctx = DebugContext(
-            source="let d = {\"a\": 1}\nlet v = d[\"b\"]",
+            source='let d = {"a": 1}\nlet v = d["b"]',
             error_message="key 'b' not found",
             error_type="KeyError",
         )
@@ -896,7 +978,7 @@ class TestDebugAssistant(unittest.TestCase):
         self.assertGreater(len(results), 0)
 
     def test_find_infinite_loop_risks_while_true_no_break(self):
-        source = "while true {\n    print(\"hi\")\n}"
+        source = 'while true {\n    print("hi")\n}'
         risks = self.assistant.find_infinite_loop_risks(source)
         self.assertGreater(len(risks), 0)
 
@@ -1015,7 +1097,9 @@ class TestDebugAssistant(unittest.TestCase):
         self.assertEqual(var, "myVar")
 
     def test_extract_attr_from_error(self):
-        attr = self.assistant._extract_attr_from_error("'X' object has no attribute 'foo'")
+        attr = self.assistant._extract_attr_from_error(
+            "'X' object has no attribute 'foo'"
+        )
         self.assertEqual(attr, "foo")
 
     def test_find_recursive_functions_no_base_case(self):
@@ -1044,12 +1128,13 @@ class TestDebugAssistant(unittest.TestCase):
 # docs.py tests
 # =============================================================================
 
+
 class TestDocGenerator(unittest.TestCase):
     def setUp(self):
         self.generator = DocGenerator()
 
     def test_generate_returns_markdown_with_headings(self):
-        source = '/// My module\nfn hello(name) {\n    return name\n}'
+        source = "/// My module\nfn hello(name) {\n    return name\n}"
         result = self.generator.generate(source, "module.zr")
         self.assertIn("#", result)
         self.assertIsInstance(result, str)
@@ -1123,11 +1208,14 @@ class TestDocGenerator(unittest.TestCase):
         self.assertIn("1.0.0", result)
 
     def test_generate_changelog_categorizes_changes(self):
-        result = self.generator.generate_changelog("1.0.0", [
-            "Add login feature",
-            "fix crash on startup",
-            "chore update deps",
-        ])
+        result = self.generator.generate_changelog(
+            "1.0.0",
+            [
+                "Add login feature",
+                "fix crash on startup",
+                "chore update deps",
+            ],
+        )
         self.assertIn("### Added", result)
         self.assertIn("### Fixed", result)
         self.assertIn("### Changed", result)
@@ -1196,12 +1284,14 @@ class TestApiReference(unittest.TestCase):
         self.api = ApiReference()
 
     def test_to_markdown_renders_api_ref(self):
-        self.api.functions.append({
-            "name": "add",
-            "params": [{"name": "a", "type": "int"}, {"name": "b", "type": "int"}],
-            "return_type": "int",
-            "doc": "Adds two numbers",
-        })
+        self.api.functions.append(
+            {
+                "name": "add",
+                "params": [{"name": "a", "type": "int"}, {"name": "b", "type": "int"}],
+                "return_type": "int",
+                "doc": "Adds two numbers",
+            }
+        )
         md = self.api.to_markdown()
         self.assertIn("add", md)
         self.assertIn("# API Reference", md)
@@ -1212,20 +1302,24 @@ class TestApiReference(unittest.TestCase):
         self.assertIn("math", md)
 
     def test_to_markdown_with_classes(self):
-        self.api.classes.append({
-            "name": "Calculator",
-            "methods": [{"name": "add", "params": []}],
-        })
+        self.api.classes.append(
+            {
+                "name": "Calculator",
+                "methods": [{"name": "add", "params": []}],
+            }
+        )
         md = self.api.to_markdown()
         self.assertIn("Calculator", md)
 
     def test_to_html_renders_html(self):
-        self.api.functions.append({
-            "name": "add",
-            "params": [{"name": "a", "type": "int"}],
-            "return_type": "int",
-            "doc": "Adds numbers",
-        })
+        self.api.functions.append(
+            {
+                "name": "add",
+                "params": [{"name": "a", "type": "int"}],
+                "return_type": "int",
+                "doc": "Adds numbers",
+            }
+        )
         html = self.api.to_html()
         self.assertIn("<h1>API Reference</h1>", html)
         self.assertIn("<h3>", html)
@@ -1252,7 +1346,9 @@ class TestApiReference(unittest.TestCase):
 
 class TestParseDocComments(unittest.TestCase):
     def test_parse_doc_comments_extracts_fn_docs(self):
-        source = "/// This function adds two numbers\nfn add(a, b) {\n    return a + b\n}"
+        source = (
+            "/// This function adds two numbers\nfn add(a, b) {\n    return a + b\n}"
+        )
         docs = parse_doc_comments(source)
         self.assertIn("add", docs)
         self.assertIn("adds two numbers", docs["add"].lower())
@@ -1301,18 +1397,21 @@ class TestDocHelpers(unittest.TestCase):
 
     def test_api_reference_to_markdown_with_params_doc(self):
         api = ApiReference()
-        api.functions.append({
-            "name": "search",
-            "params": [{"name": "query", "type": "str", "doc": "The search query"}],
-            "return_type": "list",
-            "doc": "Search for items",
-        })
+        api.functions.append(
+            {
+                "name": "search",
+                "params": [{"name": "query", "type": "str", "doc": "The search query"}],
+                "return_type": "list",
+                "doc": "Search for items",
+            }
+        )
         md = api.to_markdown()
         self.assertIn("query", md)
         self.assertIn("search query", md)
 
     def test_extract_classes_from_source(self):
         from zoya.ide.docs import _extract_classes
+
         source = "class Animal {\n    fn speak() { }\n}"
         classes = _extract_classes(source)
         self.assertEqual(len(classes), 1)
@@ -1320,6 +1419,7 @@ class TestDocHelpers(unittest.TestCase):
 
     def test_extract_enums_from_source(self):
         from zoya.ide.docs import _extract_enums
+
         source = "enum Color {\n    Red\n    Green\n    Blue\n}"
         enums = _extract_enums(source)
         self.assertEqual(len(enums), 1)
@@ -1327,6 +1427,7 @@ class TestDocHelpers(unittest.TestCase):
 
     def test_extract_interfaces_from_source(self):
         from zoya.ide.docs import _extract_interfaces
+
         source = "interface Drawable {\n    fn draw()\n    fn resize()\n}"
         interfaces = _extract_interfaces(source)
         self.assertEqual(len(interfaces), 1)
@@ -1334,9 +1435,13 @@ class TestDocHelpers(unittest.TestCase):
 
     def test_format_fn_signature(self):
         from zoya.ide.docs import _format_fn_signature
+
         fn = {
             "name": "add",
-            "params": [{"name": "a", "type": "int"}, {"name": "b", "type": "int", "default": "0"}],
+            "params": [
+                {"name": "a", "type": "int"},
+                {"name": "b", "type": "int", "default": "0"},
+            ],
             "return_type": "int",
         }
         sig = _format_fn_signature(fn)
@@ -1347,8 +1452,9 @@ class TestDocHelpers(unittest.TestCase):
 
     def test_escape_html(self):
         from zoya.ide.docs import _escape_html
+
         self.assertEqual(_escape_html("<script>"), "&lt;script&gt;")
-        self.assertEqual(_escape_html('a & b'), "a &amp; b")
+        self.assertEqual(_escape_html("a & b"), "a &amp; b")
 
 
 if __name__ == "__main__":

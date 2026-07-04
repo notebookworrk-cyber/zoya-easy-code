@@ -8,7 +8,7 @@ def load_module(interpreter: Any) -> Any:
     from zoya.interpreter import ZoyaModule
 
     def read(path: str) -> str:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return f.read()
 
     def write(path: str, content: str) -> None:

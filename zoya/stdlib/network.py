@@ -8,7 +8,8 @@ def load_module(interpreter: Any) -> Any:
 
     def get(url: str, timeout: int = 10) -> str:
         try:
-            from urllib.request import urlopen, Request
+            from urllib.request import Request, urlopen
+
             req = Request(url, headers={"User-Agent": "Zoya/1.0"})
             with urlopen(req, timeout=timeout) as response:
                 return response.read().decode("utf-8")
@@ -17,12 +18,17 @@ def load_module(interpreter: Any) -> Any:
 
     def post(url: str, data: str = "", content_type: str = "application/json") -> str:
         try:
-            from urllib.request import urlopen, Request
+            from urllib.request import Request, urlopen
+
             data_bytes = data.encode("utf-8") if data else None
-            req = Request(url, data=data_bytes, headers={
-                "User-Agent": "Zoya/1.0",
-                "Content-Type": content_type,
-            })
+            req = Request(
+                url,
+                data=data_bytes,
+                headers={
+                    "User-Agent": "Zoya/1.0",
+                    "Content-Type": content_type,
+                },
+            )
             with urlopen(req, timeout=10) as response:
                 return response.read().decode("utf-8")
         except Exception as e:
@@ -30,7 +36,8 @@ def load_module(interpreter: Any) -> Any:
 
     def download(url: str, path: str) -> str:
         try:
-            from urllib.request import urlopen, Request
+            from urllib.request import Request, urlopen
+
             req = Request(url, headers={"User-Agent": "Zoya/1.0"})
             with urlopen(req, timeout=30) as response:
                 data = response.read()

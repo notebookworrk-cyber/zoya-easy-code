@@ -1,22 +1,43 @@
-import sys
 import os
-import time
-import math
+import sys
 import unittest
-from typing import List, Optional
 
-sys.path.insert(0, r"C:\Users\hp\zoya3")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from zoya.mobile import (
-    Widget, Label, Button, TextField, Image, ListView, ScrollView,
-    Column, Row, Card, Switch, Slider, ProgressBar, Spinner, Toast,
-    Modal, Screen, Navigator, App, NativeBridge, IOSBridge, AndroidBridge,
-    MobileError, create_mobile_app,
+    AndroidBridge,
+    App,
+    Button,
+    Card,
+    Column,
+    Image,
+    IOSBridge,
+    Label,
+    ListView,
+    MobileError,
+    Modal,
+    Navigator,
+    ProgressBar,
+    Row,
+    Screen,
+    ScrollView,
+    Slider,
+    Spinner,
+    Switch,
+    TextField,
+    Toast,
+    Widget,
+    create_mobile_app,
 )
 from zoya.mobile.gestures import (
-    TouchEvent, GestureRecognizer, TapRecognizer, DoubleTapRecognizer,
-    LongPressRecognizer, SwipeRecognizer, PinchRecognizer, PanRecognizer,
+    DoubleTapRecognizer,
     GestureDetector,
+    LongPressRecognizer,
+    PanRecognizer,
+    PinchRecognizer,
+    SwipeRecognizer,
+    TapRecognizer,
+    TouchEvent,
 )
 
 
@@ -528,6 +549,7 @@ class TestNavigatorLifecycle(unittest.TestCase):
         class Tracker(Screen):
             def on_appear(self):
                 events.append(f"appear_{self.name}")
+
             def on_disappear(self):
                 events.append(f"disappear_{self.name}")
 

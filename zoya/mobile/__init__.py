@@ -5,11 +5,13 @@ and native bridge support.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 
 class MobileError(Exception):
     """Base exception for mobile framework errors."""
+
     pass
 
 
@@ -31,9 +33,9 @@ class Widget:
         self.height = height
         self.visible = True
         self.enabled = True
-        self.on_click: Optional[Callable[[], None]] = None
-        self.on_long_press: Optional[Callable[[], None]] = None
-        self.on_swipe: Optional[Callable[[str], None]] = None
+        self.on_click: Callable[[], None] | None = None
+        self.on_long_press: Callable[[], None] | None = None
+        self.on_swipe: Callable[[str], None] | None = None
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(id='{self.id}')"
@@ -61,7 +63,7 @@ class Button(Widget):
     def __init__(
         self,
         text: str,
-        on_click: Optional[Callable[[], None]] = None,
+        on_click: Callable[[], None] | None = None,
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -82,7 +84,7 @@ class TextField(Widget):
     def __init__(
         self,
         placeholder: str = "",
-        on_change: Optional[Callable[[str], None]] = None,
+        on_change: Callable[[str], None] | None = None,
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -120,8 +122,8 @@ class ListView(Widget):
 
     def __init__(
         self,
-        items: List[Any],
-        on_select: Optional[Callable[[Any], None]] = None,
+        items: list[Any],
+        on_select: Callable[[Any], None] | None = None,
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -155,7 +157,7 @@ class Column(Widget):
 
     def __init__(
         self,
-        children: List[Widget],
+        children: list[Widget],
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -177,7 +179,7 @@ class Row(Widget):
 
     def __init__(
         self,
-        children: List[Widget],
+        children: list[Widget],
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -216,7 +218,7 @@ class Switch(Widget):
     def __init__(
         self,
         value: bool = False,
-        on_toggle: Optional[Callable[[bool], None]] = None,
+        on_toggle: Callable[[bool], None] | None = None,
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -240,7 +242,7 @@ class Slider(Widget):
         min_value: float = 0,
         max_value: float = 100,
         value: float = 50,
-        on_change: Optional[Callable[[float], None]] = None,
+        on_change: Callable[[float], None] | None = None,
         widget_id: str = "",
         x: float = 0,
         y: float = 0,
@@ -338,7 +340,7 @@ class Screen:
     def __init__(self, name: str, title: str = "") -> None:
         self.name = name
         self.title = title or name
-        self.widgets: List[Widget] = []
+        self.widgets: list[Widget] = []
 
     def add_widget(self, widget: Widget) -> None:
         """Add a widget to the screen."""
@@ -365,7 +367,7 @@ class Screen:
         """Visibility: screen is no longer visible."""
         pass
 
-    def build(self) -> List[Widget]:
+    def build(self) -> list[Widget]:
         """Build and return the screen's widget tree."""
         return self.widgets
 
@@ -374,7 +376,7 @@ class Navigator:
     """Manages screen navigation stack."""
 
     def __init__(self) -> None:
-        self._stack: List[Screen] = []
+        self._stack: list[Screen] = []
 
     def push(self, screen: Screen, animated: bool = True) -> None:
         """Push a screen onto the navigation stack."""
@@ -413,13 +415,13 @@ class Navigator:
         if self._stack:
             self._stack[-1].on_appear()
 
-    def get_current(self) -> Optional[Screen]:
+    def get_current(self) -> Screen | None:
         """Get the topmost screen."""
         if not self._stack:
             return None
         return self._stack[-1]
 
-    def get_history(self) -> List[str]:
+    def get_history(self) -> list[str]:
         """Return the list of screen names in the stack."""
         return [s.name for s in self._stack]
 
@@ -434,10 +436,10 @@ class App:
     def __init__(self, name: str = "ZoyaApp", version: str = "1.0.0") -> None:
         self.name = name
         self.version = version
-        self.screens: Dict[str, Screen] = {}
+        self.screens: dict[str, Screen] = {}
         self.initial_route: str = ""
         self.navigator = Navigator()
-        self.theme: Dict[str, Any] = {
+        self.theme: dict[str, Any] = {
             "primary_color": "#007AFF",
             "background_color": "#FFFFFF",
             "text_color": "#000000",
@@ -454,7 +456,7 @@ class App:
         """Set the first screen to display on launch."""
         self.initial_route = name
 
-    def get_screen(self, name: str) -> Optional[Screen]:
+    def get_screen(self, name: str) -> Screen | None:
         """Retrieve a registered screen by name."""
         return self.screens.get(name)
 
@@ -468,49 +470,38 @@ class App:
             print(f"Zoya Mobile App '{self.name}' v{self.version} running")
             print(f"Initial screen: {screen.name}")
         else:
-            raise MobileError(
-                f"Initial route '{self.initial_route}' not found"
-            )
+            raise MobileError(f"Initial route '{self.initial_route}' not found")
 
 
 class NativeBridge(ABC):
     """Abstract interface for native platform calls."""
 
     @abstractmethod
-    def request_permission(self, permission: str) -> bool:
-        ...
+    def request_permission(self, permission: str) -> bool: ...
 
     @abstractmethod
-    def get_device_info(self) -> Dict[str, Any]:
-        ...
+    def get_device_info(self) -> dict[str, Any]: ...
 
     @abstractmethod
-    def show_notification(self, title: str, body: str) -> None:
-        ...
+    def show_notification(self, title: str, body: str) -> None: ...
 
     @abstractmethod
-    def vibrate(self, duration: int = 100) -> None:
-        ...
+    def vibrate(self, duration: int = 100) -> None: ...
 
     @abstractmethod
-    def get_location(self) -> Dict[str, Any]:
-        ...
+    def get_location(self) -> dict[str, Any]: ...
 
     @abstractmethod
-    def take_photo(self) -> str:
-        ...
+    def take_photo(self) -> str: ...
 
     @abstractmethod
-    def pick_file(self) -> str:
-        ...
+    def pick_file(self) -> str: ...
 
     @abstractmethod
-    def open_url(self, url: str) -> None:
-        ...
+    def open_url(self, url: str) -> None: ...
 
     @abstractmethod
-    def share_text(self, text: str) -> None:
-        ...
+    def share_text(self, text: str) -> None: ...
 
 
 class IOSBridge(NativeBridge):
@@ -520,7 +511,7 @@ class IOSBridge(NativeBridge):
         print(f"[iOS] Requesting permission: {permission}")
         return True
 
-    def get_device_info(self) -> Dict[str, Any]:
+    def get_device_info(self) -> dict[str, Any]:
         return {"platform": "iOS", "model": "iPhone", "os_version": "17.0"}
 
     def show_notification(self, title: str, body: str) -> None:
@@ -529,7 +520,7 @@ class IOSBridge(NativeBridge):
     def vibrate(self, duration: int = 100) -> None:
         print(f"[iOS] Vibrate for {duration}ms")
 
-    def get_location(self) -> Dict[str, Any]:
+    def get_location(self) -> dict[str, Any]:
         return {"lat": 37.7749, "lng": -122.4194}
 
     def take_photo(self) -> str:
@@ -556,7 +547,7 @@ class AndroidBridge(NativeBridge):
         print(f"[Android] Requesting permission: {permission}")
         return True
 
-    def get_device_info(self) -> Dict[str, Any]:
+    def get_device_info(self) -> dict[str, Any]:
         return {"platform": "Android", "model": "Pixel 8", "os_version": "14.0"}
 
     def show_notification(self, title: str, body: str) -> None:
@@ -565,7 +556,7 @@ class AndroidBridge(NativeBridge):
     def vibrate(self, duration: int = 100) -> None:
         print(f"[Android] Vibrate for {duration}ms")
 
-    def get_location(self) -> Dict[str, Any]:
+    def get_location(self) -> dict[str, Any]:
         return {"lat": 37.7749, "lng": -122.4194}
 
     def take_photo(self) -> str:

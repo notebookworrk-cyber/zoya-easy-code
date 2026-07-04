@@ -1,16 +1,45 @@
 from __future__ import annotations
 
 import pytest
-from zoya.lexer import tokenize
-from zoya.parser import Parser, parse
+
 from zoya.ast import (
-    Assign, BinOp, Block, Boolean, Break, Call, ClassDef, Continue,
-    Dict_, EnumDef, ForEach, ForLoop, Function, GetAttr, Ident, If,
-    Import, Index, InterpolatedString, Lambda, List_, Loop, Match,
-    MethodCall, Number, Print, Return, Slice, String, Switch,
-    Throw, Try, UnaryOp, While,
+    Assign,
+    BinOp,
+    Block,
+    Boolean,
+    Break,
+    Call,
+    ClassDef,
+    Continue,
+    Dict_,
+    EnumDef,
+    ForEach,
+    ForLoop,
+    Function,
+    GetAttr,
+    Ident,
+    If,
+    Import,
+    Index,
+    InterpolatedString,
+    Lambda,
+    List_,
+    Loop,
+    Match,
+    MethodCall,
+    Number,
+    Print,
+    Return,
+    Slice,
+    String,
+    Switch,
+    Throw,
+    Try,
+    UnaryOp,
+    While,
 )
-from zoya.errors import ParseError
+from zoya.lexer import tokenize
+from zoya.parser import parse
 
 
 def _get_ast(source: str):
@@ -226,7 +255,7 @@ def test_if_else_if():
 
 
 def test_while():
-    source = 'while x < 10 {\n    x = x + 1\n}\n'
+    source = "while x < 10 {\n    x = x + 1\n}\n"
     node = _first_stmt(source)
     assert isinstance(node, While)
     assert isinstance(node.cond, BinOp)
@@ -266,7 +295,7 @@ def test_for_in():
 
 
 def test_function_def():
-    source = 'fn add(a, b) {\n    return a + b\n}\n'
+    source = "fn add(a, b) {\n    return a + b\n}\n"
     node = _first_stmt(source)
     assert isinstance(node, Function)
     assert node.name == "add"
@@ -363,13 +392,14 @@ def test_assign_index():
     source = "items[0] = 42\n"
     node = _first_stmt(source)
     from zoya.ast import AssignIndex
+
     assert isinstance(node, AssignIndex)
     assert isinstance(node.index, Number)
     assert node.index.value == 0
 
 
 def test_method_call():
-    source = 'items.append(4)\n'
+    source = "items.append(4)\n"
     node = _first_stmt(source)
     assert isinstance(node, MethodCall)
     assert node.method == "append"
@@ -377,16 +407,17 @@ def test_method_call():
 
 
 def test_get_attr():
-    source = 'obj.attr\n'
+    source = "obj.attr\n"
     node = _first_stmt(source)
     assert isinstance(node, GetAttr)
     assert node.attr == "attr"
 
 
 def test_assign_attr():
-    source = 'obj.attr = 42\n'
+    source = "obj.attr = 42\n"
     node = _first_stmt(source)
     from zoya.ast import AssignAttr
+
     assert isinstance(node, AssignAttr)
     assert node.attr == "attr"
 
@@ -401,7 +432,9 @@ def test_class_def():
 
 
 def test_class_def_with_parent():
-    source = 'class Dog extends Animal {\n    fn bark() {\n        print "woof"\n    }\n}\n'
+    source = (
+        'class Dog extends Animal {\n    fn bark() {\n        print "woof"\n    }\n}\n'
+    )
     node = _first_stmt(source)
     assert isinstance(node, ClassDef)
     assert node.name == "Dog"
@@ -409,7 +442,7 @@ def test_class_def_with_parent():
 
 
 def test_class_def_with_colon_parent():
-    source = 'class Dog: Animal {\n}\n'
+    source = "class Dog: Animal {\n}\n"
     node = _first_stmt(source)
     assert isinstance(node, ClassDef)
     assert node.name == "Dog"
@@ -508,14 +541,14 @@ def test_lambda_with_arrow():
 
 
 def test_match():
-    source = "match x {\n    1 -> print(\"one\"),\n    2 -> print(\"two\")\n}\n"
+    source = 'match x {\n    1 -> print("one"),\n    2 -> print("two")\n}\n'
     node = _first_stmt(source)
     assert isinstance(node, Match)
     assert len(node.arms) == 2
 
 
 def test_match_with_default():
-    source = "match x {\n    1 -> print(\"one\"),\n    default -> print(\"other\")\n}\n"
+    source = 'match x {\n    1 -> print("one"),\n    default -> print("other")\n}\n'
     node = _first_stmt(source)
     assert isinstance(node, Match)
     assert len(node.arms) == 1
@@ -558,18 +591,19 @@ def test_slice_step():
 
 
 def test_chained_method_call():
-    source = 'data.strip().upper()\n'
+    source = "data.strip().upper()\n"
     node = _first_stmt(source)
     assert isinstance(node, MethodCall)
     assert node.method == "upper"
 
 
 def test_named_arguments():
-    source = 'fn f(a, b) {\n    return a + b\n}\nf(b = 2, a = 1)\n'
+    source = "fn f(a, b) {\n    return a + b\n}\nf(b = 2, a = 1)\n"
     block = _get_ast(source)
     call_node = block.statements[1]
     assert isinstance(call_node, Call)
     from zoya.ast import NamedArg
+
     assert any(isinstance(a, NamedArg) for a in call_node.args)
 
 
@@ -581,7 +615,7 @@ def test_chained_comparison():
 
 def test_unexpected_token():
     source = "x = @\n"
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         _first_stmt(source)
 
 
@@ -595,7 +629,9 @@ def test_empty_block():
 def test_interface_def():
     source = "interface Speaker {\n    fn speak()\n}\n"
     node = _first_stmt(source)
-    assert isinstance(node, __import__("zoya.ast", fromlist=["InterfaceDef"]).InterfaceDef)
+    assert isinstance(
+        node, __import__("zoya.ast", fromlist=["InterfaceDef"]).InterfaceDef
+    )
 
 
 def test_block_as_statement():

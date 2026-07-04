@@ -6,8 +6,7 @@ Provides touch event handling and gesture detection for mobile interactions.
 import math
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 
 
 @dataclass
@@ -25,7 +24,7 @@ class GestureRecognizer(ABC):
     """Abstract base for all gesture recognizers."""
 
     @abstractmethod
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
         """Detect gesture type from a batch of touch events.
 
         Returns the gesture name (e.g. 'tap', 'swipe_left') or None.
@@ -44,12 +43,12 @@ class TapRecognizer(GestureRecognizer):
     def __init__(self, max_distance: float = 10, max_duration: float = 0.3) -> None:
         self.max_distance = max_distance
         self.max_duration = max_duration
-        self._start_x: Optional[float] = None
-        self._start_y: Optional[float] = None
-        self._start_time: Optional[float] = None
+        self._start_x: float | None = None
+        self._start_y: float | None = None
+        self._start_time: float | None = None
         self._touching = False
 
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
         for touch in touches:
             if touch.event_type == "down" and not self._touching:
                 self._start_x = touch.x
@@ -92,10 +91,10 @@ class DoubleTapRecognizer(GestureRecognizer):
 
     def __init__(self, max_interval: float = 0.3) -> None:
         self.max_interval = max_interval
-        self._last_tap_time: Optional[float] = None
+        self._last_tap_time: float | None = None
         self._sub = TapRecognizer()
 
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
         result = self._sub.recognize(touches)
 
         if result == "tap":
@@ -120,13 +119,13 @@ class LongPressRecognizer(GestureRecognizer):
 
     def __init__(self, min_duration: float = 0.5) -> None:
         self.min_duration = min_duration
-        self._start_x: Optional[float] = None
-        self._start_y: Optional[float] = None
-        self._start_time: Optional[float] = None
+        self._start_x: float | None = None
+        self._start_y: float | None = None
+        self._start_time: float | None = None
         self._touching = False
         self._triggered = False
 
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
         for touch in touches:
             if touch.event_type == "down" and not self._touching:
                 self._start_x = touch.x
@@ -164,11 +163,11 @@ class SwipeRecognizer(GestureRecognizer):
     def __init__(self, min_distance: float = 50, direction: str = "any") -> None:
         self.min_distance = min_distance
         self.direction = direction
-        self._start_x: Optional[float] = None
-        self._start_y: Optional[float] = None
+        self._start_x: float | None = None
+        self._start_y: float | None = None
         self._touching = False
 
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
         for touch in touches:
             if touch.event_type == "down" and not self._touching:
                 self._start_x = touch.x
@@ -219,11 +218,11 @@ class PinchRecognizer(GestureRecognizer):
 
     def __init__(self, min_scale: float = 0.5) -> None:
         self.min_scale = min_scale
-        self._initial_distance: Optional[float] = None
+        self._initial_distance: float | None = None
         self._active = False
 
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
-        pointers: Dict[int, Tuple[float, float]] = {}
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
+        pointers: dict[int, tuple[float, float]] = {}
 
         for t in touches:
             pointers[t.pointer_id] = (t.x, t.y)
@@ -240,9 +239,7 @@ class PinchRecognizer(GestureRecognizer):
         keys = list(pointers.keys())[:2]
         p1 = pointers[keys[0]]
         p2 = pointers[keys[1]]
-        current_distance = math.sqrt(
-            (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2
-        )
+        current_distance = math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
         if current_distance < 1:
             return None
@@ -271,13 +268,13 @@ class PanRecognizer(GestureRecognizer):
 
     def __init__(self, min_distance: float = 10) -> None:
         self.min_distance = min_distance
-        self._start_x: Optional[float] = None
-        self._start_y: Optional[float] = None
-        self._last_x: Optional[float] = None
-        self._last_y: Optional[float] = None
+        self._start_x: float | None = None
+        self._start_y: float | None = None
+        self._last_x: float | None = None
+        self._last_y: float | None = None
         self._touching = False
 
-    def recognize(self, touches: List[TouchEvent]) -> Optional[str]:
+    def recognize(self, touches: list[TouchEvent]) -> str | None:
         for touch in touches:
             if touch.event_type == "down" and not self._touching:
                 self._start_x = touch.x
@@ -316,15 +313,13 @@ class GestureDetector:
     """Orchestrates multiple gesture recognizers on touch input."""
 
     def __init__(self) -> None:
-        self.recognizers: List[GestureRecognizer] = []
+        self.recognizers: list[GestureRecognizer] = []
 
     def add_recognizer(self, recognizer: GestureRecognizer) -> None:
         """Register a recognizer for gesture detection."""
         self.recognizers.append(recognizer)
 
-    def process_touches(
-        self, touches: List[TouchEvent]
-    ) -> Optional[Tuple[str, Dict]]:
+    def process_touches(self, touches: list[TouchEvent]) -> tuple[str, dict] | None:
         """Feed touch events to all recognizers.
 
         Returns the first matching (gesture_name, params) or None.
@@ -337,7 +332,7 @@ class GestureDetector:
         return None
 
     @staticmethod
-    def _extract_params(touches: List[TouchEvent]) -> Dict:
+    def _extract_params(touches: list[TouchEvent]) -> dict:
         if not touches:
             return {}
         t = touches[-1]

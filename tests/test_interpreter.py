@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import pytest
-from zoya import run
-from zoya.interpreter import Interpreter, interpret
+
+from zoya.errors import RuntimeError_
+from zoya.interpreter import interpret
 from zoya.lexer import tokenize
 from zoya.parser import parse
-from zoya.errors import ZoyaRuntimeError, RuntimeError_
 
 
 def _run(source: str):
@@ -174,7 +174,9 @@ def test_if_else_false():
 
 
 def test_if_else_if():
-    result = _run("x = 5\nif x > 10 {\n    1\n} else if x > 3 {\n    2\n} else {\n    3\n}\n")
+    result = _run(
+        "x = 5\nif x > 10 {\n    1\n} else if x > 3 {\n    2\n} else {\n    3\n}\n"
+    )
     assert result == 2
 
 
@@ -194,58 +196,75 @@ def test_for_loop():
 
 
 def test_foreach_iterable():
-    result = _run("items = [10, 20, 30]\nsum = 0\nforeach item in items {\n    sum = sum + item\n}\nsum\n")
+    result = _run(
+        "items = [10, 20, 30]\nsum = 0\nforeach item in items {\n    sum = sum + item\n}\nsum\n"
+    )
     assert result == 60
 
 
 def test_for_in():
-    result = _run("items = [1, 2, 3]\nsum = 0\nfor item in items {\n    sum = sum + item\n}\nsum\n")
+    result = _run(
+        "items = [1, 2, 3]\nsum = 0\nfor item in items {\n    sum = sum + item\n}\nsum\n"
+    )
     assert result == 6
 
 
 def test_break():
-    result = _run("x = 0\nloop 10 {\n    if x == 3 {\n        break\n    }\n    x = x + 1\n}\nx\n")
+    result = _run(
+        "x = 0\nloop 10 {\n    if x == 3 {\n        break\n    }\n    x = x + 1\n}\nx\n"
+    )
     assert result == 3
 
 
 def test_continue():
-    result = _run("items = []\nloop 5 {\n    i = 0\n    if i == 2 {\n        continue\n    }\n    items.append(i)\n}\n" + "items\n")
-    result = _run("x = 0\nloop 5 {\n    x = x + 1\n    if x == 3 {\n        continue\n    }\n    y = x\n}\ny\n")
+    result = _run(
+        "items = []\nloop 5 {\n    i = 0\n    if i == 2 {\n        continue\n    }\n    items.append(i)\n}\n"
+        + "items\n"
+    )
+    result = _run(
+        "x = 0\nloop 5 {\n    x = x + 1\n    if x == 3 {\n        continue\n    }\n    y = x\n}\ny\n"
+    )
     assert result == 5
 
 
 def test_function_no_params():
-    result = _run('fn f() {\n    return 42\n}\nf()\n')
+    result = _run("fn f() {\n    return 42\n}\nf()\n")
     assert result == 42
 
 
 def test_function_with_params():
-    result = _run('fn add(a, b) {\n    return a + b\n}\nadd(3, 4)\n')
+    result = _run("fn add(a, b) {\n    return a + b\n}\nadd(3, 4)\n")
     assert result == 7
 
 
 def test_function_recursion():
-    result = _run('fn fact(n) {\n    if n <= 1 {\n        return 1\n    }\n    return n * fact(n - 1)\n}\nfact(5)\n')
+    result = _run(
+        "fn fact(n) {\n    if n <= 1 {\n        return 1\n    }\n    return n * fact(n - 1)\n}\nfact(5)\n"
+    )
     assert result == 120
 
 
 def test_function_default_param():
-    result = _run('fn f(x = 10) {\n    return x\n}\nf()\n')
+    result = _run("fn f(x = 10) {\n    return x\n}\nf()\n")
     assert result == 10
 
 
 def test_function_default_param_override():
-    result = _run('fn f(x = 10) {\n    return x\n}\nf(20)\n')
+    result = _run("fn f(x = 10) {\n    return x\n}\nf(20)\n")
     assert result == 20
 
 
 def test_closure():
-    result = _run('fn make_counter() {\n    count = 0\n    fn increment() {\n        count = count + 1\n        return count\n    }\n    return increment\n}\nc = make_counter()\nc()\nc()\n')
+    result = _run(
+        "fn make_counter() {\n    count = 0\n    fn increment() {\n        count = count + 1\n        return count\n    }\n    return increment\n}\nc = make_counter()\nc()\nc()\n"
+    )
     assert result == 2
 
 
 def test_nested_function():
-    result = _run('fn outer() {\n    fn inner() {\n        return 42\n    }\n    return inner()\n}\nouter()\n')
+    result = _run(
+        "fn outer() {\n    fn inner() {\n        return 42\n    }\n    return inner()\n}\nouter()\n"
+    )
     assert result == 42
 
 
@@ -515,7 +534,7 @@ def test_none_constant():
 
 
 def test_lambda_call():
-    result = _run('fn(x, y) { return x + y }(3, 4)\n')
+    result = _run("fn(x, y) { return x + y }(3, 4)\n")
     assert result == 7
 
 
@@ -525,7 +544,9 @@ def test_lambda_arrow():
 
 
 def test_lambda_closure():
-    result = _run("fn make_mult(n) {\n    return lambda(x) -> x * n\n}\ndouble = make_mult(2)\ndouble(5)\n")
+    result = _run(
+        "fn make_mult(n) {\n    return lambda(x) -> x * n\n}\ndouble = make_mult(2)\ndouble(5)\n"
+    )
     assert result == 10
 
 
@@ -536,9 +557,10 @@ def test_class_instantiation():
 
 
 def test_class_no_init():
-    source = 'class Empty {\n}\ne = Empty()\n'
+    source = "class Empty {\n}\ne = Empty()\n"
     result = _run(source)
     from zoya.interpreter import ZoyaInstance
+
     assert isinstance(result, ZoyaInstance)
 
 
@@ -555,7 +577,7 @@ def test_class_inheritance_super_call():
 
 
 def test_class_field_access():
-    source = 'class Point {\n    fn init(x, y) {\n        this.x = x\n        this.y = y\n    }\n}\np = Point(3, 4)\np.x\n'
+    source = "class Point {\n    fn init(x, y) {\n        this.x = x\n        this.y = y\n    }\n}\np = Point(3, 4)\np.x\n"
     result = _run(source)
     assert result == 3
 
@@ -579,12 +601,12 @@ def test_throw_catch():
 
 
 def test_try_no_throw():
-    result = _run('try {\n    42\n} catch e {\n    0\n}\n')
+    result = _run("try {\n    42\n} catch e {\n    0\n}\n")
     assert result == 42
 
 
 def test_try_finally():
-    source = 'x = 0\ntry {\n    x = 1\n} finally {\n    x = 2\n}\nx\n'
+    source = "x = 0\ntry {\n    x = 1\n} finally {\n    x = 2\n}\nx\n"
     result = _run(source)
     assert result == 2
 
@@ -612,6 +634,7 @@ def test_match():
     result = _run(source)
     assert result == "one"
 
+
 def test_match_default():
     source = 'fn describe(x) {\n    match x {\n        1 -> "one",\n        default -> "other"\n    }\n}\ndescribe(99)\n'
     result = _run(source)
@@ -625,7 +648,7 @@ def test_print_statement(capsys):
 
 
 def test_print_with_expression(capsys):
-    _run('print 1 + 2\n')
+    _run("print 1 + 2\n")
     captured = capsys.readouterr()
     assert "3" in captured.out
 
@@ -671,17 +694,23 @@ def test_foreach_string():
 
 
 def test_nested_if():
-    result = _run("x = 10\nif x > 0 {\n    if x > 5 {\n        result = \"big\"\n    } else {\n        result = \"small\"\n    }\n}\nresult\n")
+    result = _run(
+        'x = 10\nif x > 0 {\n    if x > 5 {\n        result = "big"\n    } else {\n        result = "small"\n    }\n}\nresult\n'
+    )
     assert result == "big"
 
 
 def test_return_from_loop():
-    result = _run('fn find(items, target) {\n    for item in items {\n        if item == target {\n            return item\n        }\n    }\n    return -1\n}\nfind([1, 2, 3], 2)\n')
+    result = _run(
+        "fn find(items, target) {\n    for item in items {\n        if item == target {\n            return item\n        }\n    }\n    return -1\n}\nfind([1, 2, 3], 2)\n"
+    )
     assert result == 2
 
 
 def test_modified_in_loop():
-    result = _run("items = [1, 2, 3]\ni = 0\nwhile i < len(items) {\n    items[i] = items[i] * 10\n    i = i + 1\n}\nitems\n")
+    result = _run(
+        "items = [1, 2, 3]\ni = 0\nwhile i < len(items) {\n    items[i] = items[i] * 10\n    i = i + 1\n}\nitems\n"
+    )
     assert result == [10, 20, 30]
 
 
@@ -701,7 +730,7 @@ def test_string_method_chain():
 
 
 def test_index_out_of_range():
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         _run("items = [1]\nitems[5]\n")
 
 
@@ -716,9 +745,9 @@ def test_neg_index():
 
 
 def test_empty_dict():
-    result = _run('items = []\nitems\n')
+    result = _run("items = []\nitems\n")
     assert result == []
-    result = _run("d = {\"a\": 1}\nd.clear()\nd\n")
+    result = _run('d = {"a": 1}\nd.clear()\nd\n')
     assert result == {}
 
 
@@ -728,22 +757,22 @@ def test_import_via_run(capsys):
 
 
 def test_repr_functions():
-    result = _run('fn f() {\n    return 1\n}\nf\n')
+    result = _run("fn f() {\n    return 1\n}\nf\n")
     assert "function" in str(result).lower()
 
 
 def test_class_repr():
-    result = _run('class C {\n}\nC\n')
+    result = _run("class C {\n}\nC\n")
     assert "class" in str(result).lower()
 
 
 def test_enum_repr():
-    result = _run('enum E { A, B }\nE\n')
+    result = _run("enum E { A, B }\nE\n")
     assert "enum" in str(result).lower()
 
 
 def test_instance_repr():
-    result = _run('class C {\n}\nc = C()\nc\n')
+    result = _run("class C {\n}\nc = C()\nc\n")
     assert "instance" in str(result).lower()
 
 
@@ -753,7 +782,7 @@ def test_module_repr():
 
 
 def test_named_args():
-    result = _run('fn f(a, b) {\n    return a * 10 + b\n}\nf(b = 3, a = 2)\n')
+    result = _run("fn f(a, b) {\n    return a * 10 + b\n}\nf(b = 3, a = 2)\n")
     assert result == 23
 
 
@@ -763,7 +792,8 @@ def test_truthiness_none():
 
 def test_loop_non_number():
     import pytest
-    with pytest.raises(Exception):
+
+    with pytest.raises(Exception):  # noqa: B017
         _run('loop "a" {\n    print 1\n}\n')
 
 
@@ -774,20 +804,23 @@ def test_error_unknown_op():
 
 def test_class_parent_not_class():
     import pytest
-    with pytest.raises(Exception):
-        _run('class A {\n}\nclass B extends A {\n}\nclass C extends 42 {\n}\n')
+
+    with pytest.raises(Exception):  # noqa: B017
+        _run("class A {\n}\nclass B extends A {\n}\nclass C extends 42 {\n}\n")
 
 
 def test_index_non_indexable():
     import pytest
-    with pytest.raises(Exception):
-        _run('42[0]\n')
+
+    with pytest.raises(Exception):  # noqa: B017
+        _run("42[0]\n")
 
 
 def test_method_on_non_object():
     import pytest
-    with pytest.raises(Exception):
-        _run('42.unknown()\n')
+
+    with pytest.raises(Exception):  # noqa: B017
+        _run("42.unknown()\n")
 
 
 def test_lambda_defaults():
@@ -810,13 +843,14 @@ def test_assign_index_with_dict():
 
 
 def test_interface_in_env():
-    result = _run('interface I {\n    fn foo()\n}\nI\n')
+    result = _run("interface I {\n    fn foo()\n}\nI\n")
     assert "interface" in str(result).lower()
 
 
 def test_error_division_non_number():
     import pytest
-    with pytest.raises(Exception):
+
+    with pytest.raises(Exception):  # noqa: B017
         _run('"hello" / 2\n')
 
 

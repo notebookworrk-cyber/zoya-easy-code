@@ -50,10 +50,11 @@ def load_module(interpreter: Any) -> Any:
 
     def connect(path: str) -> _Connection:
         import sqlite3
+
         try:
             conn = sqlite3.connect(path)
             return _Connection(conn)
-        except Exception as e:
+        except Exception:
             return None  # type: ignore[return-value]
 
     funcs = {

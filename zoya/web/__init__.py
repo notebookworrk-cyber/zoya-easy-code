@@ -3,28 +3,29 @@
 Exposes the Web class and related components for creating web applications.
 """
 
-from typing import Any, Callable, Dict, List, Awaitable
+from collections.abc import Callable
+from typing import Any
 
-from .router import Router
-from .response import (
-    ResponseData,
-    create_success,
-    create_error,
-    HTTP_200_OK,
-    HTTP_400_BAD_REQUEST,
-)
 from .middleware import (
+    AuthMiddleware,  # noqa: F401
     BaseMiddleware,
-    LoggingMiddleware,
-    AuthMiddleware,
-    ErrorHandlingMiddleware,
+    ErrorHandlingMiddleware,  # noqa: F401
+    LoggingMiddleware,  # noqa: F401
 )
+from .response import (
+    HTTP_200_OK,  # noqa: F401
+    HTTP_400_BAD_REQUEST,
+    ResponseData,
+    create_error,
+    create_success,
+)
+from .router import Router
 
 
 class Request:
     """Minimal request abstraction."""
 
-    def __init__(self, scope: Dict[str, Any], receive: Callable) -> None:
+    def __init__(self, scope: dict[str, Any], receive: Callable) -> None:
         self.scope = scope
         self.method = scope.get("method", "GET")
         self.path = scope.get("path", "/")
@@ -33,7 +34,9 @@ class Request:
 class Response:
     """HTTP response wrapper."""
 
-    def __init__(self, content: str = "", status: int = 200, headers: Dict[str, str] = None) -> None:
+    def __init__(
+        self, content: str = "", status: int = 200, headers: dict[str, str] = None
+    ) -> None:
         self.content = content
         self.status = status
         self.headers = headers or {}
@@ -44,7 +47,7 @@ class Web:
 
     def __init__(self) -> None:
         self.router = Router()
-        self.middleware_stack: List[BaseMiddleware] = []
+        self.middleware_stack: list[BaseMiddleware] = []
 
     def use(self, middleware: BaseMiddleware) -> None:
         """Register a middleware component."""
@@ -57,9 +60,12 @@ class Web:
     def run(self, host: str = "127.0.0.1", port: int = 8000) -> None:
         """Launch the web server."""
         import uvicorn
+
         uvicorn.run(self._asgi_app, host=host, port=port)
 
-    async def _asgi_app(self, scope: Dict[str, Any], receive: Callable, send: Callable) -> None:
+    async def _asgi_app(
+        self, scope: dict[str, Any], receive: Callable, send: Callable
+    ) -> None:
         if scope.get("type") != "http":
             return
 
@@ -68,10 +74,7 @@ class Web:
         handler = self.router.handle(request.method, request.path, request)
         if isinstance(handler, ResponseData):
             await self._send_response(handler, send)
-        elif isinstance(handler, dict):
-            response = create_success(handler)
-            await self._send_response(response, send)
-        elif isinstance(handler, str):
+        elif isinstance(handler, (dict, str)):
             response = create_success(handler)
             await self._send_response(response, send)
         elif isinstance(handler, Response):
@@ -85,28 +88,36 @@ class Web:
         if response.get("meta") and isinstance(response["meta"], dict):
             status = response["meta"].get("status", 200)
 
-        await send({
-            "type": "http.response.start",
-            "status": status,
-            "headers": [],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": str(response.get("data", "")).encode(),
-            "more_body": False,
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": status,
+                "headers": [],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": str(response.get("data", "")).encode(),
+                "more_body": False,
+            }
+        )
 
     async def _send_obj_response(self, response: Response, send: Callable) -> None:
-        await send({
-            "type": "http.response.start",
-            "status": response.status,
-            "headers": [(k, v) for k, v in response.headers.items()],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": response.content.encode(),
-            "more_body": False,
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": response.status,
+                "headers": [(k, v) for k, v in response.headers.items()],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": response.content.encode(),
+                "more_body": False,
+            }
+        )
 
 
 def create_app() -> Web:
@@ -146,7 +157,9 @@ def test_response_functions() -> None:
     assert success["error"] is None
     assert success["meta"] == {"page": 1}
 
-    error = create_error("Invalid input", status=HTTP_400_BAD_REQUEST, meta={"field": "email"})
+    error = create_error(
+        "Invalid input", status=HTTP_400_BAD_REQUEST, meta={"field": "email"}
+    )
     assert error["success"] is False
     assert error["error"] == "Invalid input"
     assert error["meta"] == {"field": "email"}

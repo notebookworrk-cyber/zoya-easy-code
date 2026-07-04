@@ -3,15 +3,16 @@
 Provides standardized API response format with success, data, error, and meta fields.
 """
 
-from typing import Any, Dict, Optional, TypedDict
+from typing import Any, TypedDict
 
 
 class ResponseData(TypedDict):
     """Standardized API response format with success, data, error, and meta fields."""
+
     success: bool
-    data: Optional[Any]
-    error: Optional[str]
-    meta: Optional[Dict[str, Any]]
+    data: Any | None
+    error: str | None
+    meta: dict[str, Any] | None
 
 
 # Status code constants
@@ -25,7 +26,7 @@ HTTP_500_INTERNAL_SERVER_ERROR = 500
 
 def create_success(
     data: Any,
-    meta: Optional[Dict[str, Any]] = None,
+    meta: dict[str, Any] | None = None,
     status: int = HTTP_200_OK,
 ) -> ResponseData:
     """Create a successful API response.
@@ -49,7 +50,7 @@ def create_success(
 def create_error(
     message: str,
     status: int = HTTP_400_BAD_REQUEST,
-    meta: Optional[Dict[str, Any]] = None,
+    meta: dict[str, Any] | None = None,
 ) -> ResponseData:
     """Create an error API response.
 

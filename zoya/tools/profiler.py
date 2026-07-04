@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import contextlib
 import time
 from typing import Any
 
-from ..ast import ASTNode, Block, Call, Function, Ident
-from ..errors import ReturnException
-from ..interpreter import Environment, Interpreter, ZoyaFunction
-from ..lexer import tokenize
-from ..parser import parse
+from zoya.ast import ASTNode, Call
+from zoya.errors import ReturnException
+from zoya.interpreter import Environment, Interpreter, ZoyaFunction
+from zoya.lexer import tokenize
+from zoya.parser import parse
 
 
 class ProfilingInterpreter(Interpreter):
@@ -31,14 +32,17 @@ class ProfilingInterpreter(Interpreter):
             func = callee
 
             if len(args) != len(func.decl.params):
-                from ..errors import RuntimeError_
+                from zoya.errors import RuntimeError_
+
                 raise RuntimeError_(
                     f"Function '{func.decl.name}' expects {len(func.decl.params)} arguments, got {len(args)}",
-                    line=call.line, col=call.col, file=self.file,
+                    line=call.line,
+                    col=call.col,
+                    file=self.file,
                 )
 
             func_env = Environment(func.env)
-            for param, arg in zip(func.decl.params, args):
+            for param, arg in zip(func.decl.params, args, strict=False):
                 func_env.define(param, arg)
 
             old_env = self.current_env
@@ -70,10 +74,8 @@ def profile_source(source: str, filepath: str = "") -> dict:
     interpreter = ProfilingInterpreter(filepath)
 
     start = time.perf_counter()
-    try:
+    with contextlib.suppress(Exception):
         interpreter._eval_block(ast)
-    except Exception:
-        pass
     total_time = time.perf_counter() - start
 
     function_stats: dict[str, dict[str, float | int]] = {}

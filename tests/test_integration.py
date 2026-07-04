@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import os
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
-from zoya import run
-from zoya.cli import main as cli_main, run_file
-from zoya.errors import ParseError
+
+from zoya.cli import main as cli_main
+from zoya.cli import run_file
 
 
 def _run_source(source: str):
@@ -91,7 +89,9 @@ class TestExamplePrograms:
         for f in sorted(self.EXAMPLES_DIR.glob("*.zoya")):
             source = f.read_text()
             try:
-                tokens = __import__("zoya.lexer", fromlist=["tokenize"]).tokenize(source)
+                tokens = __import__("zoya.lexer", fromlist=["tokenize"]).tokenize(
+                    source
+                )
                 ast = __import__("zoya.parser", fromlist=["parse"]).parse(tokens)
                 assert ast is not None
             except Exception as e:
@@ -186,7 +186,7 @@ class TestFullPipeline:
         assert result == 50
 
     def test_recursive_function(self):
-        source = 'fn fact(n) {\n    if n <= 1 {\n        return 1\n    }\n    return n * fact(n - 1)\n}\nfact(6)\n'
+        source = "fn fact(n) {\n    if n <= 1 {\n        return 1\n    }\n    return n * fact(n - 1)\n}\nfact(6)\n"
         result = _run_source(source)
         assert result == 720
 
@@ -252,7 +252,7 @@ print c.get()
         assert result == [0, 1, 3, 4]
 
     def test_lambda_passed_as_arg(self):
-        source = 'fn apply(f, x) {\n    return f(x)\n}\napply(lambda(x) -> x * 3, 7)\n'
+        source = "fn apply(f, x) {\n    return f(x)\n}\napply(lambda(x) -> x * 3, 7)\n"
         result = _run_source(source)
         assert result == 21
 

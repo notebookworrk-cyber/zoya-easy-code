@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from .ast import (
-    ASTNode,
     Assign,
     AssignAttr,
     AssignIndex,
+    ASTNode,
     BinOp,
     Block,
     Boolean,
@@ -58,7 +56,7 @@ class Parser:
     def peek(self) -> Token:
         return self.tokens[self.pos]
 
-    def consume(self, kind: Optional[str] = None) -> Token:
+    def consume(self, kind: str | None = None) -> Token:
         tok = self.peek()
         if kind is not None and tok.kind != kind:
             raise ParseError(
@@ -81,7 +79,7 @@ class Parser:
                 statements.append(stmt)
         return Block(statements)
 
-    def parse_stmt(self) -> Optional[ASTNode]:
+    def parse_stmt(self) -> ASTNode | None:
         tok = self.peek()
         kind = tok.kind
 
@@ -94,8 +92,10 @@ class Parser:
         if kind == "EOF":
             return None
         if kind == "FN":
-            if (self.pos + 1 < len(self.tokens)
-                    and self.tokens[self.pos + 1].kind == "IDENT"):
+            if (
+                self.pos + 1 < len(self.tokens)
+                and self.tokens[self.pos + 1].kind == "IDENT"
+            ):
                 return self.parse_fn_def()
             return self.parse_assign_or_expr()
         if kind == "RETURN":
@@ -140,10 +140,10 @@ class Parser:
         name_tok = self.consume("IDENT")
         self.consume("LPAREN")
         params: list[str] = []
-        defaults: list[Optional[ASTNode]] = []
+        defaults: list[ASTNode | None] = []
         if self.peek().kind != "RPAREN":
             param_name = self.consume("IDENT").value
-            default_val: Optional[ASTNode] = None
+            default_val: ASTNode | None = None
             if self.check("ASSIGN"):
                 self.consume("ASSIGN")
                 default_val = self.parse_expr()
@@ -166,7 +166,8 @@ class Parser:
             params=params,
             body=body,
             defaults=defaults,
-            line=tok.line, col=tok.col,
+            line=tok.line,
+            col=tok.col,
         )
 
     def parse_return(self) -> Return:
@@ -182,7 +183,7 @@ class Parser:
         cond = self.parse_expr()
         self.skip_newlines()
         body = self.parse_block()
-        else_body: Optional[Block] = None
+        else_body: Block | None = None
         if self.check("ELSE"):
             self.consume("ELSE")
             self.skip_newlines()
@@ -216,24 +217,28 @@ class Parser:
             iterable = self.parse_expr()
             self.skip_newlines()
             body = self.parse_block()
-            return ForEach(var=var, iterable=iterable, body=body, line=tok.line, col=tok.col)
+            return ForEach(
+                var=var, iterable=iterable, body=body, line=tok.line, col=tok.col
+            )
 
-        init: Optional[ASTNode] = None
+        init: ASTNode | None = None
         if not self.check("SEMICOLON"):
             init = self.parse_assign_or_expr_semicolon()
         self.consume("SEMICOLON")
 
-        cond: Optional[ASTNode] = None
+        cond: ASTNode | None = None
         if not self.check("SEMICOLON"):
             cond = self.parse_expr()
         self.consume("SEMICOLON")
 
-        update: Optional[ASTNode] = None
+        update: ASTNode | None = None
         if not self.check("LBRACE"):
             update = self.parse_assign_or_expr_semicolon()
 
         body = self.parse_block()
-        return ForLoop(init=init, cond=cond, update=update, body=body, line=tok.line, col=tok.col)
+        return ForLoop(
+            init=init, cond=cond, update=update, body=body, line=tok.line, col=tok.col
+        )
 
     def parse_foreach(self) -> ForEach:
         tok = self.consume("FOREACH")
@@ -242,7 +247,9 @@ class Parser:
         iterable = self.parse_expr()
         self.skip_newlines()
         body = self.parse_block()
-        return ForEach(var=var, iterable=iterable, body=body, line=tok.line, col=tok.col)
+        return ForEach(
+            var=var, iterable=iterable, body=body, line=tok.line, col=tok.col
+        )
 
     def parse_assign_or_expr_semicolon(self) -> ASTNode:
         expr = self.parse_expr()
@@ -253,11 +260,15 @@ class Parser:
         if isinstance(expr, Index) and self.check("ASSIGN"):
             self.consume("ASSIGN")
             value = self.parse_expr()
-            return AssignIndex(obj=expr.obj, index=expr.index, expr=value, line=expr.line, col=expr.col)
+            return AssignIndex(
+                obj=expr.obj, index=expr.index, expr=value, line=expr.line, col=expr.col
+            )
         if isinstance(expr, GetAttr) and self.check("ASSIGN"):
             self.consume("ASSIGN")
             value = self.parse_expr()
-            return AssignAttr(obj=expr.obj, attr=expr.attr, expr=value, line=expr.line, col=expr.col)
+            return AssignAttr(
+                obj=expr.obj, attr=expr.attr, expr=value, line=expr.line, col=expr.col
+            )
         return expr
 
     def parse_switch(self) -> Switch:
@@ -266,7 +277,7 @@ class Parser:
         self.skip_newlines()
         self.consume("LBRACE")
         cases: list[tuple[ASTNode, ASTNode]] = []
-        default_body: Optional[ASTNode] = None
+        default_body: ASTNode | None = None
         while self.peek().kind not in ("RBRACE", "EOF"):
             self.skip_newlines()
             if self.check("RBRACE"):
@@ -286,35 +297,51 @@ class Parser:
             else:
                 raise ParseError(
                     f"Expected 'case' or 'default' in switch, got '{self.peek().kind}'",
-                    line=self.peek().line, col=self.peek().col, file=self.file,
+                    line=self.peek().line,
+                    col=self.peek().col,
+                    file=self.file,
                 )
         self.consume("RBRACE")
-        return Switch(expr=expr, cases=cases, default_body=default_body, line=tok.line, col=tok.col)
+        return Switch(
+            expr=expr,
+            cases=cases,
+            default_body=default_body,
+            line=tok.line,
+            col=tok.col,
+        )
 
     def parse_try(self) -> Try:
         tok = self.consume("TRY")
         self.skip_newlines()
         try_body = self.parse_block()
         catches: list[Catch] = []
-        final_body: Optional[ASTNode] = None
+        final_body: ASTNode | None = None
         while self.peek().kind in ("CATCH", "FINALLY", "NEWLINE"):
             if self.check("NEWLINE"):
                 self.consume("NEWLINE")
                 continue
             if self.check("CATCH"):
                 self.consume("CATCH")
-                var: Optional[str] = None
+                var: str | None = None
                 if self.check("IDENT"):
                     var = self.consume("IDENT").value
                 self.skip_newlines()
                 catch_body = self.parse_block()
-                catches.append(Catch(var=var, body=catch_body, line=tok.line, col=tok.col))
+                catches.append(
+                    Catch(var=var, body=catch_body, line=tok.line, col=tok.col)
+                )
             elif self.check("FINALLY"):
                 self.consume("FINALLY")
                 self.skip_newlines()
                 final_body = self.parse_block()
                 break
-        return Try(try_body=try_body, catches=catches, final_body=final_body, line=tok.line, col=tok.col)
+        return Try(
+            try_body=try_body,
+            catches=catches,
+            final_body=final_body,
+            line=tok.line,
+            col=tok.col,
+        )
 
     def parse_throw(self) -> Throw:
         tok = self.consume("THROW")
@@ -329,7 +356,7 @@ class Parser:
         self.consume("LBRACE")
         self.skip_newlines()
         arms: list[tuple[ASTNode, ASTNode]] = []
-        else_arm: Optional[ASTNode] = None
+        else_arm: ASTNode | None = None
         if self.peek().kind != "RBRACE":
             arm = self._parse_match_item()
             if isinstance(arm, tuple) and arm[0] is None:
@@ -346,9 +373,11 @@ class Parser:
                     arms.append(arm)
         self.skip_newlines()
         self.consume("RBRACE")
-        return Match(expr=expr, arms=arms, else_arm=else_arm, line=tok.line, col=tok.col)
+        return Match(
+            expr=expr, arms=arms, else_arm=else_arm, line=tok.line, col=tok.col
+        )
 
-    def _parse_match_item(self) -> tuple[Optional[ASTNode], ASTNode]:
+    def _parse_match_item(self) -> tuple[ASTNode | None, ASTNode]:
         if self.check("DEFAULT"):
             self.consume("DEFAULT")
             self.consume("ARROW")
@@ -372,12 +401,14 @@ class Parser:
                 variants.append(self.consume("IDENT").value)
         self.consume("RBRACE")
         self.expect_newline()
-        return EnumDef(name=name_tok.value, variants=variants, line=tok.line, col=tok.col)
+        return EnumDef(
+            name=name_tok.value, variants=variants, line=tok.line, col=tok.col
+        )
 
     def parse_class(self) -> ClassDef:
         tok = self.consume("CLASS")
         name_tok = self.consume("IDENT")
-        parent: Optional[str] = None
+        parent: str | None = None
         if self.check("COLON"):
             self.consume("COLON")
             parent = self.consume("IDENT").value
@@ -387,7 +418,9 @@ class Parser:
         self.skip_newlines()
         body = self.parse_block()
         self.expect_newline()
-        return ClassDef(name=name_tok.value, parent=parent, body=body, line=tok.line, col=tok.col)
+        return ClassDef(
+            name=name_tok.value, parent=parent, body=body, line=tok.line, col=tok.col
+        )
 
     def parse_interface(self) -> InterfaceDef:
         tok = self.consume("INTERFACE")
@@ -412,7 +445,9 @@ class Parser:
                 break
         self.consume("RBRACE")
         self.expect_newline()
-        return InterfaceDef(name=name_tok.value, methods=methods, line=tok.line, col=tok.col)
+        return InterfaceDef(
+            name=name_tok.value, methods=methods, line=tok.line, col=tok.col
+        )
 
     def parse_break(self) -> Break:
         tok = self.consume("BREAK")
@@ -428,7 +463,7 @@ class Parser:
         tok = self.consume("IMPORT")
         path_tok = self.consume("STRING")
         path = path_tok.value
-        alias: Optional[str] = None
+        alias: str | None = None
         if self.check("IDENT") and self.peek().value == "as":
             self.consume("IDENT")
             alias = self.consume("IDENT").value
@@ -446,9 +481,11 @@ class Parser:
         return Block(statements)
 
     def parse_assign_or_expr(self) -> ASTNode:
-        if (self.check("IDENT")
-                and self.pos + 1 < len(self.tokens)
-                and self.tokens[self.pos + 1].kind == "ASSIGN"):
+        if (
+            self.check("IDENT")
+            and self.pos + 1 < len(self.tokens)
+            and self.tokens[self.pos + 1].kind == "ASSIGN"
+        ):
             tok = self.consume("IDENT")
             self.consume("ASSIGN")
             expr = self.parse_expr()
@@ -462,26 +499,31 @@ class Parser:
             self.expect_newline()
             return Assign(name=expr.name, expr=value, line=expr.line, col=expr.col)
 
-        if (isinstance(expr, Index) and self.check("ASSIGN")):
+        if isinstance(expr, Index) and self.check("ASSIGN"):
             self.consume("ASSIGN")
             value = self.parse_expr()
             self.expect_newline()
-            return AssignIndex(obj=expr.obj, index=expr.index, expr=value, line=expr.line, col=expr.col)
+            return AssignIndex(
+                obj=expr.obj, index=expr.index, expr=value, line=expr.line, col=expr.col
+            )
 
-        if (isinstance(expr, GetAttr) and self.check("ASSIGN")):
+        if isinstance(expr, GetAttr) and self.check("ASSIGN"):
             self.consume("ASSIGN")
             value = self.parse_expr()
             self.expect_newline()
             from .ast import AssignAttr
-            return AssignAttr(obj=expr.obj, attr=expr.attr, expr=value, line=expr.line, col=expr.col)
 
-        if (isinstance(expr, Ident) and expr.name == "print"):
+            return AssignAttr(
+                obj=expr.obj, attr=expr.attr, expr=value, line=expr.line, col=expr.col
+            )
+
+        if isinstance(expr, Ident) and expr.name == "print":
             val = self.parse_expr()
             self.expect_newline()
             return Print(expr=val, line=expr.line, col=expr.col)
 
-        if (isinstance(expr, Ident) and expr.name == "input"):
-            prompt: Optional[ASTNode] = None
+        if isinstance(expr, Ident) and expr.name == "input":
+            prompt: ASTNode | None = None
             if self.check("STRING") or self.check("INTERP_STRING"):
                 prompt = String(self.consume().value)
             self.expect_newline()
@@ -514,7 +556,9 @@ class Parser:
         while self.peek().kind in ("EQ", "NE", "GT", "LT", "GTE", "LTE", "IN"):
             tok = self.consume()
             right = self.parse_term()
-            left = BinOp(op=tok.kind, left=left, right=right, line=tok.line, col=tok.col)
+            left = BinOp(
+                op=tok.kind, left=left, right=right, line=tok.line, col=tok.col
+            )
         return left
 
     def parse_term(self) -> ASTNode:
@@ -531,7 +575,9 @@ class Parser:
         while self.peek().kind in ("MUL", "DIV", "MOD"):
             tok = self.consume()
             right = self.parse_power()
-            left = BinOp(op=tok.kind, left=left, right=right, line=tok.line, col=tok.col)
+            left = BinOp(
+                op=tok.kind, left=left, right=right, line=tok.line, col=tok.col
+            )
         return left
 
     def parse_power(self) -> ASTNode:
@@ -568,7 +614,9 @@ class Parser:
                     name = self.consume("IDENT").value
                     self.consume("ASSIGN")
                     val = self.parse_expr()
-                    args.append(NamedArg(name=name, value=val, line=tok.line, col=tok.col))
+                    args.append(
+                        NamedArg(name=name, value=val, line=tok.line, col=tok.col)
+                    )
                 else:
                     args.append(self.parse_expr())
         return args
@@ -588,37 +636,59 @@ class Parser:
                     self.consume("LPAREN")
                     method_args: list[ASTNode] = self._parse_call_args()
                     self.consume("RPAREN")
-                    expr = MethodCall(obj=expr, method=attr, args=method_args, line=expr.line, col=expr.col)
+                    expr = MethodCall(
+                        obj=expr,
+                        method=attr,
+                        args=method_args,
+                        line=expr.line,
+                        col=expr.col,
+                    )
                 else:
                     expr = GetAttr(obj=expr, attr=attr, line=expr.line, col=expr.col)
             elif self.check("LBRACKET"):
                 self.consume("LBRACKET")
                 if self.check("COLON"):
-                    start: Optional[ASTNode] = None
+                    start: ASTNode | None = None
                     self.consume("COLON")
-                    stop: Optional[ASTNode] = None
-                    step: Optional[ASTNode] = None
+                    stop: ASTNode | None = None
+                    step: ASTNode | None = None
                     if self.peek().kind != "RBRACKET":
                         stop = self.parse_expr()
                         if self.check("COLON"):
                             self.consume("COLON")
                             step = self.parse_expr()
                     self.consume("RBRACKET")
-                    expr = Slice(obj=expr, start=start, stop=stop, step=step, line=expr.line, col=expr.col)
+                    expr = Slice(
+                        obj=expr,
+                        start=start,
+                        stop=stop,
+                        step=step,
+                        line=expr.line,
+                        col=expr.col,
+                    )
                 else:
                     index = self.parse_expr()
                     if self.check("COLON"):
                         self.consume("COLON")
                         stop = self.parse_expr()
-                        step: Optional[ASTNode] = None
+                        step: ASTNode | None = None
                         if self.check("COLON"):
                             self.consume("COLON")
                             step = self.parse_expr()
                         self.consume("RBRACKET")
-                        expr = Slice(obj=expr, start=index, stop=stop, step=step, line=expr.line, col=expr.col)
+                        expr = Slice(
+                            obj=expr,
+                            start=index,
+                            stop=stop,
+                            step=step,
+                            line=expr.line,
+                            col=expr.col,
+                        )
                     else:
                         self.consume("RBRACKET")
-                        expr = Index(obj=expr, index=index, line=expr.line, col=expr.col)
+                        expr = Index(
+                            obj=expr, index=index, line=expr.line, col=expr.col
+                        )
             else:
                 break
         return expr
@@ -628,7 +698,9 @@ class Parser:
 
         if tok.kind == "NUMBER":
             self.consume()
-            value: int | float = float(tok.value) if "." in tok.value else int(tok.value)
+            value: int | float = (
+                float(tok.value) if "." in tok.value else int(tok.value)
+            )
             return Number(value=value, line=tok.line, col=tok.col)
         if tok.kind == "STRING":
             self.consume()
@@ -662,10 +734,12 @@ class Parser:
                             elif ch in (")", "]", "}"):
                                 colon_depth -= 1
                             elif ch == ":" and colon_depth == 0:
-                                format_spec = expr_text[idx + 1:]
+                                format_spec = expr_text[idx + 1 :]
                                 expr_text = expr_text[:idx]
                                 break
-                    expr_tokens = __import__("zoya.lexer", fromlist=["tokenize"]).tokenize(expr_text)
+                    expr_tokens = __import__(
+                        "zoya.lexer", fromlist=["tokenize"]
+                    ).tokenize(expr_text)
                     expr_ast = Parser(expr_tokens).parse()
                     if expr_ast.statements:
                         parts.append(expr_ast.statements[0])
@@ -759,7 +833,16 @@ class Parser:
         is_dict = False
         if self.peek().kind not in ("RBRACE", "EOF"):
             self.skip_newlines()
-            if self.peek().kind in ("NUMBER", "STRING", "IDENT", "TRUE", "FALSE", "LBRACKET", "LBRACE", "LPAREN"):
+            if self.peek().kind in (
+                "NUMBER",
+                "STRING",
+                "IDENT",
+                "TRUE",
+                "FALSE",
+                "LBRACKET",
+                "LBRACE",
+                "LPAREN",
+            ):
                 self.pos += 1
                 self.skip_newlines()
                 if self.check("COLON"):
@@ -771,10 +854,10 @@ class Parser:
         tok = self.consume()
         self.consume("LPAREN")
         params: list[str] = []
-        defaults: list[Optional[ASTNode]] = []
+        defaults: list[ASTNode | None] = []
         if self.peek().kind != "RPAREN":
             param_name = self.consume("IDENT").value
-            default_val: Optional[ASTNode] = None
+            default_val: ASTNode | None = None
             if self.check("ASSIGN"):
                 self.consume("ASSIGN")
                 default_val = self.parse_expr()
@@ -798,7 +881,9 @@ class Parser:
             self.skip_newlines()
             body = self.parse_block()
 
-        return Lambda(params=params, body=body, defaults=defaults, line=tok.line, col=tok.col)
+        return Lambda(
+            params=params, body=body, defaults=defaults, line=tok.line, col=tok.col
+        )
 
     def skip_newlines(self) -> None:
         while self.check("NEWLINE"):
@@ -815,7 +900,7 @@ class Parser:
             pass
         else:
             raise ParseError(
-                f"Expected newline after statement",
+                "Expected newline after statement",
                 line=self.peek().line,
                 col=self.peek().col,
                 file=self.file,

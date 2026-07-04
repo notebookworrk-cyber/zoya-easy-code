@@ -9,7 +9,7 @@ def load_module(interpreter: Any) -> Any:
 
     def read(path: str) -> list[dict[str, str]]:
         try:
-            with open(path, "r", encoding="utf-8", newline="") as f:
+            with open(path, encoding="utf-8", newline="") as f:
                 reader = _csv.DictReader(f)
                 return list(reader)
         except Exception as e:
@@ -34,6 +34,7 @@ def load_module(interpreter: Any) -> Any:
     def format(rows: list[list[str]]) -> str:
         try:
             import io
+
             buf = io.StringIO()
             writer = _csv.writer(buf)
             writer.writerows(rows)

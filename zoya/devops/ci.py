@@ -2,21 +2,20 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Dict, List, Optional
 
 
 class PipelineConfig:
     name: str
-    stages: List[str]
-    environment: Dict[str, str]
+    stages: list[str]
+    environment: dict[str, str]
     timeout: int = 3600
     parallel: bool = False
 
     def __init__(
         self,
         name: str,
-        stages: List[str],
-        environment: Optional[Dict[str, str]] = None,
+        stages: list[str],
+        environment: dict[str, str] | None = None,
         timeout: int = 3600,
         parallel: bool = False,
     ) -> None:
@@ -29,22 +28,22 @@ class PipelineConfig:
 
 class PipelineStage:
     name: str
-    commands: List[str]
+    commands: list[str]
     timeout: int = 300
-    dependencies: List[str]
-    artifacts: List[str]
+    dependencies: list[str]
+    artifacts: list[str]
     allow_failure: bool = False
-    env: Dict[str, str]
+    env: dict[str, str]
 
     def __init__(
         self,
         name: str,
-        commands: Optional[List[str]] = None,
+        commands: list[str] | None = None,
         timeout: int = 300,
-        dependencies: Optional[List[str]] = None,
-        artifacts: Optional[List[str]] = None,
+        dependencies: list[str] | None = None,
+        artifacts: list[str] | None = None,
         allow_failure: bool = False,
-        env: Optional[Dict[str, str]] = None,
+        env: dict[str, str] | None = None,
     ) -> None:
         self.name = name
         self.commands = commands or []
@@ -85,19 +84,19 @@ class PipelineRun:
     id: str
     status: str
     started_at: float
-    finished_at: Optional[float]
-    stage_results: List[StageResult]
-    logs: List[str]
+    finished_at: float | None
+    stage_results: list[StageResult]
+    logs: list[str]
 
     def __init__(
         self,
         pipeline: PipelineConfig,
-        id: Optional[str] = None,
+        id: str | None = None,
         status: str = "pending",
-        started_at: Optional[float] = None,
-        finished_at: Optional[float] = None,
-        stage_results: Optional[List[StageResult]] = None,
-        logs: Optional[List[str]] = None,
+        started_at: float | None = None,
+        finished_at: float | None = None,
+        stage_results: list[StageResult] | None = None,
+        logs: list[str] | None = None,
     ) -> None:
         self.pipeline = pipeline
         self.id = id or uuid.uuid4().hex[:12]
@@ -109,7 +108,7 @@ class PipelineRun:
 
 
 class PipelineRunner:
-    _runs: Dict[str, PipelineRun]
+    _runs: dict[str, PipelineRun]
     _cancelled: set
 
     def __init__(self) -> None:
@@ -117,7 +116,7 @@ class PipelineRunner:
         self._cancelled = set()
 
     def run(
-        self, pipeline: PipelineConfig, env: Optional[Dict[str, str]] = None
+        self, pipeline: PipelineConfig, env: dict[str, str] | None = None
     ) -> PipelineRun:
         merged_env = dict(pipeline.environment)
         if env is not None:
@@ -135,7 +134,7 @@ class PipelineRunner:
         return run
 
     def _run_sequential(
-        self, pipeline: PipelineConfig, env: Dict[str, str], run: PipelineRun
+        self, pipeline: PipelineConfig, env: dict[str, str], run: PipelineRun
     ) -> PipelineRun:
         run.status = "running"
         run.logs.append(f"[{run.id}] Pipeline '{pipeline.name}' started (sequential).")
@@ -182,13 +181,13 @@ class PipelineRunner:
         return run
 
     def _run_parallel(
-        self, pipeline: PipelineConfig, env: Dict[str, str], run: PipelineRun
+        self, pipeline: PipelineConfig, env: dict[str, str], run: PipelineRun
     ) -> PipelineRun:
         run.status = "running"
         run.logs.append(f"[{run.id}] Pipeline '{pipeline.name}' started (parallel).")
 
         stage_map = self._resolve_stages(pipeline, env)
-        results: List[StageResult] = []
+        results: list[StageResult] = []
         any_failed = False
 
         for stage_name in pipeline.stages:
@@ -223,17 +222,15 @@ class PipelineRunner:
         return run
 
     def _resolve_stages(
-        self, pipeline: PipelineConfig, env: Dict[str, str]
-    ) -> Dict[str, PipelineStage]:
-        stages: Dict[str, PipelineStage] = {}
+        self, pipeline: PipelineConfig, env: dict[str, str]
+    ) -> dict[str, PipelineStage]:
+        stages: dict[str, PipelineStage] = {}
         for s in pipeline.stages:
             stage_env = dict(env)
             stages[s] = PipelineStage(name=s, env=stage_env)
         return stages
 
-    def run_stage(
-        self, stage: PipelineStage, env: Dict[str, str]
-    ) -> StageResult:
+    def run_stage(self, stage: PipelineStage, env: dict[str, str]) -> StageResult:
         import subprocess
 
         started = time.time()
@@ -291,13 +288,13 @@ class PipelineRunner:
         run.finished_at = time.time()
         run.logs.append(f"[{run_id}] Pipeline cancelled by user.")
 
-    def get_run(self, run_id: str) -> Optional[PipelineRun]:
+    def get_run(self, run_id: str) -> PipelineRun | None:
         return self._runs.get(run_id)
 
-    def list_runs(self) -> List[PipelineRun]:
+    def list_runs(self) -> list[PipelineRun]:
         return list(self._runs.values())
 
-    def get_logs(self, run_id: str) -> List[str]:
+    def get_logs(self, run_id: str) -> list[str]:
         run = self._runs.get(run_id)
         if run is None:
             return []

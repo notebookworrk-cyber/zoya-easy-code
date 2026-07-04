@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 
 class Environment:
-    def __init__(self, parent: Optional[Environment] = None) -> None:
+    def __init__(self, parent: Environment | None = None) -> None:
         self._vars: dict[str, Any] = {}
         self.parent = parent
 

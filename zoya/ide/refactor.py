@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
-from typing import List, Tuple
+from dataclasses import dataclass
 
 
 @dataclass
@@ -18,21 +17,29 @@ class RefactoringOperation:
 class RefactoringSuggestion:
     name: str
     description: str
-    lines: Tuple[int, int]
+    lines: tuple[int, int]
     confidence: float
 
 
 _INDENT_RE = re.compile(r"^( {4}|\t)*")
 _FN_RE = re.compile(r"\bfn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(")
-_FOR_RE = re.compile(r"\bfor\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*0\s*;\s*\1\s*<\s*([a-zA-Z_][a-zA-Z0-9_]*?)\s*;\s*\1\s*\+\+\s*\)")
+_FOR_RE = re.compile(
+    r"\bfor\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*0\s*;\s*\1\s*<\s*([a-zA-Z_][a-zA-Z0-9_]*?)\s*;\s*\1\s*\+\+\s*\)"
+)
 _FOREACH_RE = re.compile(r"\bforeach\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+")
 _IF_CHAIN_RE = re.compile(r"\bif\s+(.+?)\s*\{[^}]*\}\s*else\s+if\s+")
 _PRINT_RE = re.compile(r"\bprint\s+(.+)$", re.MULTILINE)
 _LOGGING_TEMPLATE = 'log("{level}", {expr})'
 _VAR_REF = re.compile(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b")
-_UNREACHABLE_RE = re.compile(r"^\s*return\s+.*?\n((?:.|\n)*?)^\s*(?:[a-zA-Z_])", re.MULTILINE)
-_IMPORT_RE = re.compile(r'^\s*import\s+"([^"]+)"(?:\s+as\s+([a-zA-Z_][a-zA-Z0-9_]*))?\s*$', re.MULTILINE)
-_BOOL_SIMP = re.compile(r"\b(true\s+and\s+true|false\s+or\s+false|true\s+or\s+\w+|false\s+and\s+\w+|\w+\s+==\s+\w+)")
+_UNREACHABLE_RE = re.compile(
+    r"^\s*return\s+.*?\n((?:.|\n)*?)^\s*(?:[a-zA-Z_])", re.MULTILINE
+)
+_IMPORT_RE = re.compile(
+    r'^\s*import\s+"([^"]+)"(?:\s+as\s+([a-zA-Z_][a-zA-Z0-9_]*))?\s*$', re.MULTILINE
+)
+_BOOL_SIMP = re.compile(
+    r"\b(true\s+and\s+true|false\s+or\s+false|true\s+or\s+\w+|false\s+and\s+\w+|\w+\s+==\s+\w+)"
+)
 
 
 class RefactoringEngine:
@@ -44,13 +51,9 @@ class RefactoringEngine:
         result: list[str] = []
         scope_stack: list[list[int]] = []
         current_scope_vars: set[str] = set()
-        brace_depth = 0
 
         def in_scope(line_idx: int) -> bool:
-            for scope_lines in reversed(scope_stack):
-                if line_idx in scope_lines:
-                    return True
-            return False
+            return any(line_idx in scope_lines for scope_lines in reversed(scope_stack))
 
         for i, line in enumerate(lines):
             stripped = line.strip()
@@ -63,11 +66,10 @@ class RefactoringEngine:
                 scope_stack.append(list(range(max(0, i - 5), i + 5)))
                 current_scope_vars = set()
 
-            for cb in re.findall(r"\}", stripped):
+            for _cb in re.findall(r"\}", stripped):
                 if scope_stack:
                     scope_stack.pop()
 
-            orig = line
             if old_name in current_scope_vars or in_scope(i):
                 replaced = self._replace_ident(line, old_name, new_name)
             else:
@@ -83,7 +85,9 @@ class RefactoringEngine:
             line,
         )
 
-    def extract_function(self, source: str, start_line: int, end_line: int, new_name: str) -> str:
+    def extract_function(
+        self, source: str, start_line: int, end_line: int, new_name: str
+    ) -> str:
         lines = source.split("\n")
         if start_line < 1 or end_line > len(lines) or start_line > end_line:
             return source
@@ -105,9 +109,23 @@ class RefactoringEngine:
         for line in extracted_lines:
             for m in re.finditer(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b", line):
                 name = m.group(1)
-                if name not in params and name not in ("print", "input", "return", "if", "else",
-                                                       "while", "for", "foreach", "loop", "in",
-                                                       "true", "false", "and", "or", "not"):
+                if name not in params and name not in (
+                    "print",
+                    "input",
+                    "return",
+                    "if",
+                    "else",
+                    "while",
+                    "for",
+                    "foreach",
+                    "loop",
+                    "in",
+                    "true",
+                    "false",
+                    "and",
+                    "or",
+                    "not",
+                ):
                     params.append(name)
 
         fn_def = f"{base_indent}fn {new_name}({', '.join(params)}) {{\n"
@@ -144,7 +162,9 @@ class RefactoringEngine:
         fn_body_lines: list[str] = []
 
         for i, line in enumerate(lines):
-            m = re.match(r"^\s*fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line)
+            m = re.match(
+                r"^\s*fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line
+            )
             if m:
                 fn_start = i
                 raw_params = m.group(1).strip()
@@ -178,18 +198,17 @@ class RefactoringEngine:
         result_lines = lines[:fn_start] + lines[fn_end:]
 
         result_source = "\n".join(result_lines)
-        result_source = call_re.sub(lambda m: self._substitute_inline(m, fn_params, return_line), result_source)
+        result_source = call_re.sub(
+            lambda m: self._substitute_inline(m, fn_params, return_line), result_source
+        )
 
         return result_source
 
     def _substitute_inline(self, m: re.Match, params: list[str], body: str) -> str:
         raw_args = m.group(1).strip()
-        if raw_args:
-            args = [a.strip() for a in raw_args.split(",")]
-        else:
-            args = []
+        args = [a.strip() for a in raw_args.split(",")] if raw_args else []
         result = body
-        for p, a in zip(params, args):
+        for p, a in zip(params, args, strict=False):
             result = result.replace(p, a)
         return result.strip()
 
@@ -201,11 +220,13 @@ class RefactoringEngine:
                 var = m.group(1)
                 container = m.group(2)
                 # Adjust to foreach pattern
-                result.append(re.sub(
-                    r"for\s*\(.*?\)",
-                    f"foreach {var} in {container}",
-                    line,
-                ))
+                result.append(
+                    re.sub(
+                        r"for\s*\(.*?\)",
+                        f"foreach {var} in {container}",
+                        line,
+                    )
+                )
             else:
                 result.append(line)
         return "\n".join(result)
@@ -250,7 +271,9 @@ class RefactoringEngine:
                     val_match = re.search(r"==\s*(.+?)\s*\{", cl)
                     if val_match:
                         switch_lines.append(f"{case_indent}}}")
-                        switch_lines.append(f"{case_indent}case {val_match.group(1)} {{")
+                        switch_lines.append(
+                            f"{case_indent}case {val_match.group(1)} {{"
+                        )
                     i += 1
                 elif re.match(r"^\s*\}\s*else\s*\{", cl):
                     switch_lines.append(f"{case_indent}}}")
@@ -295,11 +318,15 @@ class RefactoringEngine:
                 continue
             m = re.match(r"^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*\[", stripped)
             if m and "::" not in stripped:
-                result.append(f"{m.group(1)}{m.group(2)} :: list = {stripped[m.end(2) - m.start(1) + m.start(1):]}")
+                result.append(
+                    f"{m.group(1)}{m.group(2)} :: list = {stripped[m.end(2) - m.start(1) + m.start(1):]}"
+                )
                 continue
             m = re.match(r"^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*\{", stripped)
             if m and "::" not in stripped:
-                result.append(f"{m.group(1)}{m.group(2)} :: dict = {stripped[m.end(2) - m.start(1) + m.start(1):]}")
+                result.append(
+                    f"{m.group(1)}{m.group(2)} :: dict = {stripped[m.end(2) - m.start(1) + m.start(1):]}"
+                )
                 continue
             result.append(line)
 
@@ -317,8 +344,14 @@ class RefactoringEngine:
             (r"\bfalse\s+or\s+false\b", "false"),
             (r"\bnot\s+true\b", "false"),
             (r"\bnot\s+false\b", "true"),
-            (r"\bnot\s+\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*==\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)", r"\1 != \2"),
-            (r"\bnot\s+\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*!=\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)", r"\1 == \2"),
+            (
+                r"\bnot\s+\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*==\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)",
+                r"\1 != \2",
+            ),
+            (
+                r"\bnot\s+\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*!=\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)",
+                r"\1 == \2",
+            ),
             (r"\b(\w+)\s+==\s+true\b", r"\1"),
             (r"\b(\w+)\s+==\s+false\b", r"not \1"),
             (r"\b(\w+)\s+!=\s+true\b", r"not \1"),
@@ -352,7 +385,12 @@ class RefactoringEngine:
                 brace_depth = 0
                 continue
 
-            if stripped.startswith("// dead") or stripped.startswith("//dead") or stripped.startswith("# dead") or stripped.startswith("#dead"):
+            if (
+                stripped.startswith("// dead")
+                or stripped.startswith("//dead")
+                or stripped.startswith("# dead")
+                or stripped.startswith("#dead")
+            ):
                 continue
 
             result.append(line)
@@ -386,7 +424,7 @@ class RefactoringEngine:
 
         result: list[str] = []
         first = True
-        for _, orig, alias, _ in import_lines:
+        for _, orig, _, _ in import_lines:
             if first:
                 first = False
             else:
@@ -411,10 +449,19 @@ class RefactoringEngine:
             if not stripped:
                 result.append("")
                 continue
-            if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("/*"):
+            if (
+                stripped.startswith("//")
+                or stripped.startswith("#")
+                or stripped.startswith("/*")
+            ):
                 result.append("    " * indent_level + stripped)
                 continue
-            if stripped.startswith("}") or stripped.startswith("])") or stripped.startswith(")") or stripped == "}":
+            if (
+                stripped.startswith("}")
+                or stripped.startswith("])")
+                or stripped.startswith(")")
+                or stripped == "}"
+            ):
                 indent_level = max(0, indent_level - 1)
 
             result.append("    " * indent_level + stripped)
@@ -435,7 +482,9 @@ class RefactoringEngine:
         next_id = 1
 
         while i < len(lines):
-            fn_match = re.match(r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i])
+            fn_match = re.match(
+                r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i]
+            )
             if not fn_match:
                 result.append(lines[i])
                 i += 1
@@ -443,7 +492,7 @@ class RefactoringEngine:
 
             indent = fn_match.group(1)
             fn_name = fn_match.group(2)
-            fn_params = fn_match.group(3)
+            fn_match.group(3)
 
             fn_body_start = i + 1
             brace_count = 1
@@ -459,14 +508,16 @@ class RefactoringEngine:
                 result.append(lines[i])
                 result.extend(fn_body_lines)
                 if i < len(lines):
-                    result.append(lines[fn_body_end] if fn_body_end < len(lines) else "")
+                    result.append(
+                        lines[fn_body_end] if fn_body_end < len(lines) else ""
+                    )
                 i = fn_body_end + 1
                 continue
 
             extracted_fn: list[str] = []
             chunk_size = max_lines - 5
             for chunk_start in range(0, len(fn_body_lines), chunk_size):
-                chunk = fn_body_lines[chunk_start:chunk_start + chunk_size]
+                chunk = fn_body_lines[chunk_start : chunk_start + chunk_size]
                 helper_name = f"_{fn_name}_part{next_id}"
                 helper_line = f"    {helper_name}()"
                 extracted_fn.append(helper_line)
@@ -477,7 +528,7 @@ class RefactoringEngine:
                 def_lines.append(f"{indent}}}")
                 result.extend(def_lines)
 
-            for chunk_start in range(0, len(fn_body_lines), chunk_size):
+            for _ in range(0, len(fn_body_lines), chunk_size):
                 pass
 
             i = fn_body_end + 1
@@ -499,7 +550,7 @@ class RefactoringEngine:
                 if not has_log_import and not log_import_added:
                     result.append('import "logging"')
                     log_import_added = True
-                result.append(f"{indent}log(\"info\", {expr})")
+                result.append(f'{indent}log("info", {expr})')
             else:
                 result.append(line)
 
@@ -508,29 +559,34 @@ class RefactoringEngine:
     def wrap_in_error_handler(self, source: str, function_name: str) -> str:
         lines = source.split("\n")
         result: list[str] = []
-        i = 0
         inside_fn = False
         fn_brace_count = 0
-        fn_body_start = -1
-        fn_body_end = -1
 
         for line in lines:
-            m = re.match(r"^(\s*)fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line)
+            m = re.match(
+                r"^(\s*)fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line
+            )
             if m:
                 indent = m.group(1)
                 fn_brace_count = 1
                 inside_fn = True
                 result.append(line)
-                fn_body_start = len(result)
+                len(result)
                 result.append(f"{indent}    try {{")
                 continue
 
             if inside_fn:
                 fn_brace_count += line.count("{") - line.count("}")
                 if fn_brace_count == 0:
-                    indent = re.match(r"^(\s*)", line).group(1) if re.match(r"^(\s*)", line) else ""
+                    indent = (
+                        re.match(r"^(\s*)", line).group(1)
+                        if re.match(r"^(\s*)", line)
+                        else ""
+                    )
                     result.append(f"{indent}    }} catch err {{")
-                    result.append(f'{indent}        print "Error in {function_name}: " + err')
+                    result.append(
+                        f'{indent}        print "Error in {function_name}: " + err'
+                    )
                     result.append(f"{indent}    }}")
                     result.append(line)
                     inside_fn = False
@@ -542,21 +598,25 @@ class RefactoringEngine:
         return "\n".join(result)
 
 
-def get_available_refactorings(source: str) -> List[RefactoringSuggestion]:
-    suggestions: List[RefactoringSuggestion] = []
+def get_available_refactorings(source: str) -> list[RefactoringSuggestion]:
+    suggestions: list[RefactoringSuggestion] = []
     lines = source.split("\n")
 
     # for loop to foreach
     for i, line in enumerate(lines):
         if re.search(r"for\s*\(\s*[a-zA-Z_]\w*\s*=\s*0\s*;", line):
-            container_match = re.search(r";\s*\1?\s*<\s*([a-zA-Z_]\w*)\.length\s*;", line)
+            container_match = re.search(
+                r";\s*\1?\s*<\s*([a-zA-Z_]\w*)\.length\s*;", line
+            )
             if container_match:
-                suggestions.append(RefactoringSuggestion(
-                    name="convert_loop_to_for_each",
-                    description="Convert indexed for loop to foreach",
-                    lines=(i + 1, i + 1),
-                    confidence=0.8,
-                ))
+                suggestions.append(
+                    RefactoringSuggestion(
+                        name="convert_loop_to_for_each",
+                        description="Convert indexed for loop to foreach",
+                        lines=(i + 1, i + 1),
+                        confidence=0.8,
+                    )
+                )
             break
 
     # if/elif chain to switch
@@ -572,29 +632,35 @@ def get_available_refactorings(source: str) -> List[RefactoringSuggestion]:
         elif re.match(r"^\s*\}\s*else\s*\{", line):
             chain_count += 1
             if chain_count >= 3:
-                suggestions.append(RefactoringSuggestion(
-                    name="convert_if_to_switch",
-                    description="Convert if/elif chain to switch statement",
-                    lines=(chain_start, i + 1),
-                    confidence=0.7,
-                ))
+                suggestions.append(
+                    RefactoringSuggestion(
+                        name="convert_if_to_switch",
+                        description="Convert if/elif chain to switch statement",
+                        lines=(chain_start, i + 1),
+                        confidence=0.7,
+                    )
+                )
             chain_start = -1
             chain_count = 0
 
     # print to logging
     print_count = sum(1 for line in lines if re.match(r"^\s*print\s+", line))
     if print_count >= 3:
-        suggestions.append(RefactoringSuggestion(
-            name="convert_print_to_logging",
-            description="Replace print statements with structured logging",
-            lines=(1, len(lines)),
-            confidence=0.6,
-        ))
+        suggestions.append(
+            RefactoringSuggestion(
+                name="convert_print_to_logging",
+                description="Replace print statements with structured logging",
+                lines=(1, len(lines)),
+                confidence=0.6,
+            )
+        )
 
     # large function split
     i = 0
     while i < len(lines):
-        fn_match = re.match(r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i])
+        fn_match = re.match(
+            r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i]
+        )
         if fn_match:
             fn_name = fn_match.group(2)
             brace_count = 1
@@ -606,12 +672,14 @@ def get_available_refactorings(source: str) -> List[RefactoringSuggestion]:
                     j += 1
             fn_body_len = j - start
             if fn_body_len > 50:
-                suggestions.append(RefactoringSuggestion(
-                    name="split_large_function",
-                    description=f"Split function '{fn_name}' ({fn_body_len} lines) into smaller functions",
-                    lines=(i + 1, j + 1),
-                    confidence=0.7,
-                ))
+                suggestions.append(
+                    RefactoringSuggestion(
+                        name="split_large_function",
+                        description=f"Split function '{fn_name}' ({fn_body_len} lines) into smaller functions",
+                        lines=(i + 1, j + 1),
+                        confidence=0.7,
+                    )
+                )
             i = j + 1
         else:
             i += 1
@@ -619,41 +687,53 @@ def get_available_refactorings(source: str) -> List[RefactoringSuggestion]:
     # type annotation
     untyped_count = 0
     for line in lines:
-        m = re.match(r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(?:\d+|'.*?'|\".*?\"|true|false|\[|\{)", line)
+        m = re.match(
+            r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(?:\d+|'.*?'|\".*?\"|true|false|\[|\{)",
+            line,
+        )
         if m and "::" not in line:
             untyped_count += 1
     if untyped_count >= 2:
-        suggestions.append(RefactoringSuggestion(
-            name="add_type_annotations",
-            description=f"Add type annotations to {untyped_count} untyped variables",
-            lines=(1, len(lines)),
-            confidence=0.5,
-        ))
+        suggestions.append(
+            RefactoringSuggestion(
+                name="add_type_annotations",
+                description=f"Add type annotations to {untyped_count} untyped variables",
+                lines=(1, len(lines)),
+                confidence=0.5,
+            )
+        )
 
     # sort imports
     import_count = len([l for l in lines if re.match(r"^\s*import\s+", l)])
     if import_count > 1:
-        suggestions.append(RefactoringSuggestion(
-            name="sort_imports",
-            description="Sort and group imports alphabetically",
-            lines=(1, len(lines)),
-            confidence=0.9,
-        ))
+        suggestions.append(
+            RefactoringSuggestion(
+                name="sort_imports",
+                description="Sort and group imports alphabetically",
+                lines=(1, len(lines)),
+                confidence=0.9,
+            )
+        )
 
     # simplify boolean
-    bool_patterns = sum(1 for line in lines if re.search(
-        r"\b(true|false)\s+(and|or)\s+(true|false)\b|"
-        r"\bnot\s+(true|false)\b|"
-        r"\b\w+\s+==\s+(true|false)\b",
-        line,
-    ))
+    bool_patterns = sum(
+        1
+        for line in lines
+        if re.search(
+            r"\b(true|false)\s+(and|or)\s+(true|false)\b|"
+            r"\bnot\s+(true|false)\b|"
+            r"\b\w+\s+==\s+(true|false)\b",
+            line,
+        )
+    )
     if bool_patterns > 0:
-        suggestions.append(RefactoringSuggestion(
-            name="simplify_boolean_expression",
-            description=f"Simplify {bool_patterns} boolean expression(s)",
-            lines=(1, len(lines)),
-            confidence=0.8,
-        ))
+        suggestions.append(
+            RefactoringSuggestion(
+                name="simplify_boolean_expression",
+                description=f"Simplify {bool_patterns} boolean expression(s)",
+                lines=(1, len(lines)),
+                confidence=0.8,
+            )
+        )
 
     return suggestions
-

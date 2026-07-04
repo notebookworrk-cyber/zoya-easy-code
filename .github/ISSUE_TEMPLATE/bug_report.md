@@ -1,31 +1,24 @@
 ---
-name: Bug Report
+name: Bug report
 about: Create a report to help us improve Zoya
-title: '[BUG] '
 labels: bug
-assignees: ''
 ---
 
-**Describe the Bug**
-A clear and concise description of what the bug is.
+**Describe the bug**
+A clear description of what the bug is.
 
 **To Reproduce**
-Steps to reproduce the behavior:
-
-```zoya
-# Your Zoya code here
+```python
+# Minimal code to reproduce
 ```
 
-**Expected Behavior**
-A clear and concise description of what you expected to happen.
-
-**Actual Behavior**
-What actually happened (error message, wrong output, crash, etc.)
+**Expected behavior**
+What you expected to happen.
 
 **Environment (please complete):**
-- OS: [e.g. Windows 11, Ubuntu 22.04]
-- Zoya Version: [e.g. 1.0.0]
-- Python Version: [e.g. 3.11]
+- Python version: [e.g. 3.10, 3.11]
+- OS: [e.g. Ubuntu, macOS, Windows]
+- Zoya version: [e.g. 4.0.0]
 
-**Additional Context**
+**Additional context**
 Add any other context about the problem here.

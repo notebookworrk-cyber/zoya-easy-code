@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os as _os
 import sys as _sys
-import platform as _platform
 from typing import Any
 
 
@@ -41,6 +40,7 @@ def load_module(interpreter: Any) -> Any:
     def memory() -> dict[str, Any]:
         try:
             import psutil
+
             mem = psutil.virtual_memory()
             return {
                 "total": mem.total,

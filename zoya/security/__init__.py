@@ -1,5 +1,5 @@
 from .encryption import AESCipher, Hasher, KeyGenerator
-from .validation import Validator, Sanitizer
+from .validation import Sanitizer, Validator
 
 __version__ = "0.1.0"
 

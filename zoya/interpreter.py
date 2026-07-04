@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 import os
-import sys
-from typing import Any, Optional
+from typing import Any
 
 from .ast import (
-    ASTNode,
     Assign,
     AssignAttr,
     AssignIndex,
+    ASTNode,
     BinOp,
     Block,
     Boolean,
     Break,
     Call,
-    Catch,
     ClassDef,
     Continue,
     Dict_,
@@ -47,12 +45,11 @@ from .ast import (
     UnaryOp,
     While,
 )
-from .builtins import BUILTIN_FUNCTIONS, LIST_METHODS, STRING_METHODS, DICT_METHODS
+from .builtins import BUILTIN_FUNCTIONS, DICT_METHODS, LIST_METHODS, STRING_METHODS
 from .environment import Environment
 from .errors import (
     BreakException,
     ContinueException,
-    InterpreterError,
     ReturnException,
     RuntimeError_,
     ZoyaRuntimeError,
@@ -80,8 +77,13 @@ class ZoyaModule:
 
 
 class ZoyaClass:
-    def __init__(self, name: str, parent: Optional[ZoyaClass], methods: dict[str, ZoyaFunction],
-                 env: Environment) -> None:
+    def __init__(
+        self,
+        name: str,
+        parent: ZoyaClass | None,
+        methods: dict[str, ZoyaFunction],
+        env: Environment,
+    ) -> None:
         self.name = name
         self.parent = parent
         self.methods = methods
@@ -102,7 +104,7 @@ class ZoyaInstance:
         self.klass = klass
         self._fields: dict[str, Any] = {}
 
-    def _find_method(self, name: str) -> Optional[ZoyaFunction]:
+    def _find_method(self, name: str) -> ZoyaFunction | None:
         k = self.klass
         while k is not None:
             if name in k.methods:
@@ -151,9 +153,10 @@ class Interpreter:
 
     def _init_builtins(self) -> None:
         from .builtins import register_builtins
+
         register_builtins(self.global_env)
 
-    def interpret(self, node: ASTNode, env: Optional[Environment] = None) -> Any:
+    def interpret(self, node: ASTNode, env: Environment | None = None) -> Any:
         if env is not None:
             self.current_env = env
         return self._eval(node)
@@ -194,7 +197,9 @@ class Interpreter:
                 return self.current_env.get(name)
             raise RuntimeError_(
                 f"'{name}' is not defined",
-                line=line, col=col, file=self.file,
+                line=line,
+                col=col,
+                file=self.file,
             )
 
         if isinstance(node, Assign):
@@ -206,14 +211,18 @@ class Interpreter:
             obj = self._eval(node.obj)
             index = self._eval(node.index)
             val = self._eval(node.expr)
-            if isinstance(obj, list) and isinstance(index, int):
-                obj[index] = val
-            elif isinstance(obj, dict):
+            if (
+                isinstance(obj, list)
+                and isinstance(index, int)
+                or isinstance(obj, dict)
+            ):
                 obj[index] = val
             else:
                 raise RuntimeError_(
                     "Cannot assign to index of this type",
-                    line=line, col=col, file=self.file,
+                    line=line,
+                    col=col,
+                    file=self.file,
                 )
             return val
 
@@ -229,15 +238,19 @@ class Interpreter:
         if isinstance(node, BinOp):
             op = node.op
             if op == "AND":
-                return self._truthy(self._eval(node.left)) and self._truthy(self._eval(node.right))
+                return self._truthy(self._eval(node.left)) and self._truthy(
+                    self._eval(node.right)
+                )
             if op == "OR":
-                return self._truthy(self._eval(node.left)) or self._truthy(self._eval(node.right))
+                return self._truthy(self._eval(node.left)) or self._truthy(
+                    self._eval(node.right)
+                )
 
             left = self._eval(node.left)
             right = self._eval(node.right)
 
             if op == "POW":
-                return left ** right
+                return left**right
             if op == "MOD":
                 return left % right
             if op == "PLUS":
@@ -253,7 +266,9 @@ class Interpreter:
                     return left / right
                 raise RuntimeError_(
                     "Division requires numbers",
-                    line=line, col=col, file=self.file,
+                    line=line,
+                    col=col,
+                    file=self.file,
                 )
             if op == "GT":
                 return left > right
@@ -271,7 +286,9 @@ class Interpreter:
                 return left in right if hasattr(right, "__contains__") else False
             raise RuntimeError_(
                 f"Unknown operator: {op}",
-                line=line, col=col, file=self.file,
+                line=line,
+                col=col,
+                file=self.file,
             )
 
         if isinstance(node, UnaryOp):
@@ -282,7 +299,9 @@ class Interpreter:
                 return -expr
             raise RuntimeError_(
                 f"Unknown unary operator: {node.op}",
-                line=line, col=col, file=self.file,
+                line=line,
+                col=col,
+                file=self.file,
             )
 
         if isinstance(node, Print):
@@ -329,7 +348,9 @@ class Interpreter:
             if not isinstance(count, (int, float)):
                 raise RuntimeError_(
                     "Loop count must be a number",
-                    line=line, col=col, file=self.file,
+                    line=line,
+                    col=col,
+                    file=self.file,
                 )
             result = None
             for _ in range(int(count)):
@@ -402,20 +423,26 @@ class Interpreter:
                     return obj._fields[node.attr]
                 raise RuntimeError_(
                     f"'{obj.klass.name}' has no attribute '{node.attr}'",
-                    line=line, col=col, file=self.file,
+                    line=line,
+                    col=col,
+                    file=self.file,
                 )
             if isinstance(obj, ZoyaSuper):
                 parent = obj._klass.parent
                 if parent is None:
                     raise RuntimeError_(
                         f"super: '{obj._klass.name}' has no parent",
-                        line=line, col=col, file=self.file,
+                        line=line,
+                        col=col,
+                        file=self.file,
                     )
                 if node.attr in parent.methods:
                     return parent.methods[node.attr]
                 raise RuntimeError_(
                     f"super: '{parent.name}' has no attribute '{node.attr}'",
-                    line=line, col=col, file=self.file,
+                    line=line,
+                    col=col,
+                    file=self.file,
                 )
             return getattr(obj, node.attr)
 
@@ -448,7 +475,9 @@ class Interpreter:
                 return obj[index]
             raise RuntimeError_(
                 f"Cannot index {type(obj).__name__}",
-                line=line, col=col, file=self.file,
+                line=line,
+                col=col,
+                file=self.file,
             )
 
         if isinstance(node, Slice):
@@ -463,7 +492,9 @@ class Interpreter:
 
         raise RuntimeError_(
             f"Unknown AST node: {type(node).__name__}",
-            line=line, col=col, file=self.file,
+            line=line,
+            col=col,
+            file=self.file,
         )
 
     def _eval_block(self, block: ASTNode) -> Any:
@@ -479,9 +510,8 @@ class Interpreter:
             self._eval(node.init)
         result = None
         while True:
-            if node.cond is not None:
-                if not self._truthy(self._eval(node.cond)):
-                    break
+            if node.cond is not None and not self._truthy(self._eval(node.cond)):
+                break
             try:
                 result = self._eval_block(node.body)
             except BreakException:
@@ -497,16 +527,7 @@ class Interpreter:
     def _eval_for_each(self, node: ForEach) -> None:
         iterable = self._eval(node.iterable)
         result = None
-        if isinstance(iterable, (list, tuple, str)):
-            for item in iterable:
-                self.current_env.set(node.var, item)
-                try:
-                    result = self._eval_block(node.body)
-                except BreakException:
-                    break
-                except ContinueException:
-                    continue
-        elif hasattr(iterable, "__iter__"):
+        if isinstance(iterable, (list, tuple, str)) or hasattr(iterable, "__iter__"):
             for item in iterable:
                 self.current_env.set(node.var, item)
                 try:
@@ -518,7 +539,9 @@ class Interpreter:
         else:
             raise RuntimeError_(
                 f"Cannot iterate over '{type(iterable).__name__}'",
-                line=node.line, col=node.col, file=self.file,
+                line=node.line,
+                col=node.col,
+                file=self.file,
             )
         return result
 
@@ -537,11 +560,9 @@ class Interpreter:
 
     def _eval_try(self, node: Try) -> Any:
         result = None
-        caught = False
         try:
             result = self._eval_block(node.try_body)
         except (ZoyaRuntimeError, ZoyaTypeError, RuntimeError_) as e:
-            caught = True
             for catch in node.catches:
                 func_env = Environment(self.current_env)
                 if catch.var is not None:
@@ -560,7 +581,6 @@ class Interpreter:
         except Exception as e:
             if not isinstance(e, (BreakException, ContinueException, ReturnException)):
                 for catch in node.catches:
-                    caught = True
                     func_env = Environment(self.current_env)
                     if catch.var is not None:
                         func_env.define(catch.var, str(e))
@@ -590,13 +610,15 @@ class Interpreter:
         return None
 
     def _eval_class_def(self, node: ClassDef) -> Any:
-        parent: Optional[ZoyaClass] = None
+        parent: ZoyaClass | None = None
         if node.parent is not None:
             parent_obj = self.current_env.get(node.parent)
             if not isinstance(parent_obj, ZoyaClass):
                 raise RuntimeError_(
                     f"'{node.parent}' is not a class",
-                    line=node.line, col=node.col, file=self.file,
+                    line=node.line,
+                    col=node.col,
+                    file=self.file,
                 )
             parent = parent_obj
 
@@ -630,7 +652,9 @@ class Interpreter:
                 return callee._call(call.args, self)
             raise RuntimeError_(
                 f"'{callee.name}' is not callable",
-                line=call.line, col=call.col, file=self.file,
+                line=call.line,
+                col=call.col,
+                file=self.file,
             )
 
         builtin_name = ""
@@ -647,7 +671,9 @@ class Interpreter:
         if isinstance(callee, ZoyaClass):
             instance = ZoyaInstance(callee)
             if "init" in callee.methods:
-                self._call_function_internal(callee.methods["init"], instance, call.args)
+                self._call_function_internal(
+                    callee.methods["init"], instance, call.args
+                )
             return instance
 
         if callable(callee):
@@ -656,11 +682,17 @@ class Interpreter:
 
         raise RuntimeError_(
             f"'{callee}' is not callable",
-            line=call.line, col=call.col, file=self.file,
+            line=call.line,
+            col=call.col,
+            file=self.file,
         )
 
-    def _call_function_internal(self, func: ZoyaFunction, instance: Optional[ZoyaInstance],
-                                arg_nodes: list[ASTNode]) -> Any:
+    def _call_function_internal(
+        self,
+        func: ZoyaFunction,
+        instance: ZoyaInstance | None,
+        arg_nodes: list[ASTNode],
+    ) -> Any:
         positional_nodes: list[ASTNode] = []
         named_kwargs: dict[str, ASTNode] = {}
 
@@ -671,7 +703,9 @@ class Interpreter:
                 positional_nodes.append(arg)
 
         positional_args: list[Any] = [self._eval(a) for a in positional_nodes]
-        named_evaled: dict[str, Any] = {k: self._eval(v) for k, v in named_kwargs.items()}
+        named_evaled: dict[str, Any] = {
+            k: self._eval(v) for k, v in named_kwargs.items()
+        }
 
         func_env = Environment(func.env)
 
@@ -738,22 +772,28 @@ class Interpreter:
                 return field
             raise RuntimeError_(
                 f"'{obj.klass.name}' has no method '{method}'",
-                line=mc.line, col=mc.col, file=self.file,
+                line=mc.line,
+                col=mc.col,
+                file=self.file,
             )
 
         if isinstance(obj, ZoyaSuper):
             parent = obj._klass.parent
             if parent is None:
                 raise RuntimeError_(
-                    f"super: no parent class",
-                    line=mc.line, col=mc.col, file=self.file,
+                    "super: no parent class",
+                    line=mc.line,
+                    col=mc.col,
+                    file=self.file,
                 )
             if method in parent.methods:
                 func = parent.methods[method]
                 return self._call_function_internal(func, obj._instance, mc.args)
             raise RuntimeError_(
                 f"super: '{parent.name}' has no method '{method}'",
-                line=mc.line, col=mc.col, file=self.file,
+                line=mc.line,
+                col=mc.col,
+                file=self.file,
             )
 
         if isinstance(obj, str) and method in STRING_METHODS:
@@ -773,7 +813,9 @@ class Interpreter:
 
         raise RuntimeError_(
             f"'{type(obj).__name__}' has no method '{method}'",
-            line=mc.line, col=mc.col, file=self.file,
+            line=mc.line,
+            col=mc.col,
+            file=self.file,
         )
 
     def _handle_import(self, node: Import) -> Any:
@@ -782,6 +824,7 @@ class Interpreter:
 
         try:
             import importlib
+
             py_module = importlib.import_module(f"zoya.stdlib.{path}")
             if hasattr(py_module, "load_module"):
                 module = py_module.load_module(self)
@@ -808,7 +851,8 @@ class Interpreter:
             if os.path.exists(full_path):
                 from .lexer import tokenize
                 from .parser import parse
-                with open(full_path, "r") as f:
+
+                with open(full_path) as f:
                     source = f.read()
                 tokens = tokenize(source, full_path)
                 ast = parse(tokens, full_path)
@@ -828,7 +872,9 @@ class Interpreter:
 
         raise RuntimeError_(
             f"Module '{path}' not found",
-            line=node.line, col=node.col, file=self.file,
+            line=node.line,
+            col=node.col,
+            file=self.file,
         )
 
     def _truthy(self, value: Any) -> bool:
@@ -853,6 +899,7 @@ def interpret(ast: Block, file: str = "") -> Any:
 def run(source: str, file: str = "") -> Any:
     from .lexer import tokenize
     from .parser import parse
+
     tokens = tokenize(source, file)
     ast = parse(tokens, file)
     return interpret(ast, file)

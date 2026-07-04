@@ -1,37 +1,76 @@
-# Zoya — Software Development Platform v4.0
+<div align="center">
 
-**Zoya** is a complete software development platform: a beginner-friendly programming language **and** a pure-Python SDK with 15+ module areas for building web, desktop, mobile, AI, cloud, and enterprise applications — with zero external dependencies.
+# 🚀 Zoya — Software Development Platform v4.0
 
-```
+**Build anything. Pure Python. Zero dependencies.**
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-1,512%20passing-brightgreen?style=flat-square)](#test-suite)
+[![Coverage](https://img.shields.io/badge/Coverage-14%25-yellow?style=flat-square)](#test-suite)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
+[![Made with ❤️](https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F-red?style=flat-square)](https://github.com/notebookworrk-cyber)
+
+</div>
+
+**Zoya** is a complete software development platform: a beginner-friendly programming language **and** a pure-Python SDK spanning **15+ module areas** — web, desktop, AI, cloud, data science, mobile, security, DevOps, marketplace, visual builder, export, enterprise, IDE, robotics, and scientific computing.
+
+### ⚡ Why Zoya?
+
+| Feature | Zoya | Typical Python Stack |
+|---------|------|---------------------|
+| **Dependencies** | Zero external deps | Flask + NumPy + Pandas + FastAPI + ... |
+| **Modules** | 15+ domains, one package | 20+ separate packages |
+| **Install size** | `pip install zoya-lang` | `pip install flask pandas numpy scikit-learn fastapi uvicorn ...` |
+| **Learning curve** | Beginner-friendly | Steep for new devs |
+| **Protocol** | ⚡ Web framework | Flask / FastAPI |
+| **Desktop** | ⚡ Widget framework | PyQt / Tkinter |
+| **AI/LLM** | ⚡ Agents + RAG + Tools | LangChain / LlamaIndex |
+| **Data Science** | ⚡ DataFrame + ML | Pandas + Scikit-learn |
+| **Cloud** | ⚡ Auth + DB + Realtime + Analytics | Supabase / Firebase SDK |
+| **Security** | ⚡ Encryption + Validation + Sanitization | cryptography + bleach |
+| **Mobile** | ⚡ Cross-platform widgets | Kivy / React Native |
+| **Robotics** | ⚡ Robot + Drone + Sensor control | ROS / serial |
+
+### 📦 One-Click Install
+
+```bash
 pip install zoya-lang
 ```
 
-Or from source:
+> **Not on PyPI yet?** Install from source:
+> ```bash
+> git clone https://github.com/notebookworrk-cyber/zoya-easy-code.git
+> cd zoya-easy-code
+> pip install -e .
+> ```
 
-```bash
-git clone https://github.com/notebookworrk-cyber/zoya-easy-code.git
-cd zoya-easy-code
-pip install -e .
+### 🎯 Quick Start
+
+```python
+# A Zoya web app in 30 seconds
+from zoya.web import create_app
+
+app = create_app()
+
+@app.get("/")
+def home(req):
+    return {"message": "Hello, World!"}
+
+app.run(port=8080)
 ```
 
 ```bash
-zoya hello.zoya    # Run a script
+zoya hello.zoya    # Run a Zoya script
 zoya --repl        # Interactive REPL
 ```
 
-```python
-from zoya.web import create_app
-from zoya.ai import create_agent
-from zoya.cloud import create_cloud
-from zoya.data import DataFrame
-from zoya.security import Validator, Hasher
-```
-
-> **Zero external dependencies.** All modules are pure Python — no numpy, pandas, openai, flask, or any third-party packages required.
-
 ---
 
-## Table of Contents
+## 📋 Table of Contents
+
+<details>
+<summary>Click to expand (15 modules + language reference)</summary>
 
 1. [Web Framework](#1-web-framework-zoyaweb)
 2. [Desktop Framework](#2-desktop-framework-zoyadesktop)
@@ -50,6 +89,8 @@ from zoya.security import Validator, Hasher
 15. [Robotics SDK](#15-robotics-sdk-zoyarobotics)
 16. [Zoya Language Syntax](#zoya-language-syntax)
 17. [Test Suite](#test-suite)
+
+</details>
 
 ---
 
@@ -1760,23 +1801,49 @@ zoya/
 ├── repl.py              # Interactive REPL
 ├── cli.py               # CLI entry point
 ├── stdlib/              # Language stdlib (20+ modules)
-│   └── scientific/      # Scientific computing (Python SDK)
-├── ai/                  # AI Platform
-├── cloud/               # Cloud Platform
-├── ide/                 # AI-Assisted IDE
-├── data/                # Data Science
-├── mobile/              # Mobile Framework
-├── security/            # Security
-├── devops/              # DevOps
-├── marketplace/         # Package Marketplace
-├── visual/              # Visual Builder
-├── export/              # Cross-Platform Export
-├── enterprise/          # Enterprise
-├── robotics/            # Robotics SDK
-├── web/                 # Web Framework
-└── desktop/             # Desktop Framework
+├── ai/                  # AI Platform (LLM, agents, RAG, tools, memory, embeddings)
+├── cloud/               # Cloud Platform (auth, DB, storage, realtime, multiplayer, analytics)
+├── ide/                 # AI-Assisted IDE (completion, review, refactor, debug, docs)
+├── data/                # Data Science (DataFrame, Series, visualization)
+├── mobile/              # Mobile Framework (widgets, navigation, gestures)
+├── security/            # Security (encryption, hashing, validation, sanitization)
+├── devops/              # DevOps (CI/CD pipelines, deployment strategies)
+├── marketplace/         # Package Marketplace (registry, dependency resolution)
+├── visual/              # Visual Builder (JSON-to-UI, layout engine, themes)
+├── export/              # Cross-Platform Export (web, desktop, mobile, CLI, Docker)
+├── enterprise/          # Enterprise (RBAC, audit, feature flags, SSO, multi-tenant)
+├── robotics/            # Robotics SDK (robot, drone, sensors, servos, simulation)
+├── web/                 # Web Framework (HTTP router, middleware, responses)
+└── desktop/             # Desktop Framework (widget-based GUI applications)
+
 ```
 
-## License
+---
 
-MIT
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+- 🐛 [Report a bug](https://github.com/notebookworrk-cyber/zoya-easy-code/issues/new)
+- 💡 [Request a feature](https://github.com/notebookworrk-cyber/zoya-easy-code/discussions)
+- ⭐ [Star the repo](https://github.com/notebookworrk-cyber/zoya-easy-code) if you find it useful!
+
+### 📚 Resources
+
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+- [Discussions](https://github.com/notebookworrk-cyber/zoya-easy-code/discussions)
+
+---
+
+<div align="center">
+
+**Built with ❤️ by [Lucky](https://github.com/notebookworrk-cyber)**
+
+[![GitHub followers](https://img.shields.io/github/followers/notebookworrk-cyber?style=social)](https://github.com/notebookworrk-cyber)
+[![GitHub stars](https://img.shields.io/github/stars/notebookworrk-cyber/zoya-easy-code?style=social)](https://github.com/notebookworrk-cyber/zoya-easy-code)
+
+⭐ If Zoya helps you learn or build something, consider giving it a star!
+
+</div>

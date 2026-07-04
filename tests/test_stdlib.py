@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import pytest
-from zoya import run
-from zoya.interpreter import Interpreter, interpret
+from zoya.interpreter import interpret
 from zoya.lexer import tokenize
 from zoya.parser import parse
 
@@ -93,11 +91,13 @@ class TestMathModule:
     def test_math_inf(self):
         result = _run('import "math" as m\nm.inf\n')
         import math
+
         assert result == math.inf
 
     def test_math_nan(self):
         result = _run('import "math" as m\nm.nan\n')
         import math
+
         assert str(result) == str(math.nan)
 
 
@@ -131,7 +131,9 @@ class TestStringModule:
         assert result == "  hi"
 
     def test_string_replace(self):
-        result = _run('import "string" as s\ns.replace("hello world", "world", "zoya")\n')
+        result = _run(
+            'import "string" as s\ns.replace("hello world", "world", "zoya")\n'
+        )
         assert result == "hello zoya"
 
     def test_string_split(self):
@@ -202,6 +204,7 @@ class TestCollectionsModule:
     def test_deque(self):
         result = _run('import "collections" as c\nc.deque()\n')
         from collections import deque
+
         assert type(result) == type(deque())
 
     def test_deque_with_items(self):
@@ -219,6 +222,7 @@ class TestCollectionsModule:
     def test_ordered_dict(self):
         result = _run('import "collections" as c\nc.ordered_dict()\n')
         from collections import OrderedDict
+
         assert type(result) == type(OrderedDict())
 
     def test_defaultdict_callable(self):
@@ -232,7 +236,7 @@ class TestJsonModule:
         assert '"a": 1' in result
 
     def test_loads(self):
-        result = _run("import \"json\" as j\ns = '{\"a\": 1}'\nj.loads(s)\n")
+        result = _run('import "json" as j\ns = \'{"a": 1}\'\nj.loads(s)\n')
         assert result == {"a": 1}
 
 
@@ -278,15 +282,17 @@ class TestRegexModule:
         assert result == "world"
 
     def test_findall(self):
-        result = _run("import \"regex\" as re\ns = 'ab12cd34'\nre.findall(\"12\", s)\n")
+        result = _run('import "regex" as re\ns = \'ab12cd34\'\nre.findall("12", s)\n')
         assert result == ["12"]
 
     def test_compile(self):
-        result = _run("import \"regex\" as re\nre.compile(\"hello\")\n")
+        result = _run('import "regex" as re\nre.compile("hello")\n')
         assert result is not None
 
     def test_replace(self):
-        result = _run('import "regex" as r\nr.replace("world", "zoya", "hello world")\n')
+        result = _run(
+            'import "regex" as r\nr.replace("world", "zoya", "hello world")\n'
+        )
         assert result == "hello zoya"
 
 

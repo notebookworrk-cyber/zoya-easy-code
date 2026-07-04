@@ -1,24 +1,22 @@
-import sys
 import os
 import shutil
+import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
+import unittest
+
 from zoya.devops import (
+    Deployer,
+    Deployment,
+    DeploymentConfig,
     PipelineConfig,
     PipelineRun,
     PipelineRunner,
     PipelineStage,
     StageResult,
-    Deployer,
-    Deployment,
-    DeploymentConfig,
-    create_pipeline,
-    create_deployment,
-    __version__,
 )
-import unittest
 
 
 class TestPipelineConfig(unittest.TestCase):
@@ -153,9 +151,7 @@ class TestPipelineRunner(unittest.TestCase):
 
     def test_run_with_parallel_flag(self):
         runner = PipelineRunner()
-        config = PipelineConfig(
-            name="parallel-test", stages=["a", "b"], parallel=True
-        )
+        config = PipelineConfig(name="parallel-test", stages=["a", "b"], parallel=True)
         run = runner.run(config)
         self.assertEqual(run.status, "success")
         self.assertEqual(len(run.stage_results), 2)
@@ -208,9 +204,7 @@ class TestPipelineRunner(unittest.TestCase):
 
     def test_pipeline_with_multiple_stages(self):
         runner = PipelineRunner()
-        config = PipelineConfig(
-            name="multi-stage", stages=["build", "test", "deploy"]
-        )
+        config = PipelineConfig(name="multi-stage", stages=["build", "test", "deploy"])
         run = runner.run(config)
         self.assertEqual(run.status, "success")
         self.assertEqual(len(run.stage_results), 3)
@@ -254,9 +248,7 @@ class TestDeploymentConfig(unittest.TestCase):
             self.assertEqual(config.env_vars, {"PORT": "8080"})
 
     def test_default_values(self):
-        config = DeploymentConfig(
-            name="defaults", source=".", target="/tmp/deploy"
-        )
+        config = DeploymentConfig(name="defaults", source=".", target="/tmp/deploy")
         self.assertEqual(config.strategy, "rolling")
         self.assertEqual(config.timeout, 300)
         self.assertTrue(config.rollback_on_failure)
@@ -357,9 +349,7 @@ class TestDeployer(unittest.TestCase):
         dep1 = self.deployer.deploy(self.config, version="v1")
         dep2 = self.deployer.deploy(self.config, version="v2")
         self.deployer.switch_traffic(dep1.id, dep2.id, percentage=50)
-        self.assertTrue(
-            any("Traffic switched" in log for log in dep2.logs)
-        )
+        self.assertTrue(any("Traffic switched" in log for log in dep2.logs))
 
     def test_switch_traffic_invalid_source_raises(self):
         dep = self.deployer.deploy(self.config, version="v1")

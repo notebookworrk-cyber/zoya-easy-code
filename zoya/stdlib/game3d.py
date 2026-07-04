@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 
@@ -14,21 +15,28 @@ def load_module(interpreter: Any) -> Any:
         nonlocal _app
         try:
             from ursina import Ursina
+
             _app = Ursina()
         except ImportError:
             try:
                 from direct.showbase.ShowBase import ShowBase
+
                 class Zoya3DApp(ShowBase):
                     def __init__(self):
                         super().__init__()
+
                 _app = Zoya3DApp()
             except ImportError:
-                raise ImportError("Ursina or Panda3D required. Install: pip install ursina")
+                raise ImportError(
+                    "Ursina or Panda3D required. Install: pip install ursina"
+                ) from None
 
     def cube(x: float = 0, y: float = 0, z: float = 0, color: str = "white") -> Any:
         nonlocal _entities
         try:
-            from ursina import Entity, color as ucolor
+            from ursina import Entity
+            from ursina import color as ucolor
+
             c = getattr(ucolor, color, ucolor.white)
             ent = Entity(model="cube", position=(x, y, z), color=c)
             _entities.append(ent)
@@ -41,7 +49,9 @@ def load_module(interpreter: Any) -> Any:
     def sphere(x: float = 0, y: float = 0, z: float = 0, color: str = "white") -> Any:
         nonlocal _entities
         try:
-            from ursina import Entity, color as ucolor
+            from ursina import Entity
+            from ursina import color as ucolor
+
             c = getattr(ucolor, color, ucolor.white)
             ent = Entity(model="sphere", position=(x, y, z), color=c)
             _entities.append(ent)
@@ -53,8 +63,8 @@ def load_module(interpreter: Any) -> Any:
 
     def light(type_: str = "ambient", intensity: float = 1.0) -> Any:
         try:
-            from ursina import Entity, Vec3
-            from ursina.shaders import lit_with_shadows_shader
+            from ursina import Entity
+
             ent = Entity(model="cube", scale=0, light=type_)
             return ent
         except ImportError:
@@ -63,15 +73,14 @@ def load_module(interpreter: Any) -> Any:
     def camera(x: float = 0, y: float = 0, z: float = -10) -> None:
         try:
             from ursina import camera as ucam
+
             ucam.position = (x, y, z)
         except ImportError:
             pass
 
     def rotate(entity: Any, x: float = 0, y: float = 0, z: float = 0) -> None:
-        try:
+        with contextlib.suppress(AttributeError, TypeError):
             entity.rotation += (x, y, z)
-        except (AttributeError, TypeError):
-            pass
 
     def move(entity: Any, x: float = 0, y: float = 0, z: float = 0) -> None:
         try:
@@ -87,6 +96,7 @@ def load_module(interpreter: Any) -> Any:
         _running = True
         try:
             from ursina import application
+
             application.run()
         except ImportError:
             pass
@@ -94,6 +104,7 @@ def load_module(interpreter: Any) -> Any:
     def quit_3d() -> None:
         try:
             from ursina import application
+
             application.quit()
         except ImportError:
             pass

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Any
 
 from . import run
 
@@ -16,9 +15,11 @@ class ZoyaREPL:
     def _load_history(self) -> None:
         try:
             if os.path.exists(self.history_file):
-                with open(self.history_file, "r", encoding="utf-8") as f:
-                    self.history = [line.rstrip("\n") for line in f.readlines() if line.strip()]
-        except (OSError, IOError):
+                with open(self.history_file, encoding="utf-8") as f:
+                    self.history = [
+                        line.rstrip("\n") for line in f.readlines() if line.strip()
+                    ]
+        except OSError:
             self.history = []
 
     def _save_history(self) -> None:
@@ -26,7 +27,7 @@ class ZoyaREPL:
             with open(self.history_file, "w", encoding="utf-8") as f:
                 for line in self.history[-100:]:
                     f.write(line + "\n")
-        except (OSError, IOError):
+        except OSError:
             pass
 
     def _show_banner(self) -> None:
@@ -125,6 +126,7 @@ f"Hello {name}"            - String interpolation
 
             if line == ":examples":
                 from .cli import show_examples
+
                 show_examples()
                 continue
 

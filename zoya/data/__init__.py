@@ -1,4 +1,4 @@
-from .dataframe import DataFrame, Series, GroupBy, GroupByColumn, DataFrameError
+from .dataframe import DataFrame, DataFrameError, GroupBy, GroupByColumn, Series
 from .visualization import Figure, Plot, VisualizationError, set_style
 
 __version__ = "0.1.0"

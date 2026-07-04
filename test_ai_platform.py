@@ -3,46 +3,65 @@
 Tests cover: llm.py, tools.py, memory.py, embeddings.py, agent.py, rag.py
 """
 
-import sys
-sys.path.insert(0, r"C:\Users\hp\zoya3")
-
-import unittest
-import tempfile
 import os
-import json
-import math
-import shutil
+import sys
 
-from zoya.ai.llm import (
-    MockProvider, create_provider, LLMError, ChatMessage, LLMResponse
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import json
+import os
+import tempfile
+import unittest
+
+from zoya.ai.agent import (
+    Agent,
+    AgentError,
+    PlanningAgent,
+    create_agent,
 )
-from zoya.ai.tools import (
-    Calculator, WebSearchTool, FileReadTool, FileWriteTool,
-    PythonExecuteTool, ShellTool, tool, ToolError,
+from zoya.ai.agent import (
+    Tool as AgentTool,
 )
-from zoya.ai.tools import Tool as ToolBase, ToolRegistry as ToolRegistryBase
-from zoya.ai.memory import (
-    ConversationMemory, SemanticMemory, MemoryError,
+from zoya.ai.agent import (
+    ToolRegistry as AgentToolRegistry,
 )
 from zoya.ai.embeddings import (
-    cosine_similarity, TFIDFVectorizer, TextEmbedding,
-    simple_tokenize, EmbeddingError,
+    EmbeddingError,
+    TextEmbedding,
+    TFIDFVectorizer,
+    cosine_similarity,
+    simple_tokenize,
 )
-from zoya.ai.agent import (
-    Agent, PlanningAgent, create_agent, AgentError,
-)
-from zoya.ai.agent import (
-    Tool as AgentTool, ToolRegistry as AgentToolRegistry,
-    AgentMemory as AgentMemoryCls,
+from zoya.ai.llm import LLMError, MockProvider, create_provider
+from zoya.ai.memory import (
+    ConversationMemory,
+    MemoryError,
+    SemanticMemory,
 )
 from zoya.ai.rag import (
-    Document, DocumentChunker, RAGIndex, RAGRetriever, RAGError,
+    Document,
+    DocumentChunker,
+    RAGError,
+    RAGIndex,
+    RAGRetriever,
 )
-
+from zoya.ai.tools import (
+    Calculator,
+    FileReadTool,
+    FileWriteTool,
+    PythonExecuteTool,
+    ShellTool,
+    ToolError,
+    WebSearchTool,
+    tool,
+)
+from zoya.ai.tools import Tool as ToolBase
+from zoya.ai.tools import ToolRegistry as ToolRegistryBase
 
 # ============================================================================
 # LLM Tests
 # ============================================================================
+
 
 class TestLLM(unittest.TestCase):
     """Tests for zoya.ai.llm module."""
@@ -75,11 +94,15 @@ class TestLLM(unittest.TestCase):
         )
 
     def test_mock_provider_substring_matching(self):
-        result = self.provider.chat([{"role": "user", "content": "tell me about the weather today"}])
+        result = self.provider.chat(
+            [{"role": "user", "content": "tell me about the weather today"}]
+        )
         self.assertEqual(result["content"], "The weather is sunny.")
 
     def test_mock_provider_fallback_response(self):
-        result = self.provider.chat([{"role": "user", "content": "something completely different"}])
+        result = self.provider.chat(
+            [{"role": "user", "content": "something completely different"}]
+        )
         self.assertIn("Mock response to:", result["content"])
 
     def test_mock_provider_empty_messages(self):
@@ -136,6 +159,7 @@ class TestLLM(unittest.TestCase):
 # ============================================================================
 # Tools Tests
 # ============================================================================
+
 
 class TestTools(unittest.TestCase):
     """Tests for zoya.ai.tools module."""
@@ -208,6 +232,7 @@ class TestTools(unittest.TestCase):
     def test_web_search_tool_custom_func(self):
         def fake_search(q):
             return {"results": [{"title": q.upper()}]}
+
         search = WebSearchTool(search_func=fake_search)
         result = json.loads(search.execute(query="hello"))
         self.assertEqual(result["results"][0]["title"], "HELLO")
@@ -215,12 +240,15 @@ class TestTools(unittest.TestCase):
     def test_web_search_tool_custom_func_error(self):
         def broken(q):
             raise ValueError("API down")
+
         search = WebSearchTool(search_func=broken)
         with self.assertRaises(ToolError):
             search.execute(query="test")
 
     def test_file_read_tool_reads_file(self):
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as f:
             f.write("file content")
             f.flush()
             filepath = f.name
@@ -258,7 +286,7 @@ class TestTools(unittest.TestCase):
             result = json.loads(writer.execute(path=filepath, content="hello world"))
             self.assertEqual(result["status"], "written")
             self.assertEqual(result["bytes"], 11)
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, encoding="utf-8") as f:
                 self.assertEqual(f.read(), "hello world")
 
     def test_file_write_tool_creates_directories(self):
@@ -388,6 +416,7 @@ class TestTools(unittest.TestCase):
 # ============================================================================
 # Memory Tests
 # ============================================================================
+
 
 class TestMemory(unittest.TestCase):
     """Tests for zoya.ai.memory module."""
@@ -530,6 +559,7 @@ class TestMemory(unittest.TestCase):
 
     def test_agent_memory_combines_conversation_and_knowledge(self):
         from zoya.ai.memory import AgentMemory as SemanticAgentMemory
+
         am = SemanticAgentMemory()
         am.conversation.add("user", "question")
         am.knowledge.store("fact", "data")
@@ -538,11 +568,14 @@ class TestMemory(unittest.TestCase):
 
     def test_agent_memory_save_and_load(self):
         from zoya.ai.memory import AgentMemory as SemanticAgentMemory
+
         am = SemanticAgentMemory()
         am.conversation.add("user", "hello")
         am.conversation.add("assistant", "hi")
         am.knowledge.store("color", "blue")
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
             filepath = f.name
         try:
             am.save(filepath)
@@ -560,6 +593,7 @@ class TestMemory(unittest.TestCase):
 # ============================================================================
 # Embeddings Tests
 # ============================================================================
+
 
 class TestEmbeddings(unittest.TestCase):
     """Tests for zoya.ai.embeddings module."""
@@ -677,6 +711,7 @@ class TestEmbeddings(unittest.TestCase):
 # Agent Tests
 # ============================================================================
 
+
 class TestAgent(unittest.TestCase):
     """Tests for zoya.ai.agent module."""
 
@@ -694,7 +729,9 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(result, "Hello world!")
 
     def test_agent_run_with_answer_in_body(self):
-        agent = create_agent(provider=lambda p, **kw: "Here is what I think.\nAnswer: Final answer")
+        agent = create_agent(
+            provider=lambda p, **kw: "Here is what I think.\nAnswer: Final answer"
+        )
         result = agent.run("Do something")
         self.assertEqual(result, "Final answer")
 
@@ -717,10 +754,13 @@ class TestAgent(unittest.TestCase):
             agent.add_tool("not a tool")
 
     def test_agent_run_uses_tool(self):
-        responses = iter([
-            'Action: reverse\nAction Input: {"s": "hello"}',
-            'Answer: The reversed string is olleh',
-        ])
+        responses = iter(
+            [
+                'Action: reverse\nAction Input: {"s": "hello"}',
+                "Answer: The reversed string is olleh",
+            ]
+        )
+
         def mock_provider(prompt, **kw):
             return next(responses)
 
@@ -732,10 +772,13 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(result, "The reversed string is olleh")
 
     def test_agent_run_unknown_tool(self):
-        responses = iter([
-            'Action: nonexistent_tool\nAction Input: {"x": "1"}',
-            'Answer: Error handled',
-        ])
+        responses = iter(
+            [
+                'Action: nonexistent_tool\nAction Input: {"x": "1"}',
+                "Answer: Error handled",
+            ]
+        )
+
         def mock_provider(prompt, **kw):
             return next(responses)
 
@@ -844,6 +887,7 @@ class TestAgent(unittest.TestCase):
 # RAG Tests
 # ============================================================================
 
+
 class TestRAG(unittest.TestCase):
     """Tests for zoya.ai.rag module."""
 
@@ -891,8 +935,15 @@ class TestRAG(unittest.TestCase):
     def test_chunker_chunk_documents(self):
         chunker = DocumentChunker(chunk_size=500, overlap=50)
         docs = [
-            ("This is the first document with enough text. It has multiple sentences. Here is another one." * 3, {"source": "doc1"}),
-            ("This is the second document. It also has some content to chunk." * 3, {"source": "doc2"}),
+            (
+                "This is the first document with enough text. It has multiple sentences. Here is another one."
+                * 3,
+                {"source": "doc1"},
+            ),
+            (
+                "This is the second document. It also has some content to chunk." * 3,
+                {"source": "doc2"},
+            ),
         ]
         chunks = chunker.chunk_documents(docs)
         self.assertGreater(len(chunks), 1)
@@ -909,13 +960,17 @@ class TestRAG(unittest.TestCase):
 
     def test_index_add_document_returns_id(self):
         index = RAGIndex()
-        doc_id = index.add_document("This is a test document about artificial intelligence.")
+        doc_id = index.add_document(
+            "This is a test document about artificial intelligence."
+        )
         self.assertIsInstance(doc_id, str)
         self.assertTrue(len(doc_id) > 0)
 
     def test_index_search_returns_results(self):
         index = RAGIndex()
-        index.add_document("Python is a programming language used for machine learning.")
+        index.add_document(
+            "Python is a programming language used for machine learning."
+        )
         results = index.search("python programming", k=5)
         self.assertGreaterEqual(len(results), 1)
         doc, score = results[0]
@@ -933,8 +988,12 @@ class TestRAG(unittest.TestCase):
     def test_index_add_documents_batch(self):
         index = RAGIndex()
         docs = [
-            Document(text="Document one about cats.", metadata={"source": "a"}, id="id1"),
-            Document(text="Document two about dogs.", metadata={"source": "b"}, id="id2"),
+            Document(
+                text="Document one about cats.", metadata={"source": "a"}, id="id1"
+            ),
+            Document(
+                text="Document two about dogs.", metadata={"source": "b"}, id="id2"
+            ),
         ]
         index.add_documents(docs)
         self.assertEqual(index.count(), 2)
@@ -1028,7 +1087,7 @@ class TestRAG(unittest.TestCase):
 
     def test_retriever_format_context(self):
         index = RAGIndex()
-        doc_id = index.add_document("Sample document text.", metadata={"source": "test"})
+        index.add_document("Sample document text.", metadata={"source": "test"})
         results = index.search("sample", k=5)
         retriever = RAGRetriever(index)
         formatted = retriever.format_context(results)

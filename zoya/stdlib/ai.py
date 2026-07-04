@@ -20,11 +20,14 @@ def load_module(interpreter: Any) -> Any:
         elif provider == "lmstudio":
             return _lmstudio_model(base_url)
         else:
-            raise ValueError(f"Unknown AI provider: {provider}. Supported: gemini, openai, ollama, lmstudio")
+            raise ValueError(
+                f"Unknown AI provider: {provider}. Supported: gemini, openai, ollama, lmstudio"
+            )
 
     def _gemini_model(api_key: str) -> dict[str, Any]:
         try:
             import google.generativeai as genai
+
             if api_key:
                 genai.configure(api_key=api_key)
 
@@ -38,7 +41,10 @@ def load_module(interpreter: Any) -> Any:
 
             return {"ask": ask, "provider": "gemini"}
         except ImportError:
-            return {"ask": lambda p: "[gemini] Install: pip install google-generativeai", "provider": "gemini"}
+            return {
+                "ask": lambda p: "[gemini] Install: pip install google-generativeai",
+                "provider": "gemini",
+            }
 
     def _openai_model(api_key: str, base_url: str = "") -> dict[str, Any]:
         try:
@@ -50,7 +56,9 @@ def load_module(interpreter: Any) -> Any:
             if base_url:
                 client_kwargs["base_url"] = base_url
 
-            client = openai.OpenAI(**client_kwargs) if client_kwargs else openai.OpenAI()
+            client = (
+                openai.OpenAI(**client_kwargs) if client_kwargs else openai.OpenAI()
+            )
 
             def ask(prompt: str) -> str:
                 try:
@@ -64,21 +72,26 @@ def load_module(interpreter: Any) -> Any:
 
             return {"ask": ask, "provider": "openai"}
         except ImportError:
-            return {"ask": lambda p: "[openai] Install: pip install openai", "provider": "openai"}
+            return {
+                "ask": lambda p: "[openai] Install: pip install openai",
+                "provider": "openai",
+            }
 
     def _ollama_model(base_url: str = "") -> dict[str, Any]:
         url = base_url or "http://localhost:11434"
 
         def ask(prompt: str) -> str:
             try:
-                from urllib.request import urlopen, Request
                 import json
+                from urllib.request import Request, urlopen
 
-                data = json.dumps({
-                    "model": "llama3.2",
-                    "prompt": prompt,
-                    "stream": False,
-                }).encode()
+                data = json.dumps(
+                    {
+                        "model": "llama3.2",
+                        "prompt": prompt,
+                        "stream": False,
+                    }
+                ).encode()
                 req = Request(
                     f"{url}/api/generate",
                     data=data,
@@ -97,14 +110,16 @@ def load_module(interpreter: Any) -> Any:
 
         def ask(prompt: str) -> str:
             try:
-                from urllib.request import urlopen, Request
                 import json
+                from urllib.request import Request, urlopen
 
-                data = json.dumps({
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.7,
-                    "max_tokens": 1000,
-                }).encode()
+                data = json.dumps(
+                    {
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.7,
+                        "max_tokens": 1000,
+                    }
+                ).encode()
                 req = Request(
                     f"{url}/v1/chat/completions",
                     data=data,

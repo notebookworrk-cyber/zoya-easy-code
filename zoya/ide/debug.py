@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 @dataclass
@@ -10,8 +10,8 @@ class DebugContext:
     source: str
     error_message: str
     error_type: str
-    traceback: List[str] = field(default_factory=list)
-    variables: Dict[str, Any] = field(default_factory=dict)
+    traceback: list[str] = field(default_factory=list)
+    variables: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -19,8 +19,8 @@ class DebugAnalysis:
     root_cause: str
     fix_suggestion: str
     confidence: float
-    related_lines: List[int] = field(default_factory=list)
-    similar_bugs: List[str] = field(default_factory=list)
+    related_lines: list[int] = field(default_factory=list)
+    similar_bugs: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -32,7 +32,7 @@ class BugPattern:
     fix: str
 
 
-COMMON_BUG_PATTERNS: List[BugPattern] = [
+COMMON_BUG_PATTERNS: list[BugPattern] = [
     BugPattern(
         name="division_by_zero",
         description="Division or modulo by zero will cause a runtime error",
@@ -129,14 +129,18 @@ class DebugAssistant:
         error_msg = context.error_message
         error_type = context.error_type
         lines = source.split("\n")
-        related_lines: List[int] = []
-        similar_bugs: List[str] = []
+        related_lines: list[int] = []
+        similar_bugs: list[str] = []
 
         line_num = self._extract_line_from_error(error_msg)
         root_cause = ""
         fix_suggestion = ""
 
-        if "TypeError" in error_type or "ZoyaTypeError" in error_type or "type" in error_type.lower():
+        if (
+            "TypeError" in error_type
+            or "ZoyaTypeError" in error_type
+            or "type" in error_type.lower()
+        ):
             root_cause = self._analyze_type_error(source, error_msg, line_num)
             fix_suggestion = "Check the types of operands and ensure they are compatible for the operation"
             related_lines = self._find_related_type_lines(lines, line_num)
@@ -144,7 +148,9 @@ class DebugAssistant:
 
         elif "ZeroDivision" in error_msg or "division by zero" in error_msg.lower():
             root_cause = f"Division by zero at line {line_num}"
-            fix_suggestion = "Check that the divisor is not zero before performing the division"
+            fix_suggestion = (
+                "Check that the divisor is not zero before performing the division"
+            )
             related_lines = [line_num] if line_num > 0 else []
             similar_bugs = ["division_by_zero"]
 
@@ -154,9 +160,15 @@ class DebugAssistant:
             related_lines = self._find_related_index_lines(lines, line_num)
             similar_bugs = ["index_out_of_bounds", "off_by_one"]
 
-        elif "NameError" in error_type or "not defined" in error_msg.lower() or "undefined" in error_msg.lower():
+        elif (
+            "NameError" in error_type
+            or "not defined" in error_msg.lower()
+            or "undefined" in error_msg.lower()
+        ):
             var_name = self._extract_var_from_error(error_msg)
-            root_cause = f"Variable '{var_name}' used before definition at line {line_num}"
+            root_cause = (
+                f"Variable '{var_name}' used before definition at line {line_num}"
+            )
             fix_suggestion = f"Define '{var_name}' before use, or check for typos in the variable name"
             related_lines = self._find_related_var_lines(lines, var_name, line_num)
             similar_bugs = ["undefined_variable", "typo_in_variable_name"]
@@ -168,22 +180,34 @@ class DebugAssistant:
             related_lines = [line_num] if line_num > 0 else []
             similar_bugs = ["missing_dict_key"]
 
-        elif "RecursionError" in error_type or "maximum recursion" in error_msg.lower() or "stack overflow" in error_msg.lower():
+        elif (
+            "RecursionError" in error_type
+            or "maximum recursion" in error_msg.lower()
+            or "stack overflow" in error_msg.lower()
+        ):
             root_cause = "Recursion depth exceeded — possible missing base case or infinite recursion"
-            fix_suggestion = "Add a base case to stop recursion, or increase recursion limit"
+            fix_suggestion = (
+                "Add a base case to stop recursion, or increase recursion limit"
+            )
             related_lines = self._find_recursive_functions(lines)
             similar_bugs = ["recursive_no_base_case", "stack_overflow"]
 
         elif "AttributeError" in error_type or "has no attribute" in error_msg.lower():
             attr = self._extract_attr_from_error(error_msg)
-            root_cause = f"Attempt to access non-existent attribute '{attr}' at line {line_num}"
-            fix_suggestion = "Check that the object has the attribute before accessing it"
+            root_cause = (
+                f"Attempt to access non-existent attribute '{attr}' at line {line_num}"
+            )
+            fix_suggestion = (
+                "Check that the object has the attribute before accessing it"
+            )
             related_lines = [line_num] if line_num > 0 else []
             similar_bugs = ["none_null_access", "missing_attribute"]
 
         else:
             root_cause = f"Runtime error at line {line_num}: {error_msg}"
-            fix_suggestion = "Review the error and check the surrounding code for logical issues"
+            fix_suggestion = (
+                "Review the error and check the surrounding code for logical issues"
+            )
             related_lines = self._find_context_lines(lines, line_num)
 
         for pattern in COMMON_BUG_PATTERNS:
@@ -217,17 +241,31 @@ class DebugAssistant:
         indent = indent_match.group(1) if indent_match else ""
 
         if "/" in stripped and "0" in stripped:
-            return self._gen_fix_text(lines, error_line, indent,
-                                      f'if divisor != 0 {{\n    {stripped}\n}} else {{\n    {indent}    print "Error: division by zero"\n{indent}}}')
+            return self._gen_fix_text(
+                lines,
+                error_line,
+                indent,
+                f'if divisor != 0 {{\n    {stripped}\n}} else {{\n    {indent}    print "Error: division by zero"\n{indent}}}',
+            )
 
         if re.search(r"\b\w+\s*\[\s*\w+\s*\]", stripped):
-            return self._gen_fix_text(lines, error_line, indent,
-                                      f'if index >= 0 and index < len(collection) {{\n    {stripped}\n}} else {{\n    {indent}    print "Error: index out of bounds"\n{indent}}}')
+            return self._gen_fix_text(
+                lines,
+                error_line,
+                indent,
+                f'if index >= 0 and index < len(collection) {{\n    {stripped}\n}} else {{\n    {indent}    print "Error: index out of bounds"\n{indent}}}',
+            )
 
-        return self._gen_fix_text(lines, error_line, indent,
-                                  f'try {{\n    {stripped}\n}} catch err {{\n    {indent}    print "Error: " + err\n{indent}}}')
+        return self._gen_fix_text(
+            lines,
+            error_line,
+            indent,
+            f'try {{\n    {stripped}\n}} catch err {{\n    {indent}    print "Error: " + err\n{indent}}}',
+        )
 
-    def _gen_fix_text(self, lines: list[str], error_line: int, indent: str, wrapped: str) -> str:
+    def _gen_fix_text(
+        self, lines: list[str], error_line: int, indent: str, wrapped: str
+    ) -> str:
         result: list[str] = []
         for i, line in enumerate(lines):
             if i + 1 == error_line:
@@ -236,16 +274,21 @@ class DebugAssistant:
                 result.append(line)
         return "\n".join(result)
 
-    def find_null_pointer_sources(self, source: str) -> List[int]:
+    def find_null_pointer_sources(self, source: str) -> list[int]:
         lines = source.split("\n")
-        null_lines: List[int] = []
+        null_lines: list[int] = []
 
         for i, line in enumerate(lines):
             stripped = line.strip()
-            if re.search(r"=\s*null\b|=\s*none\b|=\s*undefined\b", stripped, re.IGNORECASE):
+            if re.search(
+                r"=\s*null\b|=\s*none\b|=\s*undefined\b", stripped, re.IGNORECASE
+            ):
                 if i + 1 < len(lines):
                     next_line = lines[i + 1]
-                    if re.search(r"\b" + re.escape(stripped.split("=")[0].strip()) + r"\b", next_line):
+                    if re.search(
+                        r"\b" + re.escape(stripped.split("=")[0].strip()) + r"\b",
+                        next_line,
+                    ):
                         null_lines.append(i + 1)
 
             if re.search(r"\.\s*\w+\s*\(\)", stripped):
@@ -258,24 +301,26 @@ class DebugAssistant:
                         if am:
                             assign_match = lines[j]
                             break
-                    if assign_match and re.search(r"=\s*(null|none|undefined)\s*$", assign_match, re.IGNORECASE):
+                    if assign_match and re.search(
+                        r"=\s*(null|none|undefined)\s*$", assign_match, re.IGNORECASE
+                    ):
                         null_lines.append(i + 1)
 
         return sorted(set(null_lines))
 
-    def find_type_errors(self, source: str) -> List[Tuple[int, str]]:
+    def find_type_errors(self, source: str) -> list[tuple[int, str]]:
         lines = source.split("\n")
-        type_issues: List[Tuple[int, str]] = []
+        type_issues: list[tuple[int, str]] = []
 
         patterns = [
             (r'"([^"]*)"\s*\+\s*(\d+)', "String concatenation with number"),
             (r'"([^"]*)"\s*-\s*', "Subtraction on string"),
             (r'"([^"]*)"\s*\*\s*', "Multiplication on string"),
             (r'"([^"]*)"\s*/\s*', "Division on string"),
-            (r'\blen\s*\(\s*(\d+)\s*\)', "len() called on a number"),
+            (r"\blen\s*\(\s*(\d+)\s*\)", "len() called on a number"),
             (r'\blen\s*\(\s*("[^"]*")\s*\)', "len() called on a string (valid)"),
-            (r'// [^/]', "Comment after expression"),
-            (r'(\d+)\s*\[\s*(\d+)\s*\]', "Index access on a number"),
+            (r"// [^/]", "Comment after expression"),
+            (r"(\d+)\s*\[\s*(\d+)\s*\]", "Index access on a number"),
         ]
 
         for i, line in enumerate(lines):
@@ -286,9 +331,9 @@ class DebugAssistant:
 
         return type_issues
 
-    def find_infinite_loop_risks(self, source: str) -> List[int]:
+    def find_infinite_loop_risks(self, source: str) -> list[int]:
         lines = source.split("\n")
-        risks: List[int] = []
+        risks: list[int] = []
 
         i = 0
         while i < len(lines):
@@ -298,13 +343,11 @@ class DebugAssistant:
             if while_match:
                 brace_count = 1
                 body_has_break = False
-                body_has_modify = False
                 j = i + 1
                 while j < len(lines) and brace_count > 0:
                     brace_count += lines[j].count("{") - lines[j].count("}")
-                    if brace_count > 0:
-                        if "break" in lines[j]:
-                            body_has_break = True
+                    if brace_count > 0 and "break" in lines[j]:
+                        body_has_break = True
                     j += 1
 
                 if not body_has_break:
@@ -312,7 +355,9 @@ class DebugAssistant:
                 i = j
                 continue
 
-            while_match = re.match(r"^while\s+([a-zA-Z_]\w*)\s*(<|>|<=|>=|!=|==)\s*(.+?)\s*\{", stripped)
+            while_match = re.match(
+                r"^while\s+([a-zA-Z_]\w*)\s*(<|>|<=|>=|!=|==)\s*(.+?)\s*\{", stripped
+            )
             if while_match:
                 var = while_match.group(1)
                 brace_count = 1
@@ -321,7 +366,9 @@ class DebugAssistant:
                 while j < len(lines) and brace_count > 0:
                     brace_count += lines[j].count("{") - lines[j].count("}")
                     if brace_count > 0:
-                        if re.search(rf"\b{re.escape(var)}\s*(?:\+\+|--|\+=|-=|\*=|/=)", lines[j]):
+                        if re.search(
+                            rf"\b{re.escape(var)}\s*(?:\+\+|--|\+=|-=|\*=|/=)", lines[j]
+                        ):
                             body_modifies_var = True
                     j += 1
 
@@ -334,7 +381,7 @@ class DebugAssistant:
 
         return sorted(set(risks))
 
-    def analyze_stack_trace(self, traceback: List[str]) -> str:
+    def analyze_stack_trace(self, traceback: list[str]) -> str:
         if not traceback:
             return "No stack trace available"
 
@@ -356,7 +403,9 @@ class DebugAssistant:
                 lines.append(f"  - In function `{func}` at line {line_num}:{col_num}")
 
             elif re.match(r"^\s*(?:File|file):", tb_line):
-                file_match = re.match(r"^\s*(?:File|file):\s*(.+?)(?:,\s*line\s*(\d+))?", tb_line)
+                file_match = re.match(
+                    r"^\s*(?:File|file):\s*(.+?)(?:,\s*line\s*(\d+))?", tb_line
+                )
                 if file_match:
                     fname = file_match.group(1)
                     fline = file_match.group(2) or "?"
@@ -391,12 +440,16 @@ class DebugAssistant:
         return m.group(1) if m else "unknown"
 
     def _extract_attr_from_error(self, error_msg: str) -> str:
-        m = re.search(r"attribute\s+'(\w+)'|'(\w+)'\s+has\s+no\s+attribute|has\s+no\s+attribute\s+'(\w+)'", error_msg, re.IGNORECASE)
+        m = re.search(
+            r"attribute\s+'(\w+)'|'(\w+)'\s+has\s+no\s+attribute|has\s+no\s+attribute\s+'(\w+)'",
+            error_msg,
+            re.IGNORECASE,
+        )
         if m:
             return next(g for g in m.groups() if g is not None)
         return "unknown"
 
-    def _find_related_type_lines(self, lines: list[str], line_num: int) -> List[int]:
+    def _find_related_type_lines(self, lines: list[str], line_num: int) -> list[int]:
         related = []
         if line_num > 0:
             related.append(line_num)
@@ -406,7 +459,7 @@ class DebugAssistant:
                     related.append(i + 1)
         return related
 
-    def _find_related_index_lines(self, lines: list[str], line_num: int) -> List[int]:
+    def _find_related_index_lines(self, lines: list[str], line_num: int) -> list[int]:
         related = []
         if line_num > 0 and line_num <= len(lines):
             related.append(line_num)
@@ -415,11 +468,15 @@ class DebugAssistant:
             if m:
                 idx = m.group(1)
                 for i, l in enumerate(lines):
-                    if re.search(rf"\b{re.escape(idx)}\s*=\s*", l) or re.search(rf"\b{re.escape(idx)}\s*\+\+|--{re.escape(idx)}", l):
+                    if re.search(rf"\b{re.escape(idx)}\s*=\s*", l) or re.search(
+                        rf"\b{re.escape(idx)}\s*\+\+|--{re.escape(idx)}", l
+                    ):
                         related.append(i + 1)
         return related
 
-    def _find_related_var_lines(self, lines: list[str], var: str, line_num: int) -> List[int]:
+    def _find_related_var_lines(
+        self, lines: list[str], var: str, line_num: int
+    ) -> list[int]:
         related = []
         if line_num > 0:
             related.append(line_num)
@@ -432,8 +489,8 @@ class DebugAssistant:
                 related.append(i + 1)
         return sorted(set(related))
 
-    def _find_recursive_functions(self, lines: list[str]) -> List[int]:
-        recursive_lines: List[int] = []
+    def _find_recursive_functions(self, lines: list[str]) -> list[int]:
+        recursive_lines: list[int] = []
         i = 0
         while i < len(lines):
             m = re.match(r"^\s*fn\s+(\w+)\s*\(", lines[i])
@@ -444,14 +501,18 @@ class DebugAssistant:
                 body_has_recursion = False
                 while j < len(lines) and brace_count > 0:
                     brace_count += lines[j].count("{") - lines[j].count("}")
-                    if brace_count > 0 and re.search(rf"\b{re.escape(fn_name)}\s*\(", lines[j]):
+                    if brace_count > 0 and re.search(
+                        rf"\b{re.escape(fn_name)}\s*\(", lines[j]
+                    ):
                         body_has_recursion = True
                     j += 1
 
                 if body_has_recursion:
                     has_base_case = False
                     for k in range(i + 1, j):
-                        if re.search(r"\bif\s+", lines[k]) and re.search(r"\breturn\b", lines[k]):
+                        if re.search(r"\bif\s+", lines[k]) and re.search(
+                            r"\breturn\b", lines[k]
+                        ):
                             has_base_case = True
                             break
                     if not has_base_case:
@@ -461,10 +522,9 @@ class DebugAssistant:
                 i += 1
         return recursive_lines
 
-    def _find_context_lines(self, lines: list[str], line_num: int) -> List[int]:
+    def _find_context_lines(self, lines: list[str], line_num: int) -> list[int]:
         if line_num <= 0:
             return []
         start = max(0, line_num - 3)
         end = min(len(lines), line_num + 2)
         return list(range(start + 1, end + 1))
-

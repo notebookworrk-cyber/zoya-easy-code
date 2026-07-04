@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import string as _string_mod
 from typing import Any
 
 
