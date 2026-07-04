@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Zoya Documentation
+    url: https://github.com/notebookworrk-cyber/zoya-easy-code#readme
+    about: Check the README before opening an issue
+  - name: Discussions
+    url: https://github.com/notebookworrk-cyber/zoya-easy-code/discussions
+    about: Ask questions and discuss ideas
