@@ -6,8 +6,8 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1,512%20passing-brightgreen?style=flat-square)](#test-suite)
-[![Coverage](https://img.shields.io/badge/Coverage-14%25-yellow?style=flat-square)](#test-suite)
+[![CI](https://img.shields.io/github/actions/workflow/status/notebookworrk-cyber/zoya-easy-code/ci.yml?style=flat-square&label=CI&branch=master)](https://github.com/notebookworrk-cyber/zoya-easy-code/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/Coverage-4%25-orange?style=flat-square)](#test-suite)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](CONTRIBUTING.md)
 [![Made with ❤️](https://img.shields.io/badge/Made%20with-%E2%9D%A4%EF%B8%8F-red?style=flat-square)](https://github.com/notebookworrk-cyber)
 
