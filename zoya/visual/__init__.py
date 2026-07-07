@@ -1,3 +1,5 @@
+"""Visual package for creating and rendering graphical user interfaces."""
+
 __version__ = "0.1.0"
 
 import json
@@ -173,13 +175,7 @@ class Theme:
             "error": "#ff3b30",
             "success": "#34c759",
         }
-        self.spacing = spacing or {
-            "xs": 4,
-            "sm": 8,
-            "md": 16,
-            "lg": 24,
-            "xl": 32,
-        }
+        self.spacing = spacing or {"xs": 4, "sm": 8, "md": 16, "lg": 24, "xl": 32}
         self.fonts = fonts or {
             "family": "system-ui",
             "size_sm": 12,
@@ -211,9 +207,7 @@ class Theme:
 
 class LayoutEngine:
     def calculate(
-        self,
-        components: list[ComponentDefinition],
-        container_width: int,
+        self, components: list[ComponentDefinition], container_width: int
     ) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         x = 0
@@ -244,15 +238,7 @@ class LayoutEngine:
                     x = 0
                     y += row_height
                     row_height = 0
-            results.append(
-                {
-                    "id": comp.id,
-                    "x": x,
-                    "y": y,
-                    "width": width,
-                    "height": height,
-                }
-            )
+            results.append({"id": comp.id, "x": x, "y": y, "width": width, "height": height})
             x += width + style.get("margin", 0)
             row_height = max(row_height, height)
         return results
@@ -290,10 +276,7 @@ class VisualBuilder:
         )
 
     def to_json(self, components: list[ComponentDefinition]) -> str:
-        return json.dumps(
-            [self._component_to_dict(c) for c in components],
-            indent=2,
-        )
+        return json.dumps([self._component_to_dict(c) for c in components], indent=2)
 
     def _component_to_dict(self, comp: ComponentDefinition) -> dict:
         return {
@@ -376,16 +359,10 @@ class VisualBuilder:
                     )
         return errors
 
-    def merge_styles(
-        self, base: dict[str, Any], override: dict[str, Any]
-    ) -> dict[str, Any]:
+    def merge_styles(self, base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
         merged = dict(base)
         for key, val in override.items():
-            if (
-                key in merged
-                and isinstance(merged[key], dict)
-                and isinstance(val, dict)
-            ):
+            if key in merged and isinstance(merged[key], dict) and isinstance(val, dict):
                 merged[key] = self.merge_styles(merged[key], val)
             else:
                 merged[key] = val
