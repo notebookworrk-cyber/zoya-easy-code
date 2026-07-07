@@ -1,3 +1,5 @@
+"""Enterprise package with features for production-grade Zoya applications."""
+
 __version__ = "0.1.0"
 
 import json
@@ -56,11 +58,7 @@ class RBACManager:
         perms = self._roles.get(name)
         if perms is None:
             return None
-        return {
-            "name": name,
-            "permissions": perms,
-            "built_in": name in self._built_in_roles,
-        }
+        return {"name": name, "permissions": perms, "built_in": name in self._built_in_roles}
 
     def update_role(self, name: str, permissions: list[str]) -> None:
         if name not in self._roles:
@@ -336,9 +334,7 @@ class TenantManager:
 
     def create_tenant(self, name: str, plan: str = "free") -> Tenant:
         if plan not in ("free", "pro", "enterprise"):
-            raise EnterpriseError(
-                f"Invalid plan: {plan}. Must be free, pro, or enterprise"
-            )
+            raise EnterpriseError(f"Invalid plan: {plan}. Must be free, pro, or enterprise")
         tenant = Tenant(name=name, plan=plan)
         self._tenants[tenant.id] = tenant
         return tenant
@@ -378,12 +374,7 @@ class TenantManager:
         tenant = self._tenants.get(tenant_id)
         if tenant is None:
             raise EnterpriseError(f"Tenant '{tenant_id}' not found")
-        return {
-            "user_count": 0,
-            "storage_gb": 0.0,
-            "api_calls": 0,
-            "tenant_id": tenant_id,
-        }
+        return {"user_count": 0, "storage_gb": 0.0, "api_calls": 0, "tenant_id": tenant_id}
 
 
 __all__ = [
