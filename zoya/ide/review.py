@@ -1,3 +1,5 @@
+"""Code review assistant for identifying issues and suggesting improvements."""
+
 from __future__ import annotations
 
 import re
@@ -136,18 +138,12 @@ class ReviewResult:
             parts.append(f"{self.warning_count} warning(s)")
         if self.info_count:
             parts.append(f"{self.info_count} info(s)")
-        return (
-            f"{self.total} issue(s): {', '.join(parts)}" if parts else "No issues found"
-        )
+        return f"{self.total} issue(s): {', '.join(parts)}" if parts else "No issues found"
 
 
 class CodeReviewer:
     def __init__(self, provider: LLMProvider | None = None):
-        self._provider = provider or MockProvider(
-            responses={
-                "review": "No AI-level issues found.",
-            }
-        )
+        self._provider = provider or MockProvider(responses={"review": "No AI-level issues found."})
 
     def review(self, source: str, file_path: str = "") -> ReviewResult:
         result = ReviewResult(file_path=file_path)
@@ -183,13 +179,9 @@ class CodeReviewer:
 
         return issues
 
-    def _check_function_naming(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_function_naming(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
-        fn_matches = re.finditer(
-            r"^\s*fn\s+([A-Z][a-zA-Z0-9_]*)\s*\(", source, re.MULTILINE
-        )
+        fn_matches = re.finditer(r"^\s*fn\s+([A-Z][a-zA-Z0-9_]*)\s*\(", source, re.MULTILINE)
         for m in fn_matches:
             fn_name = m.group(1)
             pos = m.start()
@@ -208,13 +200,9 @@ class CodeReviewer:
             )
         return issues
 
-    def _check_constant_naming(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_constant_naming(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
-        const_matches = re.finditer(
-            r"^\s*const\s+([a-z][a-zA-Z0-9_]*)\s*=", source, re.MULTILINE
-        )
+        const_matches = re.finditer(r"^\s*const\s+([a-z][a-zA-Z0-9_]*)\s*=", source, re.MULTILINE)
         for m in const_matches:
             name = m.group(1)
             if not name.isupper():
@@ -251,24 +239,17 @@ class CodeReviewer:
                 )
         return issues
 
-    def _check_unused_variables(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_unused_variables(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
 
         declared: dict[str, int] = {}
-        let_matches = re.finditer(
-            r"^\s*(?:let|const)\s+(\w+)\s*=", source, re.MULTILINE
-        )
+        let_matches = re.finditer(r"^\s*(?:let|const)\s+(\w+)\s*=", source, re.MULTILINE)
         for m in let_matches:
             pos = m.start()
             line_num = source[:pos].count("\n") + 1
             declared[m.group(1)] = line_num
 
-        param_matches = re.finditer(
-            r"fn\s+\w+\s*\(([^)]*)\)",
-            source,
-        )
+        param_matches = re.finditer(r"fn\s+\w+\s*\(([^)]*)\)", source)
         for m in param_matches:
             params_str = m.group(1)
             if params_str.strip():
@@ -354,14 +335,10 @@ class CodeReviewer:
 
         return issues
 
-    def _check_missing_return_types(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_missing_return_types(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
         fn_matches = re.finditer(
-            r"^\s*fn\s+\w+\s*\(([^)]*)\)\s*(?:->\s*(\w+))?\s*\{",
-            source,
-            re.MULTILINE,
+            r"^\s*fn\s+\w+\s*\(([^)]*)\)\s*(?:->\s*(\w+))?\s*\{", source, re.MULTILINE
         )
         for m in fn_matches:
             if not m.group(2):
@@ -409,9 +386,7 @@ class CodeReviewer:
             depth -= close_braces
         return issues
 
-    def _check_duplicate_functions(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_duplicate_functions(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
         fn_names: dict[str, int] = {}
         fn_matches = re.finditer(r"^\s*fn\s+(\w+)\s*\(", source, re.MULTILINE)
@@ -438,10 +413,7 @@ class CodeReviewer:
 
     def _check_empty_catches(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
-        empty_catch_matches = re.finditer(
-            r"catch\s*\((\w*)\)\s*\{\s*\}",
-            source,
-        )
+        empty_catch_matches = re.finditer(r"catch\s*\((\w*)\)\s*\{\s*\}", source)
         for m in empty_catch_matches:
             pos = m.start()
             line_num = source[:pos].count("\n") + 1
@@ -460,9 +432,7 @@ class CodeReviewer:
             )
         return issues
 
-    def _check_hardcoded_values(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_hardcoded_values(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
         fn_bodies: list[tuple[int, int]] = []
         current_fn_start = -1
@@ -483,8 +453,7 @@ class CodeReviewer:
             body_lines = lines[fn_start : fn_end + 1]
             body_text = "\n".join(body_lines)
             hardcoded_matches = re.finditer(
-                r'(?:^|\n)(\s*)(?:let|const)\s+\w+\s*=\s*(\d{4,}|"[^"]{20,}")\s*$',
-                body_text,
+                r'(?:^|\n)(\s*)(?:let|const)\s+\w+\s*=\s*(\d{4,}|"[^"]{20,}")\s*$', body_text
             )
             for m in hardcoded_matches:
                 value = m.group(2)
@@ -506,20 +475,13 @@ class CodeReviewer:
 
         return issues
 
-    def _check_missing_error_handling(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_missing_error_handling(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
 
         has_try = "try" in source
         has_catch = "catch" in source
 
-        potentially_unsafe = [
-            r"\binput\s*\(",
-            r"\bprint\s*\(",
-            r"\bint\s*\(",
-            r"\bfloat\s*\(",
-        ]
+        potentially_unsafe = [r"\binput\s*\(", r"\bprint\s*\(", r"\bint\s*\(", r"\bfloat\s*\("]
 
         if not has_try or not has_catch:
             for pattern in potentially_unsafe:
@@ -543,9 +505,7 @@ class CodeReviewer:
 
         return issues
 
-    def _check_loop_inefficiency(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_loop_inefficiency(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
         for_match = re.finditer(
             r"for\s+\(\s*(let\s+)?(\w+)\s*=\s*0\s*;\s*\2\s*<\s*(\w+)\.(?:length|count)\s*;\s*\2\s*\+\+\s*\)",
@@ -569,14 +529,9 @@ class CodeReviewer:
             )
         return issues
 
-    def _check_unused_loop_vars(
-        self, source: str, lines: list[str]
-    ) -> list[ReviewIssue]:
+    def _check_unused_loop_vars(self, source: str, lines: list[str]) -> list[ReviewIssue]:
         issues: list[ReviewIssue] = []
-        for_each_matches = re.finditer(
-            r"for\s+(\w+)\s+in\s+(\w+)",
-            source,
-        )
+        for_each_matches = re.finditer(r"for\s+(\w+)\s+in\s+(\w+)", source)
         for m in for_each_matches:
             var = m.group(1)
             m.group(2)
@@ -602,10 +557,7 @@ class CodeReviewer:
 
             block_text = source[open_idx + 1 : block_end]
 
-            var_refs = [
-                r.start()
-                for r in re.finditer(r"\b" + re.escape(var) + r"\b", block_text)
-            ]
+            var_refs = [r.start() for r in re.finditer(r"\b" + re.escape(var) + r"\b", block_text)]
 
             if not var_refs:
                 pos = m.start()
@@ -707,74 +659,40 @@ class CodeReviewer:
         }
 
         fn_matches = re.finditer(
-            r"^\s*fn\s+(\w+)\s*\(([^)]*)\)\s*(->\s*(\w+))?\s*\{",
-            source,
-            re.MULTILINE,
+            r"^\s*fn\s+(\w+)\s*\(([^)]*)\)\s*(->\s*(\w+))?\s*\{", source, re.MULTILINE
         )
         for m in fn_matches:
             name = m.group(1)
             params_str = m.group(2).strip()
             params = [p.strip() for p in params_str.split(",") if p.strip()]
             return_type = m.group(4) if m.group(3) else None
-            result["functions"].append(
-                {
-                    "name": name,
-                    "params": params,
-                    "return_type": return_type,
-                }
-            )
+            result["functions"].append({"name": name, "params": params, "return_type": return_type})
 
         class_matches = re.finditer(
-            r"^\s*class\s+(\w+)(?:\s*:\s*(\w+))?\s*\{",
-            source,
-            re.MULTILINE,
+            r"^\s*class\s+(\w+)(?:\s*:\s*(\w+))?\s*\{", source, re.MULTILINE
         )
         for m in class_matches:
             name = m.group(1)
             parent = m.group(2) if m.group(2) else None
-            result["classes"].append(
-                {
-                    "name": name,
-                    "parent": parent,
-                }
-            )
+            result["classes"].append({"name": name, "parent": parent})
 
-        interface_matches = re.finditer(
-            r"^\s*interface\s+(\w+)\s*\{",
-            source,
-            re.MULTILINE,
-        )
+        interface_matches = re.finditer(r"^\s*interface\s+(\w+)\s*\{", source, re.MULTILINE)
         for m in interface_matches:
             result["interfaces"].append({"name": m.group(1)})
 
-        enum_matches = re.finditer(
-            r"^\s*enum\s+(\w+)\s*\{",
-            source,
-            re.MULTILINE,
-        )
+        enum_matches = re.finditer(r"^\s*enum\s+(\w+)\s*\{", source, re.MULTILINE)
         for m in enum_matches:
             result["enums"].append({"name": m.group(1)})
 
-        let_matches = re.finditer(
-            r"^\s*(?:let|const)\s+(\w+)\s*=",
-            source,
-            re.MULTILINE,
-        )
+        let_matches = re.finditer(r"^\s*(?:let|const)\s+(\w+)\s*=", source, re.MULTILINE)
         for m in let_matches:
             result["variables"].append(m.group(1))
 
         import_matches = re.finditer(
-            r'^\s*import\s+"([^"]+)"(?:\s+as\s+(\w+))?',
-            source,
-            re.MULTILINE,
+            r'^\s*import\s+"([^"]+)"(?:\s+as\s+(\w+))?', source, re.MULTILINE
         )
         for m in import_matches:
-            result["imports"].append(
-                {
-                    "path": m.group(1),
-                    "alias": m.group(2),
-                }
-            )
+            result["imports"].append({"path": m.group(1), "alias": m.group(2)})
 
         return result
 
