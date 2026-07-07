@@ -33,6 +33,7 @@ from zoya.ast import (
     MethodCall,
     NamedArg,
     Number,
+    Pass,
     Print,
     Return,
     Slice,

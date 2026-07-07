@@ -113,6 +113,12 @@ class Continue(ASTNode):
 
 
 @dataclass
+class Pass(ASTNode):
+    line: int = 0
+    col: int = 0
+
+
+@dataclass
 class Block(ASTNode):
     statements: list[ASTNode] = field(default_factory=list)
     line: int = 0

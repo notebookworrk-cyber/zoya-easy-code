@@ -12,6 +12,7 @@ from zoya.ast import (
     Call,
     Continue,
     Dict_,
+    Pass,
     ForEach,
     ForLoop,
     Function,
@@ -145,13 +146,15 @@ def _format_expr(node: ASTNode) -> str:
         return "break"
     if isinstance(node, Continue):
         return "continue"
+    if isinstance(node, Pass):
+        return "pass"
     return f"/* unknown:{type(node).__name__} */"
 
 
 def _format_stmt(node: ASTNode, indent: int = 0) -> str:
     prefix = "    " * indent
 
-    if isinstance(node, (Assign, AssignIndex, AssignAttr, Break, Continue, Import)):
+    if isinstance(node, (Assign, AssignIndex, AssignAttr, Break, Continue, Pass, Import)):
         return prefix + _format_expr(node) + "\n"
 
     if isinstance(node, Print):

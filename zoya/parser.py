@@ -33,6 +33,7 @@ from .ast import (
     MethodCall,
     NamedArg,
     Number,
+    Pass,
     Print,
     Return,
     Slice,
@@ -122,6 +123,8 @@ class Parser:
             return self.parse_break()
         if kind == "CONTINUE":
             return self.parse_continue()
+        if kind == "PASS":
+            return self.parse_pass()
         if kind == "IMPORT":
             return self.parse_import()
         if kind == "LBRACE":

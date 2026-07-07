@@ -31,10 +31,9 @@ from .ast import (
     Lambda,
     List_,
     Loop,
-    Match,
     MethodCall,
-    NamedArg,
     Number,
+    Pass,
     Print,
     Return,
     Slice,
@@ -382,6 +381,9 @@ class Interpreter:
 
         if isinstance(node, Continue):
             raise ContinueException()
+
+        if isinstance(node, Pass):
+            return None
 
         if isinstance(node, Function):
             func = ZoyaFunction(node, self.current_env)
