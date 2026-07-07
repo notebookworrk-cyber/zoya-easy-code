@@ -1,3 +1,5 @@
+"""Built-in functions and objects for the Zoya language."""
+
 from __future__ import annotations
 
 import random
