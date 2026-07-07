@@ -52,6 +52,7 @@ _OP_STR = {
     "AND": " and ",
     "OR": " or ",
     "IN": " in ",
+    "NOT_IN": " not in ",
 }
 
 _UNARY_STR = {"MINUS": "-", "NOT": "not "}
