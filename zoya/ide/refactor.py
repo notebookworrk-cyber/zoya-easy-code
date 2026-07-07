@@ -1,3 +1,5 @@
+"""Code refactoring tools for renaming, extracting, and restructuring code."""
+
 from __future__ import annotations
 
 import re
@@ -31,9 +33,7 @@ _IF_CHAIN_RE = re.compile(r"\bif\s+(.+?)\s*\{[^}]*\}\s*else\s+if\s+")
 _PRINT_RE = re.compile(r"\bprint\s+(.+)$", re.MULTILINE)
 _LOGGING_TEMPLATE = 'log("{level}", {expr})'
 _VAR_REF = re.compile(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b")
-_UNREACHABLE_RE = re.compile(
-    r"^\s*return\s+.*?\n((?:.|\n)*?)^\s*(?:[a-zA-Z_])", re.MULTILINE
-)
+_UNREACHABLE_RE = re.compile(r"^\s*return\s+.*?\n((?:.|\n)*?)^\s*(?:[a-zA-Z_])", re.MULTILINE)
 _IMPORT_RE = re.compile(
     r'^\s*import\s+"([^"]+)"(?:\s+as\s+([a-zA-Z_][a-zA-Z0-9_]*))?\s*$', re.MULTILINE
 )
@@ -79,15 +79,9 @@ class RefactoringEngine:
         return "\n".join(result)
 
     def _replace_ident(self, line: str, old: str, new: str) -> str:
-        return re.sub(
-            rf"\b{re.escape(old)}\b(?!\s*\()",
-            new,
-            line,
-        )
+        return re.sub(rf"\b{re.escape(old)}\b(?!\s*\()", new, line)
 
-    def extract_function(
-        self, source: str, start_line: int, end_line: int, new_name: str
-    ) -> str:
+    def extract_function(self, source: str, start_line: int, end_line: int, new_name: str) -> str:
         lines = source.split("\n")
         if start_line < 1 or end_line > len(lines) or start_line > end_line:
             return source
@@ -162,9 +156,7 @@ class RefactoringEngine:
         fn_body_lines: list[str] = []
 
         for i, line in enumerate(lines):
-            m = re.match(
-                r"^\s*fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line
-            )
+            m = re.match(r"^\s*fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line)
             if m:
                 fn_start = i
                 raw_params = m.group(1).strip()
@@ -220,13 +212,7 @@ class RefactoringEngine:
                 var = m.group(1)
                 container = m.group(2)
                 # Adjust to foreach pattern
-                result.append(
-                    re.sub(
-                        r"for\s*\(.*?\)",
-                        f"foreach {var} in {container}",
-                        line,
-                    )
-                )
+                result.append(re.sub(r"for\s*\(.*?\)", f"foreach {var} in {container}", line))
             else:
                 result.append(line)
         return "\n".join(result)
@@ -271,9 +257,7 @@ class RefactoringEngine:
                     val_match = re.search(r"==\s*(.+?)\s*\{", cl)
                     if val_match:
                         switch_lines.append(f"{case_indent}}}")
-                        switch_lines.append(
-                            f"{case_indent}case {val_match.group(1)} {{"
-                        )
+                        switch_lines.append(f"{case_indent}case {val_match.group(1)} {{")
                     i += 1
                 elif re.match(r"^\s*\}\s*else\s*\{", cl):
                     switch_lines.append(f"{case_indent}}}")
@@ -319,13 +303,13 @@ class RefactoringEngine:
             m = re.match(r"^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*\[", stripped)
             if m and "::" not in stripped:
                 result.append(
-                    f"{m.group(1)}{m.group(2)} :: list = {stripped[m.end(2) - m.start(1) + m.start(1):]}"
+                    f"{m.group(1)}{m.group(2)} :: list = {stripped[m.end(2) - m.start(1) + m.start(1) :]}"
                 )
                 continue
             m = re.match(r"^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*\{", stripped)
             if m and "::" not in stripped:
                 result.append(
-                    f"{m.group(1)}{m.group(2)} :: dict = {stripped[m.end(2) - m.start(1) + m.start(1):]}"
+                    f"{m.group(1)}{m.group(2)} :: dict = {stripped[m.end(2) - m.start(1) + m.start(1) :]}"
                 )
                 continue
             result.append(line)
@@ -449,11 +433,7 @@ class RefactoringEngine:
             if not stripped:
                 result.append("")
                 continue
-            if (
-                stripped.startswith("//")
-                or stripped.startswith("#")
-                or stripped.startswith("/*")
-            ):
+            if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("/*"):
                 result.append("    " * indent_level + stripped)
                 continue
             if (
@@ -482,9 +462,7 @@ class RefactoringEngine:
         next_id = 1
 
         while i < len(lines):
-            fn_match = re.match(
-                r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i]
-            )
+            fn_match = re.match(r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i])
             if not fn_match:
                 result.append(lines[i])
                 i += 1
@@ -508,9 +486,7 @@ class RefactoringEngine:
                 result.append(lines[i])
                 result.extend(fn_body_lines)
                 if i < len(lines):
-                    result.append(
-                        lines[fn_body_end] if fn_body_end < len(lines) else ""
-                    )
+                    result.append(lines[fn_body_end] if fn_body_end < len(lines) else "")
                 i = fn_body_end + 1
                 continue
 
@@ -563,9 +539,7 @@ class RefactoringEngine:
         fn_brace_count = 0
 
         for line in lines:
-            m = re.match(
-                r"^(\s*)fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line
-            )
+            m = re.match(r"^(\s*)fn\s+" + re.escape(function_name) + r"\s*\((.*?)\)\s*\{", line)
             if m:
                 indent = m.group(1)
                 fn_brace_count = 1
@@ -578,15 +552,9 @@ class RefactoringEngine:
             if inside_fn:
                 fn_brace_count += line.count("{") - line.count("}")
                 if fn_brace_count == 0:
-                    indent = (
-                        re.match(r"^(\s*)", line).group(1)
-                        if re.match(r"^(\s*)", line)
-                        else ""
-                    )
+                    indent = re.match(r"^(\s*)", line).group(1) if re.match(r"^(\s*)", line) else ""
                     result.append(f"{indent}    }} catch err {{")
-                    result.append(
-                        f'{indent}        print "Error in {function_name}: " + err'
-                    )
+                    result.append(f'{indent}        print "Error in {function_name}: " + err')
                     result.append(f"{indent}    }}")
                     result.append(line)
                     inside_fn = False
@@ -605,9 +573,7 @@ def get_available_refactorings(source: str) -> list[RefactoringSuggestion]:
     # for loop to foreach
     for i, line in enumerate(lines):
         if re.search(r"for\s*\(\s*[a-zA-Z_]\w*\s*=\s*0\s*;", line):
-            container_match = re.search(
-                r";\s*\1?\s*<\s*([a-zA-Z_]\w*)\.length\s*;", line
-            )
+            container_match = re.search(r";\s*\1?\s*<\s*([a-zA-Z_]\w*)\.length\s*;", line)
             if container_match:
                 suggestions.append(
                     RefactoringSuggestion(
@@ -658,9 +624,7 @@ def get_available_refactorings(source: str) -> list[RefactoringSuggestion]:
     # large function split
     i = 0
     while i < len(lines):
-        fn_match = re.match(
-            r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i]
-        )
+        fn_match = re.match(r"^(\s*)fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*\{", lines[i])
         if fn_match:
             fn_name = fn_match.group(2)
             brace_count = 1
@@ -688,8 +652,7 @@ def get_available_refactorings(source: str) -> list[RefactoringSuggestion]:
     untyped_count = 0
     for line in lines:
         m = re.match(
-            r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(?:\d+|'.*?'|\".*?\"|true|false|\[|\{)",
-            line,
+            r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(?:\d+|'.*?'|\".*?\"|true|false|\[|\{)", line
         )
         if m and "::" not in line:
             untyped_count += 1
