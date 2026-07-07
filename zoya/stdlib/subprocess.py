@@ -1,3 +1,5 @@
+"""Zoya stdlib subprocess module."""
+
 from __future__ import annotations
 
 import subprocess as _subprocess
@@ -10,11 +12,7 @@ def load_module(interpreter: Any) -> Any:
     def run(cmd: str | list[str]) -> dict[str, Any]:
         try:
             result = _subprocess.run(
-                cmd,
-                shell=isinstance(cmd, str),
-                capture_output=True,
-                text=True,
-                timeout=60,
+                cmd, shell=isinstance(cmd, str), capture_output=True, text=True, timeout=60
             )
             return {
                 "returncode": result.returncode,
@@ -27,11 +25,7 @@ def load_module(interpreter: Any) -> Any:
     def run_output(cmd: str | list[str]) -> dict[str, Any]:
         try:
             result = _subprocess.run(
-                cmd,
-                shell=isinstance(cmd, str),
-                capture_output=True,
-                text=True,
-                timeout=60,
+                cmd, shell=isinstance(cmd, str), capture_output=True, text=True, timeout=60
             )
             return {
                 "returncode": result.returncode,
@@ -50,19 +44,10 @@ def load_module(interpreter: Any) -> Any:
                 stderr=_subprocess.PIPE,
                 text=True,
             )
-            return {
-                "pid": process.pid,
-                "returncode": None,
-                "stdout": "",
-                "stderr": "",
-            }
+            return {"pid": process.pid, "returncode": None, "stdout": "", "stderr": ""}
         except Exception as e:
             return {"pid": -1, "returncode": -1, "stdout": "", "stderr": str(e)}
 
-    funcs = {
-        "run": run,
-        "run_output": run_output,
-        "run_background": run_background,
-    }
+    funcs = {"run": run, "run_output": run_output, "run_background": run_background}
 
     return ZoyaModule("subprocess", funcs)
