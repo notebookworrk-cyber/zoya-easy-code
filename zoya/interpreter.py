@@ -1,3 +1,5 @@
+"""Tree-walking interpreter for executing Zoya AST nodes."""
+
 from __future__ import annotations
 
 import os
