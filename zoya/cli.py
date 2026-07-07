@@ -1,3 +1,5 @@
+"""Command-line interface for the Zoya interpreter."""
+
 from __future__ import annotations
 
 import argparse
@@ -34,47 +36,25 @@ def main() -> NoReturn:
         epilog="Examples:\n  zoya script.zoya\n  zoya docs file.zoya\n  zoya --repl\n  zoya --version",
     )
 
-    parser.add_argument(
-        "file",
-        nargs="?",
-        help="Zoya source file to execute (.zoya)",
-    )
+    parser.add_argument("file", nargs="?", help="Zoya source file to execute (.zoya)")
+
+    parser.add_argument("-r", "--repl", action="store_true", help="Start interactive REPL session")
 
     parser.add_argument(
-        "-r",
-        "--repl",
-        action="store_true",
-        help="Start interactive REPL session",
+        "-v", "--version", action="store_true", help="Show version information and exit"
     )
 
-    parser.add_argument(
-        "-v",
-        "--version",
-        action="store_true",
-        help="Show version information and exit",
-    )
+    parser.add_argument("--examples", action="store_true", help="Show example programs and exit")
 
     parser.add_argument(
-        "--examples",
-        action="store_true",
-        help="Show example programs and exit",
-    )
-
-    parser.add_argument(
-        "-c",
-        "--command",
-        dest="inline_cmd",
-        type=str,
-        help="Execute a one-liner Zoya command",
+        "-c", "--command", dest="inline_cmd", type=str, help="Execute a one-liner Zoya command"
     )
 
     args = parser.parse_args()
 
     if args.version:
         print(f"Zoya v{__version__}")
-        print(
-            "A beginner-friendly programming language for AI, automation, and game development"
-        )
+        print("A beginner-friendly programming language for AI, automation, and game development")
         sys.exit(0)
 
     if args.examples:
