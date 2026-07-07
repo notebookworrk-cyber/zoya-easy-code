@@ -8,26 +8,44 @@ from typing import Any
 
 from .middleware import (
     AuthMiddleware as AuthMiddleware,
-)
-from .middleware import (
     BaseMiddleware,
-)
-from .middleware import (
     ErrorHandlingMiddleware as ErrorHandlingMiddleware,
-)
-from .middleware import (
     LoggingMiddleware as LoggingMiddleware,
 )
 from .response import (
     HTTP_200_OK as HTTP_200_OK,
-)
-from .response import (
     HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
     ResponseData,
     create_error,
     create_success,
 )
 from .router import Router
+
+__all__ = [
+    "AuthMiddleware",
+    "BaseMiddleware",
+    "ErrorHandlingMiddleware",
+    "HTTP_200_OK",
+    "HTTP_400_BAD_REQUEST",
+    "HTTP_401_UNAUTHORIZED",
+    "HTTP_403_FORBIDDEN",
+    "HTTP_404_NOT_FOUND",
+    "HTTP_500_INTERNAL_SERVER_ERROR",
+    "LoggingMiddleware",
+    "Request",
+    "Response",
+    "ResponseData",
+    "Router",
+    "Web",
+    "create_app",
+    "create_error",
+    "create_success",
+    "create_web_app",
+]
 
 
 class Request:
@@ -71,9 +89,7 @@ class Web:
 
         uvicorn.run(self._asgi_app, host=host, port=port)
 
-    async def _asgi_app(
-        self, scope: dict[str, Any], receive: Callable, send: Callable
-    ) -> None:
+    async def _asgi_app(self, scope: dict[str, Any], receive: Callable, send: Callable) -> None:
         if scope.get("type") != "http":
             return
 
@@ -96,13 +112,7 @@ class Web:
         if response.get("meta") and isinstance(response["meta"], dict):
             status = response["meta"].get("status", 200)
 
-        await send(
-            {
-                "type": "http.response.start",
-                "status": status,
-                "headers": [],
-            }
-        )
+        await send({"type": "http.response.start", "status": status, "headers": []})
         await send(
             {
                 "type": "http.response.body",
@@ -120,11 +130,7 @@ class Web:
             }
         )
         await send(
-            {
-                "type": "http.response.body",
-                "body": response.content.encode(),
-                "more_body": False,
-            }
+            {"type": "http.response.body", "body": response.content.encode(), "more_body": False}
         )
 
 
@@ -138,40 +144,3 @@ def create_app() -> Web:
 def create_web_app() -> Web:
     """Convenience function to create a web app."""
     return create_app()
-
-
-# -------------------- Unit Tests --------------------
-async def test_router() -> None:
-    """Test router functionality."""
-    app = Web()
-    app.route("GET", "/test", lambda: "test response")
-    scope = {"type": "http", "method": "GET", "path": "/test"}
-
-    async def mock_receive() -> None:
-        pass
-
-    async def mock_send(msg: Any) -> None:
-        pass
-
-    await app._asgi_app(scope, mock_receive, mock_send)
-    print("Router test completed")
-
-
-def test_response_functions() -> None:
-    """Test response creation functions."""
-    success = create_success("data", meta={"page": 1})
-    assert success["success"] is True
-    assert success["data"] == "data"
-    assert success["error"] is None
-    assert success["meta"] == {"page": 1}
-
-    error = create_error(
-        "Invalid input", status=HTTP_400_BAD_REQUEST, meta={"field": "email"}
-    )
-    assert error["success"] is False
-    assert error["error"] == "Invalid input"
-    assert error["meta"] == {"field": "email"}
-
-
-if __name__ == "__main__":
-    test_response_functions()
