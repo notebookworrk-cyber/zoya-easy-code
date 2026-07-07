@@ -1,3 +1,5 @@
+"""Zoya stdlib 3D game module."""
+
 from __future__ import annotations
 
 import contextlib
