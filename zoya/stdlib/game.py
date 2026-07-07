@@ -1,3 +1,5 @@
+"""Zoya stdlib game module."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -30,9 +32,7 @@ def load_module(interpreter: Any) -> Any:
                 _pygame.init()
                 _pygame.font.init()
             except ImportError:
-                raise ImportError(
-                    "pygame-ce is required. Install: pip install pygame-ce"
-                ) from None
+                raise ImportError("pygame-ce is required. Install: pip install pygame-ce") from None
 
     def window(title: str, width: int, height: int) -> None:
         nonlocal _screen, _clock, _running
@@ -80,9 +80,7 @@ def load_module(interpreter: Any) -> Any:
         _sprites.append(sprite_data)
         return sprite_data
 
-    def circle(
-        x: float, y: float, radius: float, color: Any = (255, 255, 255)
-    ) -> dict[str, Any]:
+    def circle(x: float, y: float, radius: float, color: Any = (255, 255, 255)) -> dict[str, Any]:
         c = _to_color(color)
         sprite_data = {
             "type": "circle",
@@ -122,12 +120,7 @@ def load_module(interpreter: Any) -> Any:
             _pygame.draw.rect(
                 _screen,
                 sprite_obj["color"],
-                (
-                    sprite_obj["x"],
-                    sprite_obj["y"],
-                    sprite_obj["width"],
-                    sprite_obj["height"],
-                ),
+                (sprite_obj["x"], sprite_obj["y"], sprite_obj["width"], sprite_obj["height"]),
             )
         elif sprite_obj.get("type") == "circle":
             _pygame.draw.circle(
