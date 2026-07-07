@@ -1,3 +1,5 @@
+"""Zoya stdlib audio module."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -63,12 +65,6 @@ def load_module(interpreter: Any) -> Any:
         except ImportError:
             pass
 
-    funcs = {
-        "play": play,
-        "pause": pause,
-        "stop": stop,
-        "resume": resume,
-        "set_volume": set_volume,
-    }
+    funcs = {"play": play, "pause": pause, "stop": stop, "resume": resume, "set_volume": set_volume}
 
     return ZoyaModule("audio", funcs)
