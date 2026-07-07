@@ -1,3 +1,5 @@
+"""Zoya stdlib datetime module."""
+
 from __future__ import annotations
 
 import datetime as _dt
@@ -27,14 +29,10 @@ def load_module(interpreter: Any) -> Any:
         except Exception as e:
             return f"Error: {e}"
 
-    def add(
-        dt: str, days: int = 0, hours: int = 0, minutes: int = 0, seconds: int = 0
-    ) -> str:
+    def add(dt: str, days: int = 0, hours: int = 0, minutes: int = 0, seconds: int = 0) -> str:
         try:
             d = _dt.datetime.fromisoformat(dt)
-            delta = _dt.timedelta(
-                days=days, hours=hours, minutes=minutes, seconds=seconds
-            )
+            delta = _dt.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
             return (d + delta).isoformat()
         except Exception as e:
             return f"Error: {e}"
