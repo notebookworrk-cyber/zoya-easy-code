@@ -1,3 +1,5 @@
+"""Zoya stdlib regex module."""
+
 from __future__ import annotations
 
 import re as _re
