@@ -48,6 +48,9 @@ class Window:
         print("Application running...")
 
 
+__all__ = ["Widget", "Window", "create_desktop_app"]
+
+
 def create_desktop_app() -> Window:
     """Create a new desktop application window."""
     return Window("Zoya Desktop Application")
