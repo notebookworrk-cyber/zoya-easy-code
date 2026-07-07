@@ -17,5 +17,7 @@ __all__ = [
 ]
 
 
-def create_dataframe(data, columns=None) -> DataFrame:
+def create_dataframe(
+    data: list[dict] | dict | list[list], columns: list[str] | None = None
+) -> DataFrame:
     return DataFrame(data, columns=columns)
