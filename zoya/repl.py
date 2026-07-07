@@ -1,3 +1,5 @@
+"""Read-eval-print loop for interactive Zoya sessions."""
+
 from __future__ import annotations
 
 import os
@@ -16,9 +18,7 @@ class ZoyaREPL:
         try:
             if os.path.exists(self.history_file):
                 with open(self.history_file, encoding="utf-8") as f:
-                    self.history = [
-                        line.rstrip("\n") for line in f.readlines() if line.strip()
-                    ]
+                    self.history = [line.rstrip("\n") for line in f.readlines() if line.strip()]
         except OSError:
             self.history = []
 
