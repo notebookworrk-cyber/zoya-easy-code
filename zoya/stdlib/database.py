@@ -1,3 +1,5 @@
+"""Zoya stdlib database module."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -57,8 +59,6 @@ def load_module(interpreter: Any) -> Any:
         except Exception:
             return None  # type: ignore[return-value]
 
-    funcs = {
-        "connect": connect,
-    }
+    funcs = {"connect": connect}
 
     return ZoyaModule("database", funcs)
