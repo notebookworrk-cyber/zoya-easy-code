@@ -1,3 +1,5 @@
+"""Text embedding and vector representation utilities for AI features."""
+
 import math
 import re
 from collections import Counter
@@ -44,8 +46,7 @@ class TFIDFVectorizer:
                 df[token] = df.get(token, 0) + 1
         self._vocab = {token: idx for idx, token in enumerate(sorted(vocab_set))}
         self._idf = {
-            token: math.log((doc_count + 1) / (freq + 1)) + 1
-            for token, freq in df.items()
+            token: math.log((doc_count + 1) / (freq + 1)) + 1 for token, freq in df.items()
         }
         self._fitted = True
 
