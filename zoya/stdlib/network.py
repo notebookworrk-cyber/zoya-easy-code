@@ -1,3 +1,5 @@
+"""Zoya stdlib network module."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,10 +26,7 @@ def load_module(interpreter: Any) -> Any:
             req = Request(
                 url,
                 data=data_bytes,
-                headers={
-                    "User-Agent": "Zoya/1.0",
-                    "Content-Type": content_type,
-                },
+                headers={"User-Agent": "Zoya/1.0", "Content-Type": content_type},
             )
             with urlopen(req, timeout=10) as response:
                 return response.read().decode("utf-8")
@@ -47,10 +46,6 @@ def load_module(interpreter: Any) -> Any:
         except Exception as e:
             return f"Error: {e}"
 
-    funcs = {
-        "get": get,
-        "post": post,
-        "download": download,
-    }
+    funcs = {"get": get, "post": post, "download": download}
 
     return ZoyaModule("network", funcs)
