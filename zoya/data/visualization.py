@@ -1,3 +1,5 @@
+"""Data visualization module with Plot and Figure classes for charting."""
+
 from .dataframe import Series
 
 
@@ -152,9 +154,7 @@ class Plot:
         max_label_len = max(len(str(label)) for label in x)
         for label, val in zip(x, y, strict=False):
             bar_len = int((val / max_val) * max_width) if max_val else 0
-            bar_str = _STYLE["hbar_fill"] * bar_len + _STYLE["hbar_empty"] * (
-                max_width - bar_len
-            )
+            bar_str = _STYLE["hbar_fill"] * bar_len + _STYLE["hbar_empty"] * (max_width - bar_len)
             val_str = Plot._format_axis_label(val)
             lines.append(f"  {str(label).ljust(max_label_len)} |{bar_str} {val_str}")
 
@@ -218,11 +218,7 @@ class Plot:
 
         for xi, yi in zip(xs, ys, strict=False):
             col = min(
-                (
-                    int((xi - xmin) / (xmax - xmin) * (width - 1))
-                    if xmax != xmin
-                    else width // 2
-                ),
+                (int((xi - xmin) / (xmax - xmin) * (width - 1)) if xmax != xmin else width // 2),
                 width - 1,
             )
             row = max(
