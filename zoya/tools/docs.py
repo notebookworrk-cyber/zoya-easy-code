@@ -1,3 +1,5 @@
+"""Documentation generation tool for extracting and rendering Zoya module docs."""
+
 from __future__ import annotations
 
 import os
