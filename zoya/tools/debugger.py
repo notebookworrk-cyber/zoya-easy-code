@@ -1,3 +1,5 @@
+"""Interactive debugger utilities for inspecting and tracing Zoya code execution."""
+
 from __future__ import annotations
 
 import sys
@@ -11,10 +13,7 @@ from zoya.parser import parse
 
 class DebugInterpreter(Interpreter):
     def __init__(
-        self,
-        source_lines: list[str],
-        file: str = "",
-        breakpoints: set[int] | None = None,
+        self, source_lines: list[str], file: str = "", breakpoints: set[int] | None = None
     ) -> None:
         super().__init__(file)
         self.source_lines = source_lines
