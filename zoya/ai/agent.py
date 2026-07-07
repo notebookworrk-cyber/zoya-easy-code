@@ -1,3 +1,5 @@
+"""Autonomous AI agent framework for task execution and decision-making."""
+
 from __future__ import annotations
 
 import builtins
@@ -111,9 +113,7 @@ class Agent:
         if not isinstance(self.memory, AgentMemory):
             raise AgentError("memory must be an AgentMemory instance")
 
-        self.system_prompt = config.get(
-            "system_prompt", "You are a helpful AI assistant."
-        )
+        self.system_prompt = config.get("system_prompt", "You are a helpful AI assistant.")
         self.max_iterations = config.get("max_iterations", 10)
         self.temperature = config.get("temperature", 0.7)
         self.max_tokens = config.get("max_tokens", 1024)
@@ -192,11 +192,7 @@ class Agent:
         return None
 
     def _call_llm(self, prompt: str) -> str:
-        return self.provider(
-            prompt,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-        )
+        return self.provider(prompt, temperature=self.temperature, max_tokens=self.max_tokens)
 
     def run(self, prompt: str) -> str:
         self.memory.add("user", prompt)
@@ -340,12 +336,12 @@ class PlanningAgent(Agent):
         steps = self._create_plan(prompt)
         context_parts: list[str] = [
             f"Task: {prompt}",
-            "Plan:\n" + "\n".join(f"{i+1}. {s}" for i, s in enumerate(steps)),
+            "Plan:\n" + "\n".join(f"{i + 1}. {s}" for i, s in enumerate(steps)),
         ]
 
         for i, step in enumerate(steps):
             result = self._execute_step(step, "\n".join(context_parts))
-            context_parts.append(f"Step {i+1}: {step}")
+            context_parts.append(f"Step {i + 1}: {step}")
             context_parts.append(f"Result: {result}")
 
         summary_prompt = (
