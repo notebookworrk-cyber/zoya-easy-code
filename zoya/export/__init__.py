@@ -1,3 +1,5 @@
+"""Export package for converting Zoya data to various output formats."""
+
 __version__ = "0.1.0"
 
 import json
@@ -71,12 +73,9 @@ class ExportResult:
 
 
 def generate_requirements(source: str) -> str:
-    reqs: dict[str, str] = {
-        "zoya": ">=0.1.0",
-    }
+    reqs: dict[str, str] = {"zoya": ">=0.1.0"}
     lines = [
-        f"{pkg}>={ver}" if ver.startswith(">=") else f"{pkg}{ver}"
-        for pkg, ver in reqs.items()
+        f"{pkg}>={ver}" if ver.startswith(">=") else f"{pkg}{ver}" for pkg, ver in reqs.items()
     ]
     if "import flask" in source or "from flask" in source:
         lines.append("flask>=3.0.0")
@@ -132,10 +131,7 @@ def generate_setup_py(source: str) -> str:
 
 def generate_html_wrapper(code: str) -> str:
     escaped = (
-        code.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
+        code.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
     )
     return textwrap.dedent(f"""\
     <!DOCTYPE html>
@@ -185,10 +181,7 @@ class Exporter:
         if config.include_tests:
             files["tests/test_app.py"] = self._generate_test_stub(source)
         result = ExportResult(
-            success=True,
-            files=files,
-            output_dir=config.output_dir,
-            target=ExportTarget.WEB,
+            success=True, files=files, output_dir=config.output_dir, target=ExportTarget.WEB
         )
         return result
 
@@ -211,10 +204,7 @@ class Exporter:
         if config.include_tests:
             files["tests/test_app.py"] = self._generate_test_stub(source)
         result = ExportResult(
-            success=True,
-            files=files,
-            output_dir=config.output_dir,
-            target=ExportTarget.DESKTOP,
+            success=True, files=files, output_dir=config.output_dir, target=ExportTarget.DESKTOP
         )
         return result
 
@@ -244,10 +234,7 @@ class Exporter:
         if config.include_tests:
             files["tests/test_mobile.py"] = self._generate_test_stub(source)
         result = ExportResult(
-            success=True,
-            files=files,
-            output_dir=config.output_dir,
-            target=ExportTarget.MOBILE,
+            success=True, files=files, output_dir=config.output_dir, target=ExportTarget.MOBILE
         )
         return result
 
@@ -272,10 +259,7 @@ class Exporter:
         if config.include_tests:
             files["tests/test_cli.py"] = self._generate_test_stub(source)
         result = ExportResult(
-            success=True,
-            files=files,
-            output_dir=config.output_dir,
-            target=ExportTarget.CLI,
+            success=True, files=files, output_dir=config.output_dir, target=ExportTarget.CLI
         )
         return result
 
@@ -291,10 +275,7 @@ class Exporter:
         if config.include_docs:
             files["README.md"] = f"# {name}\n\nZoya library package.\n"
         result = ExportResult(
-            success=True,
-            files=files,
-            output_dir=config.output_dir,
-            target=ExportTarget.LIBRARY,
+            success=True, files=files, output_dir=config.output_dir, target=ExportTarget.LIBRARY
         )
         return result
 
@@ -326,10 +307,7 @@ class Exporter:
         if config.include_tests:
             files["tests/test_docker.py"] = self._generate_test_stub(source)
         result = ExportResult(
-            success=True,
-            files=files,
-            output_dir=config.output_dir,
-            target=ExportTarget.DOCKER,
+            success=True, files=files, output_dir=config.output_dir, target=ExportTarget.DOCKER
         )
         return result
 
