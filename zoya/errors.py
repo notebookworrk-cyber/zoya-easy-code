@@ -5,12 +5,7 @@ class ZoyaError(Exception):
     """Base exception for all Zoya language errors."""
 
     def __init__(
-        self,
-        message: str,
-        line: int = 0,
-        col: int = 0,
-        file: str = "",
-        source: str = "",
+        self, message: str, line: int = 0, col: int = 0, file: str = "", source: str = ""
     ) -> None:
         self.line = line
         self.col = col
@@ -113,13 +108,7 @@ class ContinueException(Exception):
 class CallFrame:
     """Represents a single frame in the call stack."""
 
-    def __init__(
-        self,
-        func_name: str,
-        file: str = "",
-        line: int = 0,
-        col: int = 0,
-    ) -> None:
+    def __init__(self, func_name: str, file: str = "", line: int = 0, col: int = 0) -> None:
         self.func_name = func_name
         self.file = file
         self.line = line
@@ -145,16 +134,73 @@ class StackOverflowError(RuntimeError_):
         super().__init__(message, line, col, file, source)
 
 
-class ImportCycleError(RuntimeError_):
-    """Import cycle detected."""
+class ZoyaZeroDivisionError(RuntimeError_):
+    """Division by zero error."""
 
     def __init__(
         self,
-        cycle: list[str],
+        message: str = "Division by zero",
         line: int = 0,
         col: int = 0,
         file: str = "",
         source: str = "",
+    ) -> None:
+        super().__init__(message, line, col, file, source)
+
+
+class ZoyaNameError(RuntimeError_):
+    """Name not defined error."""
+
+    def __init__(
+        self, name: str = "", line: int = 0, col: int = 0, file: str = "", source: str = ""
+    ) -> None:
+        message = f"'{name}' is not defined" if name else "Name is not defined"
+        super().__init__(message, line, col, file, source)
+        self.name = name
+
+
+class ZoyaAttributeError(RuntimeError_):
+    """Attribute not found error."""
+
+    def __init__(
+        self,
+        obj_type: str = "",
+        attr: str = "",
+        line: int = 0,
+        col: int = 0,
+        file: str = "",
+        source: str = "",
+    ) -> None:
+        if obj_type and attr:
+            message = f"'{obj_type}' object has no attribute '{attr}'"
+        elif attr:
+            message = f"Object has no attribute '{attr}'"
+        else:
+            message = "Object has no attribute"
+        super().__init__(message, line, col, file, source)
+        self.obj_type = obj_type
+        self.attr = attr
+
+
+class ZoyaIndexError(RuntimeError_):
+    """Index out of range error."""
+
+    def __init__(
+        self,
+        message: str = "Index out of range",
+        line: int = 0,
+        col: int = 0,
+        file: str = "",
+        source: str = "",
+    ) -> None:
+        super().__init__(message, line, col, file, source)
+
+
+class ImportCycleError(RuntimeError_):
+    """Import cycle detected."""
+
+    def __init__(
+        self, cycle: list[str], line: int = 0, col: int = 0, file: str = "", source: str = ""
     ) -> None:
         cycle_str = " -> ".join(cycle)
         message = f"Import cycle detected: {cycle_str}"
@@ -168,11 +214,7 @@ def format_stack_trace(frames: list[CallFrame]) -> str:
         return ""
     lines = ["Stack trace (most recent call last):"]
     for frame in reversed(frames):
-        loc = (
-            f"{frame.file}:{frame.line}:{frame.col}"
-            if frame.file
-            else "unknown location"
-        )
+        loc = f"{frame.file}:{frame.line}:{frame.col}" if frame.file else "unknown location"
         lines.append(f"  {frame.func_name} at {loc}")
     return "\n".join(lines)
 
