@@ -1,3 +1,5 @@
+"""Parser that converts a token stream into an abstract syntax tree."""
+
 from __future__ import annotations
 
 from .ast import (
