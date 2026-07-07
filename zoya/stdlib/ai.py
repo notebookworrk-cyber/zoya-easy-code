@@ -1,3 +1,5 @@
+"""Zoya stdlib AI module."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -56,15 +58,12 @@ def load_module(interpreter: Any) -> Any:
             if base_url:
                 client_kwargs["base_url"] = base_url
 
-            client = (
-                openai.OpenAI(**client_kwargs) if client_kwargs else openai.OpenAI()
-            )
+            client = openai.OpenAI(**client_kwargs) if client_kwargs else openai.OpenAI()
 
             def ask(prompt: str) -> str:
                 try:
                     response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[{"role": "user", "content": prompt}],
+                        model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}]
                     )
                     return response.choices[0].message.content or ""
                 except Exception as e:
@@ -72,10 +71,7 @@ def load_module(interpreter: Any) -> Any:
 
             return {"ask": ask, "provider": "openai"}
         except ImportError:
-            return {
-                "ask": lambda p: "[openai] Install: pip install openai",
-                "provider": "openai",
-            }
+            return {"ask": lambda p: "[openai] Install: pip install openai", "provider": "openai"}
 
     def _ollama_model(base_url: str = "") -> dict[str, Any]:
         url = base_url or "http://localhost:11434"
@@ -85,17 +81,9 @@ def load_module(interpreter: Any) -> Any:
                 import json
                 from urllib.request import Request, urlopen
 
-                data = json.dumps(
-                    {
-                        "model": "llama3.2",
-                        "prompt": prompt,
-                        "stream": False,
-                    }
-                ).encode()
+                data = json.dumps({"model": "llama3.2", "prompt": prompt, "stream": False}).encode()
                 req = Request(
-                    f"{url}/api/generate",
-                    data=data,
-                    headers={"Content-Type": "application/json"},
+                    f"{url}/api/generate", data=data, headers={"Content-Type": "application/json"}
                 )
                 with urlopen(req, timeout=60) as resp:
                     result = json.loads(resp.read())
@@ -133,8 +121,6 @@ def load_module(interpreter: Any) -> Any:
 
         return {"ask": ask, "provider": "lmstudio"}
 
-    funcs = {
-        "model": model,
-    }
+    funcs = {"model": model}
 
     return ZoyaModule("ai", funcs)
