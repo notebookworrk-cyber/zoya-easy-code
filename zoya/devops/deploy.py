@@ -1,3 +1,5 @@
+"""Deployment automation tools for releasing Zoya applications."""
+
 from __future__ import annotations
 
 import os
@@ -76,9 +78,7 @@ class Deployer:
         self._deployments = {}
         self._environments = {"dev", "staging", "production"}
 
-    def deploy(
-        self, config: DeploymentConfig, version: str | None = None
-    ) -> Deployment:
+    def deploy(self, config: DeploymentConfig, version: str | None = None) -> Deployment:
         ver = version or uuid.uuid4().hex[:8]
         deployment = Deployment(config=config, version=ver)
         deployment.status = "deploying"
@@ -158,9 +158,7 @@ class Deployer:
     def list_deployments(self, environment: str | None = None) -> list[Deployment]:
         if environment is None:
             return list(self._deployments.values())
-        return [
-            d for d in self._deployments.values() if d.config.environment == environment
-        ]
+        return [d for d in self._deployments.values() if d.config.environment == environment]
 
     def health_check(self, url: str) -> bool:
         import urllib.request
@@ -171,9 +169,7 @@ class Deployer:
         except Exception:
             return False
 
-    def switch_traffic(
-        self, from_deploy: str, to_deploy: str, percentage: int = 100
-    ) -> None:
+    def switch_traffic(self, from_deploy: str, to_deploy: str, percentage: int = 100) -> None:
         src = self._deployments.get(from_deploy)
         dst = self._deployments.get(to_deploy)
         if src is None:
@@ -183,8 +179,7 @@ class Deployer:
 
         pct = max(0, min(100, percentage))
         dst.logs.append(
-            f"[{dst.id}] Traffic switched: {pct}% from "
-            f"'{src.config.name}' to '{dst.config.name}'."
+            f"[{dst.id}] Traffic switched: {pct}% from '{src.config.name}' to '{dst.config.name}'."
         )
 
     def list_environments(self) -> list[str]:
