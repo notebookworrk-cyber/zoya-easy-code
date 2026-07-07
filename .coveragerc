@@ -1,0 +1,9 @@
+[run]
+source = zoya
+omit = */tests/*,*/.pytype/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
