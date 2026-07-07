@@ -1,3 +1,5 @@
+"""Environment (scope) management for variable storage in Zoya."""
+
 from __future__ import annotations
 
 from typing import Any
