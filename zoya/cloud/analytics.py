@@ -1,3 +1,5 @@
+"""Cloud analytics service for tracking and reporting application metrics."""
+
 import secrets
 import threading
 import time
@@ -76,10 +78,7 @@ class AnalyticsService:
         self._flush_timer.start()
 
     def track(
-        self,
-        event: str,
-        properties: dict[str, Any] | None = None,
-        value: float | None = None,
+        self, event: str, properties: dict[str, Any] | None = None, value: float | None = None
     ) -> None:
         if self._session_id in self._opted_out:
             return
@@ -108,9 +107,7 @@ class AnalyticsService:
 
     def start_session(self) -> None:
         session = UserSession(
-            session_id=self._session_id,
-            user_id="user_alice",
-            start_time=time.time(),
+            session_id=self._session_id, user_id="user_alice", start_time=time.time()
         )
         self._active_sessions[self._session_id] = session
         self._sessions[self._session_id] = session
@@ -137,8 +134,7 @@ class AnalyticsService:
         filtered = [
             e
             for e in self._events
-            if e.name == query.event
-            and query.start_date <= e.timestamp <= query.end_date
+            if e.name == query.event and query.start_date <= e.timestamp <= query.end_date
         ]
 
         metrics: dict[str, float] = {}
@@ -188,9 +184,7 @@ class AnalyticsService:
 
     def get_event_count(self, event: str, start_date: float, end_date: float) -> int:
         return sum(
-            1
-            for e in self._events
-            if e.name == event and start_date <= e.timestamp <= end_date
+            1 for e in self._events if e.name == event and start_date <= e.timestamp <= end_date
         )
 
     def get_user_count(self, start_date: float, end_date: float) -> int:
@@ -251,9 +245,7 @@ class AnalyticsService:
 
     def delete_user_data(self, user_id: str) -> None:
         self._events = [e for e in self._events if e.user_id != user_id]
-        self._sessions = {
-            sid: s for sid, s in self._sessions.items() if s.user_id != user_id
-        }
+        self._sessions = {sid: s for sid, s in self._sessions.items() if s.user_id != user_id}
         self._active_sessions = {
             sid: s for sid, s in self._active_sessions.items() if s.user_id != user_id
         }
