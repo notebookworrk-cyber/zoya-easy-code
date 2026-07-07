@@ -52,11 +52,15 @@ def zoya_round(x: float, ndigits: int = 0) -> float:
 
 
 def zoya_min(*args: Any) -> Any:
-    return min(args) if args else 0
+    if not args:
+        raise TypeError("min() expects at least one argument")
+    return min(args)
 
 
 def zoya_max(*args: Any) -> Any:
-    return max(args) if args else 0
+    if not args:
+        raise TypeError("max() expects at least one argument")
+    return max(args)
 
 
 def zoya_random(*args: float) -> float:
@@ -77,7 +81,11 @@ def zoya_list(*args: Any) -> list[Any]:
     return list(args)
 
 
-def zoya_dict(**kwargs: Any) -> dict[str, Any]:
+def zoya_dict(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    if args:
+        if len(args) == 1:
+            return dict(args[0])
+        raise TypeError(f"dict() takes at most 1 positional argument ({len(args)} given)")
     return dict(kwargs)
 
 
@@ -122,7 +130,7 @@ BUILTIN_FUNCTIONS: dict[str, Any] = {
 STRING_METHODS: dict[str, Any] = {
     "upper": lambda s: s.upper(),
     "lower": lambda s: s.lower(),
-    "strip": lambda s, chars=None: s.strip(chars) if chars else s.strip(),
+    "strip": lambda s, chars=None: s.strip(chars) if chars is not None else s.strip(),
     "replace": lambda s, old, new: s.replace(old, new),
     "split": lambda s, sep=None: s.split(sep) if sep else s.split(),
     "startswith": lambda s, prefix: s.startswith(prefix),
