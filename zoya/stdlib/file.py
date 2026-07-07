@@ -1,3 +1,5 @@
+"""Zoya stdlib file module."""
+
 from __future__ import annotations
 
 import os as _os
