@@ -1,3 +1,5 @@
+"""Code formatter for Zoya language source files."""
+
 from __future__ import annotations
 
 from zoya.ast import (
