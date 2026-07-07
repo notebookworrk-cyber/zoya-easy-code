@@ -1,3 +1,5 @@
+"""Robotics package for controlling hardware and simulating robotic systems."""
+
 __version__ = "0.1.0"
 
 import math
@@ -101,9 +103,7 @@ class InfraredSensor(Sensor):
         self._detected: int = 0
 
     def read(self) -> float:
-        self._detected = (
-            1 if (abs(hash(f"ir_{int(time.time() * 2)}")) % 100 > 70) else 0
-        )
+        self._detected = 1 if (abs(hash(f"ir_{int(time.time() * 2)}")) % 100 > 70) else 0
         return float(self._detected)
 
 
@@ -183,11 +183,7 @@ class GPSModule:
         self.latitude = self._base_lat + random.uniform(-0.001, 0.001)
         self.longitude = self._base_lng + random.uniform(-0.001, 0.001)
         self.altitude = max(0.0, self.altitude + random.uniform(-0.5, 0.5))
-        return (
-            round(self.latitude, 6),
-            round(self.longitude, 6),
-            round(self.altitude, 2),
-        )
+        return (round(self.latitude, 6), round(self.longitude, 6), round(self.altitude, 2))
 
     def get_value(self) -> dict[str, float]:
         self.read()
@@ -416,10 +412,7 @@ def create_quadcopter(name: str) -> DroneController:
 
 
 def calculate_odometry(
-    left_ticks: int,
-    right_ticks: int,
-    wheel_diameter: float,
-    wheel_base: float,
+    left_ticks: int, right_ticks: int, wheel_diameter: float, wheel_base: float
 ) -> dict[str, float]:
     ticks_per_revolution = 360
     left_rev = left_ticks / ticks_per_revolution
