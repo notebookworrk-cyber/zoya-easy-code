@@ -1,3 +1,5 @@
+"""DataFrame and Series implementations for tabular data manipulation."""
+
 import csv
 import json
 import math
@@ -129,15 +131,12 @@ class Series:
         if isinstance(key, (list, Series)):
             if isinstance(key, Series):
                 key = key.values
-            return Series(
-                [self._data[i] for i, k in enumerate(key) if k], name=self._name
-            )
+            return Series([self._data[i] for i, k in enumerate(key) if k], name=self._name)
         if isinstance(key, str):
             raise DataFrameError("String key not supported on Series")
         if isinstance(key, Series):
             return Series(
-                [v for v, k in zip(self._data, key.values, strict=False) if k],
-                name=self._name,
+                [v for v, k in zip(self._data, key.values, strict=False) if k], name=self._name
             )
         return self._data[key]
 
@@ -249,18 +248,14 @@ class Series:
         return self.apply(func)
 
     def isna(self) -> "Series":
-        return Series(
-            [v is None for v in self._data], name=self._name, index=self._index
-        )
+        return Series([v is None for v in self._data], name=self._name, index=self._index)
 
     def dropna(self) -> "Series":
         return Series([v for v in self._data if v is not None], name=self._name)
 
     def fillna(self, value) -> "Series":
         return Series(
-            [v if v is not None else value for v in self._data],
-            name=self._name,
-            index=self._index,
+            [v if v is not None else value for v in self._data], name=self._name, index=self._index
         )
 
     def unique(self) -> list:
@@ -306,9 +301,7 @@ class Series:
         mx = sum(xs) / n
         my = sum(ys) / n
         num = sum((x - mx) * (y - my) for x, y in zip(xs, ys, strict=False))
-        den = math.sqrt(sum((x - mx) ** 2 for x in xs)) * math.sqrt(
-            sum((y - my) ** 2 for y in ys)
-        )
+        den = math.sqrt(sum((x - mx) ** 2 for x in xs)) * math.sqrt(sum((y - my) ** 2 for y in ys))
         if den == 0:
             return float("nan")
         return num / den
@@ -355,9 +348,7 @@ class GroupBy:
             row = dict(zip(self._keys, key, strict=False))
             for col, func_name in funcs.items():
                 col_vals = [
-                    self._df._data[i][col]
-                    for i in indices
-                    if self._df._data[i][col] is not None
+                    self._df._data[i][col] for i in indices if self._df._data[i][col] is not None
                 ]
                 if not col_vals:
                     row[f"{col}_{func_name}"] = None
@@ -502,10 +493,7 @@ class GroupByColumn:
         for key, indices in self._groupby._groups.items():
             vals = [self._groupby._df._data[i][self._column] for i in indices]
             result.append(
-                {
-                    **dict(zip(self._groupby._keys, key, strict=False)),
-                    self._column: func(vals),
-                }
+                {**dict(zip(self._groupby._keys, key, strict=False)), self._column: func(vals)}
             )
         return DataFrame(result)
 
@@ -532,9 +520,7 @@ class DataFrame:
                     self._columns = [f"col{i}" for i in range(len(data[0]))]
                 else:
                     self._columns = list(columns)
-                self._data = [
-                    dict(zip(self._columns, row, strict=False)) for row in data
-                ]
+                self._data = [dict(zip(self._columns, row, strict=False)) for row in data]
                 for row in self._data:
                     for c in self._columns:
                         if c not in row:
@@ -588,14 +574,11 @@ class DataFrame:
         if isinstance(key, str):
             return self._get_column(key)
         if isinstance(key, list):
-            return DataFrame(
-                [{k: row[k] for k in key} for row in self._data], columns=key
-            )
+            return DataFrame([{k: row[k] for k in key} for row in self._data], columns=key)
         if isinstance(key, Series):
             bools = key.values
             return DataFrame(
-                [row for row, b in zip(self._data, bools, strict=False) if b],
-                columns=self._columns,
+                [row for row, b in zip(self._data, bools, strict=False) if b], columns=self._columns
             )
         raise DataFrameError(f"Invalid key type: {type(key)}")
 
@@ -633,9 +616,7 @@ class DataFrame:
             def __getitem__(self, key):
                 if isinstance(key, int):
                     row = dict(self._df._data[key])
-                    return Series(
-                        [row[c] for c in self._df._columns], index=self._df._columns
-                    )
+                    return Series([row[c] for c in self._df._columns], index=self._df._columns)
                 if isinstance(key, slice):
                     rows = self._df._data[key]
                     return DataFrame(rows, columns=self._df._columns)
@@ -656,17 +637,12 @@ class DataFrame:
                 if isinstance(key, Series):
                     bools = key.values
                     return DataFrame(
-                        [
-                            row
-                            for row, b in zip(self._df._data, bools, strict=False)
-                            if b
-                        ],
+                        [row for row, b in zip(self._df._data, bools, strict=False) if b],
                         columns=self._df._columns,
                     )
                 if callable(key):
                     return DataFrame(
-                        [row for row in self._df._data if key(row)],
-                        columns=self._df._columns,
+                        [row for row in self._df._data if key(row)], columns=self._df._columns
                     )
                 raise DataFrameError("loc requires a boolean Series or callable")
 
@@ -678,9 +654,7 @@ class DataFrame:
     def tail(self, n: int = 5) -> "DataFrame":
         return DataFrame(self._data[-n:], columns=self._columns)
 
-    def sample(
-        self, n: int = None, frac: float = None, random_state: int = None
-    ) -> "DataFrame":
+    def sample(self, n: int = None, frac: float = None, random_state: int = None) -> "DataFrame":
         rng = random.Random(random_state) if random_state is not None else random
         total = len(self._data)
         if n is not None:
@@ -693,38 +667,29 @@ class DataFrame:
         return DataFrame([self._data[i] for i in indices], columns=self._columns)
 
     def filter(self, condition: Callable) -> "DataFrame":
-        return DataFrame(
-            [row for row in self._data if condition(row)], columns=self._columns
-        )
+        return DataFrame([row for row in self._data if condition(row)], columns=self._columns)
 
     def query(self, expr: str) -> "DataFrame":
         return DataFrame(
-            [row for row in self._data if _parse_query_expr(expr, row)],
-            columns=self._columns,
+            [row for row in self._data if _parse_query_expr(expr, row)], columns=self._columns
         )
 
     def isin(self, column: str, values: list) -> "DataFrame":
         val_set = set(values)
         return DataFrame(
-            [row for row in self._data if row.get(column) in val_set],
-            columns=self._columns,
+            [row for row in self._data if row.get(column) in val_set], columns=self._columns
         )
 
     def between(self, column: str, low, high) -> "DataFrame":
         return DataFrame(
-            [row for row in self._data if low <= row.get(column) <= high],
-            columns=self._columns,
+            [row for row in self._data if low <= row.get(column) <= high], columns=self._columns
         )
 
     def dropna(self, axis: int = 0, subset: list[str] = None) -> "DataFrame":
         if axis == 0:
             cols = subset or self._columns
             return DataFrame(
-                [
-                    row
-                    for row in self._data
-                    if all(row.get(c) is not None for c in cols)
-                ],
+                [row for row in self._data if all(row.get(c) is not None for c in cols)],
                 columns=self._columns,
             )
         raise DataFrameError("axis=1 dropna not supported")
@@ -780,9 +745,7 @@ class DataFrame:
                     result[col] = None
                 else:
                     m = sum(vals) / len(vals)
-                    result[col] = math.sqrt(
-                        sum((x - m) ** 2 for x in vals) / (len(vals) - 1)
-                    )
+                    result[col] = math.sqrt(sum((x - m) ** 2 for x in vals) / (len(vals) - 1))
             elif func_name == "var":
                 if len(vals) < 2:
                     result[col] = None
@@ -850,9 +813,7 @@ class DataFrame:
         if columns is not None:
             col_set = set(columns)
             new_cols = [c for c in self._columns if c not in col_set]
-            new_data = [
-                {k: v for k, v in row.items() if k not in col_set} for row in new_data
-            ]
+            new_data = [{k: v for k, v in row.items() if k not in col_set} for row in new_data]
             return DataFrame(new_data, columns=new_cols)
         return DataFrame(new_data, columns=self._columns)
 
@@ -875,9 +836,7 @@ class DataFrame:
     def describe(self) -> "DataFrame":
         stats = {}
         for c in self._columns:
-            vals = [
-                row[c] for row in self._data if isinstance(row.get(c), (int, float))
-            ]
+            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
             if vals:
                 n = len(vals)
                 s = sum(vals)
@@ -912,27 +871,21 @@ class DataFrame:
     def sum(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [
-                row[c] for row in self._data if isinstance(row.get(c), (int, float))
-            ]
+            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
             result.append(sum(vals) if vals else 0)
         return Series(result, name="sum", index=self._columns)
 
     def mean(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [
-                row[c] for row in self._data if isinstance(row.get(c), (int, float))
-            ]
+            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
             result.append(sum(vals) / len(vals) if vals else float("nan"))
         return Series(result, name="mean", index=self._columns)
 
     def median(self) -> Series:
         result = []
         for c in self._columns:
-            vals = sorted(
-                [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
-            )
+            vals = sorted([row[c] for row in self._data if isinstance(row.get(c), (int, float))])
             if not vals:
                 result.append(float("nan"))
             else:
@@ -961,24 +914,18 @@ class DataFrame:
     def std(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [
-                row[c] for row in self._data if isinstance(row.get(c), (int, float))
-            ]
+            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
             if len(vals) < 2:
                 result.append(float("nan"))
             else:
                 m = sum(vals) / len(vals)
-                result.append(
-                    math.sqrt(sum((x - m) ** 2 for x in vals) / (len(vals) - 1))
-                )
+                result.append(math.sqrt(sum((x - m) ** 2 for x in vals) / (len(vals) - 1)))
         return Series(result, name="std", index=self._columns)
 
     def var(self) -> Series:
         result = []
         for c in self._columns:
-            vals = [
-                row[c] for row in self._data if isinstance(row.get(c), (int, float))
-            ]
+            vals = [row[c] for row in self._data if isinstance(row.get(c), (int, float))]
             if len(vals) < 2:
                 result.append(float("nan"))
             else:
@@ -1060,13 +1007,9 @@ class DataFrame:
         return result
 
     def nunique(self, column: str) -> int:
-        return len(
-            {row.get(column) for row in self._data if row.get(column) is not None}
-        )
+        return len({row.get(column) for row in self._data if row.get(column) is not None})
 
-    def merge(
-        self, right: "DataFrame", on: str = None, how: str = "inner"
-    ) -> "DataFrame":
+    def merge(self, right: "DataFrame", on: str = None, how: str = "inner") -> "DataFrame":
         if on is None:
             common = [c for c in self._columns if c in right._columns]
             if not common:
@@ -1117,9 +1060,7 @@ class DataFrame:
                 all_cols.append(c)
         return DataFrame(result, columns=all_cols)
 
-    def join(
-        self, right: "DataFrame", on: str = None, how: str = "left"
-    ) -> "DataFrame":
+    def join(self, right: "DataFrame", on: str = None, how: str = "left") -> "DataFrame":
         return self.merge(right, on=on, how=how)
 
     @staticmethod
@@ -1162,9 +1103,7 @@ class DataFrame:
             result = json.dumps(self._data, default=str, indent=2)
         elif orient == "list":
             result = json.dumps(
-                {c: [row[c] for row in self._data] for c in self._columns},
-                default=str,
-                indent=2,
+                {c: [row[c] for row in self._data] for c in self._columns}, default=str, indent=2
             )
         elif orient == "split":
             result = json.dumps(
