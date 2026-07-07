@@ -1,3 +1,5 @@
+"""Inline documentation viewer for displaying docstrings and type info in the IDE."""
+
 from __future__ import annotations
 
 import json
@@ -73,9 +75,7 @@ class ApiReference:
                     for p in fn["params"]:
                         pname = p["name"]
                         ptype = f": {p['type']}" if p.get("type") else ""
-                        pdefault = (
-                            f" = {p['default']}" if p.get("default") is not None else ""
-                        )
+                        pdefault = f" = {p['default']}" if p.get("default") is not None else ""
                         pdoc = f" — {p['doc']}" if p.get("doc") else ""
                         out.append(f"- `{pname}{ptype}{pdefault}`{pdoc}")
                 if fn.get("return_type"):
@@ -121,7 +121,7 @@ class ApiReference:
             sections.append("<h2>Modules</h2><ul>")
             for mod in self.modules:
                 sections.append(
-                    f'<li><code>{_escape_html(mod["name"])}</code>: {_escape_html(mod.get("doc", "No description"))}</li>'
+                    f"<li><code>{_escape_html(mod['name'])}</code>: {_escape_html(mod.get('doc', 'No description'))}</li>"
                 )
             sections.append("</ul>")
 
@@ -148,7 +148,7 @@ class ApiReference:
             for cls in self.classes:
                 parent = f" extends {cls['parent']}" if cls.get("parent") else ""
                 sections.append(
-                    f'<h3>class <code>{_escape_html(cls["name"])}{_escape_html(parent)}</code></h3>'
+                    f"<h3>class <code>{_escape_html(cls['name'])}{_escape_html(parent)}</code></h3>"
                 )
                 if cls.get("doc"):
                     sections.append(f"<p>{_escape_html(cls['doc'])}</p>")
@@ -157,11 +157,7 @@ class ApiReference:
 
     def to_json(self) -> str:
         return json.dumps(
-            {
-                "functions": self.functions,
-                "classes": self.classes,
-                "modules": self.modules,
-            },
+            {"functions": self.functions, "classes": self.classes, "modules": self.modules},
             indent=2,
         )
 
@@ -254,9 +250,7 @@ class DocGenerator:
                     for p in fn["params"]:
                         pname = p["name"]
                         ptype = f": {p['type']}" if p.get("type") else ""
-                        pdefault = (
-                            f" = {p['default']}" if p.get("default") is not None else ""
-                        )
+                        pdefault = f" = {p['default']}" if p.get("default") is not None else ""
                         pdoc = p.get("doc", "")
                         pd = f" — {pdoc}" if pdoc else ""
                         out.append(f"- `{pname}{ptype}{pdefault}`{pd}")
@@ -401,10 +395,7 @@ class DocGenerator:
 
     def generate_changelog(self, version: str, changes: list[str]) -> str:
         today = datetime.now().strftime("%Y-%m-%d")
-        out: list[str] = [
-            "# Changelog\n",
-            f"## [{version}] - {today}\n",
-        ]
+        out: list[str] = ["# Changelog\n", f"## [{version}] - {today}\n"]
 
         feat: list[str] = []
         fix: list[str] = []
@@ -456,9 +447,7 @@ class DocGenerator:
             for fn in functions:
                 sig = _format_fn_signature(fn)
                 doc = doc_comments.get(fn["name"], "")
-                fn_section.children.append(
-                    DocSection(title=f"`{sig}`", level=3, content=doc)
-                )
+                fn_section.children.append(DocSection(title=f"`{sig}`", level=3, content=doc))
             sections.append(fn_section)
 
         if classes:
@@ -466,11 +455,7 @@ class DocGenerator:
             for cls in classes:
                 parent = f" extends {cls['parent']}" if cls.get("parent") else ""
                 doc = doc_comments.get(cls["name"], "")
-                cls_node = DocSection(
-                    title=f"class `{cls['name']}{parent}`",
-                    level=3,
-                    content=doc,
-                )
+                cls_node = DocSection(title=f"class `{cls['name']}{parent}`", level=3, content=doc)
                 if cls.get("methods"):
                     for m in cls["methods"]:
                         sig = _format_fn_signature(m)
@@ -487,9 +472,7 @@ class DocGenerator:
                 variants = ", ".join(en["variants"])
                 enum_section.children.append(
                     DocSection(
-                        title=f"enum `{en['name']}`",
-                        level=3,
-                        content=f"Variants: {variants}",
+                        title=f"enum `{en['name']}`", level=3, content=f"Variants: {variants}"
                     )
                 )
             sections.append(enum_section)
@@ -500,9 +483,7 @@ class DocGenerator:
                 methods = ", ".join(iface.get("methods", []))
                 iface_section.children.append(
                     DocSection(
-                        title=f"interface `{iface['name']}`",
-                        level=3,
-                        content=f"Methods: {methods}",
+                        title=f"interface `{iface['name']}`", level=3, content=f"Methods: {methods}"
                     )
                 )
             sections.append(iface_section)
@@ -535,9 +516,7 @@ def parse_doc_comments(source: str) -> dict[str, str]:
         while j < len(lines):
             cl = lines[j].strip()
             if cl.startswith("//") or cl.startswith("#"):
-                comment_lines.append(
-                    cl[2:].strip() if cl.startswith("//") else cl[1:].strip()
-                )
+                comment_lines.append(cl[2:].strip() if cl.startswith("//") else cl[1:].strip())
                 j += 1
             elif cl == "":
                 j += 1
@@ -551,9 +530,7 @@ def parse_doc_comments(source: str) -> dict[str, str]:
                 fn_match = re.match(r"^fn\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
                 cls_match = re.match(r"^class\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
                 enum_match = re.match(r"^enum\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
-                iface_match = re.match(
-                    r"^interface\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line
-                )
+                iface_match = re.match(r"^interface\s+([a-zA-Z_][a-zA-Z0-9_]*)", next_line)
                 import_match = re.match(r'^import\s+"([^"]+)"', next_line)
 
                 target = None
@@ -578,9 +555,7 @@ def parse_doc_comments(source: str) -> dict[str, str]:
     return docs
 
 
-def _extract_functions(
-    source: str, include_private: bool = False
-) -> list[dict[str, Any]]:
+def _extract_functions(source: str, include_private: bool = False) -> list[dict[str, Any]]:
     lines = source.split("\n")
     functions: list[dict[str, Any]] = []
     i = 0
@@ -622,13 +597,7 @@ def _extract_functions(
                     eq_parts = p.split("=")
                     pname = eq_parts[0].strip()
                     pdefault = eq_parts[1].strip()
-                params.append(
-                    {
-                        "name": pname,
-                        "type": ptype,
-                        "default": pdefault,
-                    }
-                )
+                params.append({"name": pname, "type": ptype, "default": pdefault})
 
         brace_count = 1
         body_lines: list[str] = []
@@ -703,20 +672,12 @@ def _extract_classes(source: str) -> list[dict[str, Any]]:
                 body_lines.append(bl)
 
                 field_m = re.match(
-                    r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*::?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*;?\s*$",
-                    bl,
+                    r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*::?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*;?\s*$", bl
                 )
                 if field_m:
-                    fields.append(
-                        {
-                            "name": field_m.group(1),
-                            "type": field_m.group(2),
-                        }
-                    )
+                    fields.append({"name": field_m.group(1), "type": field_m.group(2)})
 
-                method_m = re.match(
-                    r"^\s*fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)", bl
-                )
+                method_m = re.match(r"^\s*fn\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)", bl)
                 if method_m:
                     mn = method_m.group(1)
                     raw_params = method_m.group(2).strip()
@@ -814,8 +775,5 @@ def _format_fn_signature(fn: dict) -> str:
 
 def _escape_html(text: str) -> str:
     return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
+        text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
     )
