@@ -10,6 +10,7 @@ from .ast import (
     AssignAttr,
     AssignIndex,
     ASTNode,
+    AugAssign,
     BinOp,
     Block,
     Boolean,
@@ -33,6 +34,7 @@ from .ast import (
     Lambda,
     List_,
     Loop,
+    Match,
     MethodCall,
     Number,
     Pass,
@@ -209,6 +211,23 @@ class Interpreter:
             val = self._eval(node.expr)
             self.current_env.set(node.name, val)
             return val
+
+        if isinstance(node, AugAssign):
+            val = self._eval(node.expr)
+            current = self.current_env.get(node.name)
+            op_map = {
+                "PLUS": lambda a, b: a + b,
+                "MINUS": lambda a, b: a - b,
+                "MUL": lambda a, b: a * b,
+                "DIV": lambda a, b: a / b,
+                "MOD": lambda a, b: a % b,
+                "POW": lambda a, b: a**b,
+            }
+            if node.op in op_map:
+                result = op_map[node.op](current, val)
+                self.current_env.set(node.name, result)
+                return result
+            raise RuntimeError_(f"Unknown augmented operator: {node.op}")
 
         if isinstance(node, AssignIndex):
             obj = self._eval(node.obj)

@@ -1,82 +1,38 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "zoya-lang"
+name = "zoya3"
 version = "4.0.0"
-description = "Zoya - A software development platform: beginner-friendly language + 15-module pure-Python SDK (AI, cloud, web, mobile, data science, security, DevOps, enterprise, robotics)"
+description = "Zoya Easy Code — Full-stack Python development platform with TUI"
 readme = "README.md"
-license = {text = "MIT"}
 requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["zoya", "framework", "web", "ai", "data", "python"]
 authors = [
-    {name = "Zoya Team", email = "zoya@example.com"},
+    {name = "Zoya Team"},
 ]
-keywords = ["programming-language", "education", "game-development", "ai"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Education",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Interpreters",
-    "Topic :: Education",
+
+dependencies = [
+    "textual>=8.0.0",
+    "uvicorn>=0.20.0",
 ]
+
+[project.optional-dependencies]
+games = ["pygame-ce>=2.5.0"]
+ai = ["openai>=1.0.0", "anthropic>=0.30.0"]
+all = ["pygame-ce>=2.5.0", "openai>=1.0.0", "anthropic>=0.30.0"]
+
+[project.scripts]
+zoya3 = "zoya_tui:main"
 
 [project.urls]
 Homepage = "https://github.com/notebookworrk-cyber/zoya-easy-code"
-Repository = "https://github.com/notebookworrk-cyber/zoya-easy-code"
-Documentation = "https://github.com/notebookworrk-cyber/zoya-easy-code"
-
-[project.optional-dependencies]
-game = ["pygame-ce>=2.6"]
-game3d = ["ursina>=7.0"]
-ai = ["google-generativeai>=0.8", "openai>=1.0"]
-all = [
-    "pygame-ce>=2.6",
-    "ursina>=7.0",
-    "google-generativeai>=0.8",
-    "openai>=1.0",
-]
-test = ["pytest>=8.0", "pytest-cov>=4.0", "prompt-toolkit>=3.0"]
-
-[project.scripts]
-zoya = "zoya.cli:main"
+Source = "https://github.com/notebookworrk-cyber/zoya-easy-code"
 
 [tool.setuptools.packages.find]
 include = ["zoya*"]
 
-[tool.setuptools.package-data]
-"zoya" = ["**/*"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
-addopts = "--cov=zoya --cov-report=term-missing --cov-fail-under=10"
-
-[tool.ruff]
-line-length = 100
-target-version = "py310"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "W", "B", "C4", "C90", "SIM", "T20", "TID"]
-ignore = ["S101", "T201", "E501", "C901", "E741", "E702", "E721", "B018", "SIM102", "SIM115"]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "T201"]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = true
-
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-ignore_missing_imports = true
-check_untyped_defs = true
+[tool.setuptools]
+py-modules = ["zoya_tui", "zoya_cli"]

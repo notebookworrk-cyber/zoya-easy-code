@@ -32,11 +32,11 @@ class ZoyaREPL:
 
     def _show_banner(self) -> None:
         banner = """
-╔══════════════════════════════════════╗
-║  Zoya Interactive REPL v1.0         ║
-║  Type :help for commands             ║
-║  Type :quit or Ctrl+C to exit       ║
-╚══════════════════════════════════════╝
++------------------------------------+
+| Zoya Interactive REPL v1.0         |
+| Type :help for commands             |
+| Type :quit or Ctrl+C to exit       |
++------------------------------------+
 """
         print(banner)
 
