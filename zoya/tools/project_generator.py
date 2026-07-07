@@ -1,3 +1,5 @@
+"""Project scaffolding tool for generating new Zoya project structures."""
+
 from __future__ import annotations
 
 import os
