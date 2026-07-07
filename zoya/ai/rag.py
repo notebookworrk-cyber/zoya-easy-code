@@ -1,3 +1,5 @@
+"""Retrieval-augmented generation pipeline for context-aware AI responses."""
+
 from __future__ import annotations
 
 import uuid
@@ -42,9 +44,7 @@ class DocumentChunker:
             sentences.append(remaining)
         return sentences
 
-    def chunk(
-        self, text: str, metadata: dict[str, Any] | None = None
-    ) -> list[Document]:
+    def chunk(self, text: str, metadata: dict[str, Any] | None = None) -> list[Document]:
         if not isinstance(text, str) or not text.strip():
             return []
 
@@ -62,13 +62,7 @@ class DocumentChunker:
 
             if current_size + sentence_len > self.chunk_size and current_chunk:
                 chunk_text = " ".join(current_chunk)
-                chunks.append(
-                    Document(
-                        text=chunk_text,
-                        metadata=dict(meta),
-                        id=str(uuid.uuid4()),
-                    )
-                )
+                chunks.append(Document(text=chunk_text, metadata=dict(meta), id=str(uuid.uuid4())))
 
                 overlap_sentences: list[str] = []
                 overlap_size = 0
@@ -86,13 +80,7 @@ class DocumentChunker:
 
         if current_chunk:
             chunk_text = " ".join(current_chunk)
-            chunks.append(
-                Document(
-                    text=chunk_text,
-                    metadata=dict(meta),
-                    id=str(uuid.uuid4()),
-                )
-            )
+            chunks.append(Document(text=chunk_text, metadata=dict(meta), id=str(uuid.uuid4())))
 
         return chunks
 
@@ -115,11 +103,7 @@ class RAGIndex:
             raise RAGError("Document text must be a non-empty string")
 
         doc_id = str(uuid.uuid4())
-        doc = Document(
-            text=text,
-            metadata=dict(metadata) if metadata else {},
-            id=doc_id,
-        )
+        doc = Document(text=text, metadata=dict(metadata) if metadata else {}, id=doc_id)
 
         self._all_texts.append(text)
 
@@ -143,11 +127,7 @@ class RAGIndex:
             doc_id = doc.get("id", str(uuid.uuid4()))
             if doc_id in self._documents:
                 doc_id = str(uuid.uuid4())
-            resolved = Document(
-                text=text,
-                metadata=dict(doc.get("metadata", {})),
-                id=doc_id,
-            )
+            resolved = Document(text=text, metadata=dict(doc.get("metadata", {})), id=doc_id)
             self._all_texts.append(text)
             self._documents[doc_id] = resolved
 
@@ -160,9 +140,7 @@ class RAGIndex:
 
         for doc_id, doc in list(self._documents.items()):
             if doc_id not in self._embeddings:
-                self._embeddings[doc_id] = self._embedding_model.embed(
-                    doc.get("text", "")
-                )
+                self._embeddings[doc_id] = self._embedding_model.embed(doc.get("text", ""))
 
     def search(self, query: str, k: int = 5) -> list[tuple[Document, float]]:
         if not self._documents:
@@ -245,7 +223,7 @@ class RAGRetriever:
     def query(self, query: str, k: int = 5) -> str:
         docs = self._index.search(query, k=k)
         context = self.format_context(docs)
-        return f"{self._system_prompt}\n\n" f"{context}\n" f"User question: {query}"
+        return f"{self._system_prompt}\n\n{context}\nUser question: {query}"
 
     def query_with_sources(self, query: str, k: int = 5) -> tuple[str, list[Document]]:
         results = self._index.search(query, k=k)
@@ -253,5 +231,5 @@ class RAGRetriever:
 
         sources: list[Document] = [doc for doc, _ in results]
 
-        prompt = f"{self._system_prompt}\n\n" f"{context}\n" f"User question: {query}"
+        prompt = f"{self._system_prompt}\n\n{context}\nUser question: {query}"
         return prompt, sources
