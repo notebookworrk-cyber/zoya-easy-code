@@ -1,3 +1,5 @@
+"""Cloud authentication service with token management and user verification."""
+
 import hashlib
 import secrets
 import threading
@@ -81,9 +83,7 @@ class AuthService:
         self._email_tokens: dict[str, str] = {}
 
     def _create_session(self, user_id: str) -> AuthSession:
-        existing_tokens = [
-            token for token, s in self._sessions.items() if s.user_id == user_id
-        ]
+        existing_tokens = [token for token, s in self._sessions.items() if s.user_id == user_id]
         while len(existing_tokens) >= self._config["max_sessions"]:
             oldest = existing_tokens.pop(0)
             removed = self._sessions.get(oldest)
@@ -95,10 +95,7 @@ class AuthService:
         refresh_token = _generate_token()
         expires_at = time.time() + self._config["session_duration"]
         session = AuthSession(
-            user_id=user_id,
-            token=token,
-            refresh_token=refresh_token,
-            expires_at=expires_at,
+            user_id=user_id, token=token, refresh_token=refresh_token, expires_at=expires_at
         )
         self._sessions[token] = session
         self._refresh_tokens[refresh_token] = token
@@ -133,11 +130,7 @@ class AuthService:
             cb(user)
 
     def register(
-        self,
-        email: str,
-        password: str,
-        username: str,
-        metadata: dict[str, Any] | None = None,
+        self, email: str, password: str, username: str, metadata: dict[str, Any] | None = None
     ) -> AuthUser:
         for u in self._users.values():
             if u.email == email:
@@ -190,13 +183,9 @@ class AuthService:
 
     def login_with_provider(self, provider: str, token: str) -> AuthSession:
         if provider not in self._config["oauth_providers"]:
-            raise AuthError(
-                f"OAuth provider not supported: {provider}", "UNSUPPORTED_PROVIDER"
-            )
+            raise AuthError(f"OAuth provider not supported: {provider}", "UNSUPPORTED_PROVIDER")
 
-        mock_id = (
-            f"oauth_{provider}_" f"{hashlib.sha256(token.encode()).hexdigest()[:12]}"
-        )
+        mock_id = f"oauth_{provider}_{hashlib.sha256(token.encode()).hexdigest()[:12]}"
 
         if mock_id not in self._users:
             now = time.time()
