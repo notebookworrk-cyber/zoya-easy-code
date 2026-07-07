@@ -1,3 +1,5 @@
+"""IDE debugger integration for breakpoint management and step-through execution."""
+
 from __future__ import annotations
 
 import re
@@ -142,21 +144,23 @@ class DebugAssistant:
             or "type" in error_type.lower()
         ):
             root_cause = self._analyze_type_error(source, error_msg, line_num)
-            fix_suggestion = "Check the types of operands and ensure they are compatible for the operation"
+            fix_suggestion = (
+                "Check the types of operands and ensure they are compatible for the operation"
+            )
             related_lines = self._find_related_type_lines(lines, line_num)
             similar_bugs = ["type_mismatch_in_operation", "incompatible_types"]
 
         elif "ZeroDivision" in error_msg or "division by zero" in error_msg.lower():
             root_cause = f"Division by zero at line {line_num}"
-            fix_suggestion = (
-                "Check that the divisor is not zero before performing the division"
-            )
+            fix_suggestion = "Check that the divisor is not zero before performing the division"
             related_lines = [line_num] if line_num > 0 else []
             similar_bugs = ["division_by_zero"]
 
         elif "IndexError" in error_type or "index" in error_msg.lower():
             root_cause = f"Index out of bounds at line {line_num}"
-            fix_suggestion = "Ensure the index is within the valid range (0 to length-1) before accessing"
+            fix_suggestion = (
+                "Ensure the index is within the valid range (0 to length-1) before accessing"
+            )
             related_lines = self._find_related_index_lines(lines, line_num)
             similar_bugs = ["index_out_of_bounds", "off_by_one"]
 
@@ -166,10 +170,10 @@ class DebugAssistant:
             or "undefined" in error_msg.lower()
         ):
             var_name = self._extract_var_from_error(error_msg)
-            root_cause = (
-                f"Variable '{var_name}' used before definition at line {line_num}"
+            root_cause = f"Variable '{var_name}' used before definition at line {line_num}"
+            fix_suggestion = (
+                f"Define '{var_name}' before use, or check for typos in the variable name"
             )
-            fix_suggestion = f"Define '{var_name}' before use, or check for typos in the variable name"
             related_lines = self._find_related_var_lines(lines, var_name, line_num)
             similar_bugs = ["undefined_variable", "typo_in_variable_name"]
 
@@ -185,29 +189,23 @@ class DebugAssistant:
             or "maximum recursion" in error_msg.lower()
             or "stack overflow" in error_msg.lower()
         ):
-            root_cause = "Recursion depth exceeded — possible missing base case or infinite recursion"
-            fix_suggestion = (
-                "Add a base case to stop recursion, or increase recursion limit"
+            root_cause = (
+                "Recursion depth exceeded — possible missing base case or infinite recursion"
             )
+            fix_suggestion = "Add a base case to stop recursion, or increase recursion limit"
             related_lines = self._find_recursive_functions(lines)
             similar_bugs = ["recursive_no_base_case", "stack_overflow"]
 
         elif "AttributeError" in error_type or "has no attribute" in error_msg.lower():
             attr = self._extract_attr_from_error(error_msg)
-            root_cause = (
-                f"Attempt to access non-existent attribute '{attr}' at line {line_num}"
-            )
-            fix_suggestion = (
-                "Check that the object has the attribute before accessing it"
-            )
+            root_cause = f"Attempt to access non-existent attribute '{attr}' at line {line_num}"
+            fix_suggestion = "Check that the object has the attribute before accessing it"
             related_lines = [line_num] if line_num > 0 else []
             similar_bugs = ["none_null_access", "missing_attribute"]
 
         else:
             root_cause = f"Runtime error at line {line_num}: {error_msg}"
-            fix_suggestion = (
-                "Review the error and check the surrounding code for logical issues"
-            )
+            fix_suggestion = "Review the error and check the surrounding code for logical issues"
             related_lines = self._find_context_lines(lines, line_num)
 
         for pattern in COMMON_BUG_PATTERNS:
@@ -263,9 +261,7 @@ class DebugAssistant:
             f'try {{\n    {stripped}\n}} catch err {{\n    {indent}    print "Error: " + err\n{indent}}}',
         )
 
-    def _gen_fix_text(
-        self, lines: list[str], error_line: int, indent: str, wrapped: str
-    ) -> str:
+    def _gen_fix_text(self, lines: list[str], error_line: int, indent: str, wrapped: str) -> str:
         result: list[str] = []
         for i, line in enumerate(lines):
             if i + 1 == error_line:
@@ -280,14 +276,11 @@ class DebugAssistant:
 
         for i, line in enumerate(lines):
             stripped = line.strip()
-            if re.search(
-                r"=\s*null\b|=\s*none\b|=\s*undefined\b", stripped, re.IGNORECASE
-            ):
+            if re.search(r"=\s*null\b|=\s*none\b|=\s*undefined\b", stripped, re.IGNORECASE):
                 if i + 1 < len(lines):
                     next_line = lines[i + 1]
                     if re.search(
-                        r"\b" + re.escape(stripped.split("=")[0].strip()) + r"\b",
-                        next_line,
+                        r"\b" + re.escape(stripped.split("=")[0].strip()) + r"\b", next_line
                     ):
                         null_lines.append(i + 1)
 
@@ -367,9 +360,7 @@ class DebugAssistant:
                 while j < len(lines) and brace_count > 0:
                     brace_count += lines[j].count("{") - lines[j].count("}")
                     if brace_count > 0:
-                        if re.search(
-                            rf"\b{re.escape(var)}\s*(?:\+\+|--|\+=|-=|\*=|/=)", lines[j]
-                        ):
+                        if re.search(rf"\b{re.escape(var)}\s*(?:\+\+|--|\+=|-=|\*=|/=)", lines[j]):
                             body_modifies_var = True
                     j += 1
 
@@ -394,8 +385,7 @@ class DebugAssistant:
                 continue
 
             frame_match = re.match(
-                r"^\s*(?:at\s+)?(\w+)\s*(?:at|\(|\:)\s*(?:line\s*)?(\d+)(?:\s*:\s*(\d+))?",
-                tb_line,
+                r"^\s*(?:at\s+)?(\w+)\s*(?:at|\(|\:)\s*(?:line\s*)?(\d+)(?:\s*:\s*(\d+))?", tb_line
             )
             if frame_match:
                 func = frame_match.group(1)
@@ -404,9 +394,7 @@ class DebugAssistant:
                 lines.append(f"  - In function `{func}` at line {line_num}:{col_num}")
 
             elif re.match(r"^\s*(?:File|file):", tb_line):
-                file_match = re.match(
-                    r"^\s*(?:File|file):\s*(.+?)(?:,\s*line\s*(\d+))?", tb_line
-                )
+                file_match = re.match(r"^\s*(?:File|file):\s*(.+?)(?:,\s*line\s*(\d+))?", tb_line)
                 if file_match:
                     fname = file_match.group(1)
                     fline = file_match.group(2) or "?"
@@ -475,9 +463,7 @@ class DebugAssistant:
                         related.append(i + 1)
         return related
 
-    def _find_related_var_lines(
-        self, lines: list[str], var: str, line_num: int
-    ) -> list[int]:
+    def _find_related_var_lines(self, lines: list[str], var: str, line_num: int) -> list[int]:
         related = []
         if line_num > 0:
             related.append(line_num)
@@ -502,18 +488,14 @@ class DebugAssistant:
                 body_has_recursion = False
                 while j < len(lines) and brace_count > 0:
                     brace_count += lines[j].count("{") - lines[j].count("}")
-                    if brace_count > 0 and re.search(
-                        rf"\b{re.escape(fn_name)}\s*\(", lines[j]
-                    ):
+                    if brace_count > 0 and re.search(rf"\b{re.escape(fn_name)}\s*\(", lines[j]):
                         body_has_recursion = True
                     j += 1
 
                 if body_has_recursion:
                     has_base_case = False
                     for k in range(i + 1, j):
-                        if re.search(r"\bif\s+", lines[k]) and re.search(
-                            r"\breturn\b", lines[k]
-                        ):
+                        if re.search(r"\bif\s+", lines[k]) and re.search(r"\breturn\b", lines[k]):
                             has_base_case = True
                             break
                     if not has_base_case:
