@@ -1,3 +1,5 @@
+"""Code generation engine for auto-creating boilerplate and templates in the IDE."""
+
 from __future__ import annotations
 
 import re
@@ -53,9 +55,7 @@ class CodeGenerator:
         prompt += f"Description: {description}\n\nGenerate Zoya code:"
 
         if isinstance(self.config.provider, MockProvider):
-            mock_response = self._mock_code(
-                f"fn generated() {{\n    // {description}\n}}"
-            )
+            mock_response = self._mock_code(f"fn generated() {{\n    // {description}\n}}")
             self.config.provider.responses["generate"] = mock_response
 
         response = self.config.provider.chat(
@@ -69,10 +69,7 @@ class CodeGenerator:
         return self._apply_style(code)
 
     def generate_function(
-        self,
-        description: str,
-        name: str | None = None,
-        params: list[str] | None = None,
+        self, description: str, name: str | None = None, params: list[str] | None = None
     ) -> str:
         param_str = ", ".join(params) if params else "..."
         name_str = name or "generated_function"
@@ -96,11 +93,7 @@ class CodeGenerator:
         code = self._clean_code(code)
         return self._apply_style(code)
 
-    def generate_class(
-        self,
-        description: str,
-        name: str | None = None,
-    ) -> str:
+    def generate_class(self, description: str, name: str | None = None) -> str:
         name_str = name or "GeneratedClass"
         prompt = (
             f"Generate a Zoya class named '{name_str}'.\n"
@@ -178,9 +171,7 @@ class CodeGenerator:
             self.config.provider.responses["explain"] = explanation
 
         response = self.config.provider.chat(
-            [{"role": "user", "content": prompt}],
-            temperature=0.5,
-            max_tokens=800,
+            [{"role": "user", "content": prompt}], temperature=0.5, max_tokens=800
         )
 
         return response.get("content", "No explanation generated.")
@@ -250,13 +241,13 @@ class CodeGenerator:
         return code
 
     def _default_generate_response(self) -> str:
-        return "fn generated() {\n" '    print("Generated function")\n' "}"
+        return 'fn generated() {\n    print("Generated function")\n}'
 
     def _default_function_response(self) -> str:
-        return "fn generated(params) {\n" "    return null\n" "}"
+        return "fn generated(params) {\n    return null\n}"
 
     def _default_class_response(self) -> str:
-        return "class GeneratedClass {\n" "    fn init() {\n" "    }\n" "}"
+        return "class GeneratedClass {\n    fn init() {\n    }\n}"
 
     def _default_test_response(self) -> str:
         return (
