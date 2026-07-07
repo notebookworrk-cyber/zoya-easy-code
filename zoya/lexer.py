@@ -1,3 +1,5 @@
+"""Lexer/tokenizer for the Zoya programming language."""
+
 from __future__ import annotations
 
 import re
