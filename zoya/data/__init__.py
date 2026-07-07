@@ -1,3 +1,5 @@
+"""Data package providing DataFrame, Series, and visualization capabilities."""
+
 from .dataframe import DataFrame, DataFrameError, GroupBy, GroupByColumn, Series
 from .visualization import Figure, Plot, VisualizationError, set_style
 
