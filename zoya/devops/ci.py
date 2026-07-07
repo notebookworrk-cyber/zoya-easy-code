@@ -1,3 +1,5 @@
+"""Continuous integration pipeline utilities for automated builds and testing."""
+
 from __future__ import annotations
 
 import time
@@ -115,9 +117,7 @@ class PipelineRunner:
         self._runs = {}
         self._cancelled = set()
 
-    def run(
-        self, pipeline: PipelineConfig, env: dict[str, str] | None = None
-    ) -> PipelineRun:
+    def run(self, pipeline: PipelineConfig, env: dict[str, str] | None = None) -> PipelineRun:
         merged_env = dict(pipeline.environment)
         if env is not None:
             merged_env.update(env)
@@ -156,9 +156,7 @@ class PipelineRunner:
 
             stage = stage_map.get(stage_name)
             if stage is None:
-                run.logs.append(
-                    f"[{run.id}] Stage '{stage_name}' not found — skipping."
-                )
+                run.logs.append(f"[{run.id}] Stage '{stage_name}' not found — skipping.")
                 continue
 
             result = self.run_stage(stage, env)
@@ -170,9 +168,7 @@ class PipelineRunner:
 
             if result.status == "failed" and not stage.allow_failure:
                 run.status = "failed"
-                run.logs.append(
-                    f"[{run.id}] Stage '{stage.name}' failed and allow_failure=False."
-                )
+                run.logs.append(f"[{run.id}] Stage '{stage.name}' failed and allow_failure=False.")
                 return run
 
         if run.status != "failed" and run.status != "cancelled":
