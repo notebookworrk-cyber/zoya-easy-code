@@ -1,3 +1,5 @@
+"""Code completion engine providing intelligent suggestions for Zoya IDE."""
+
 from __future__ import annotations
 
 import re
@@ -66,11 +68,7 @@ ZOYA_BUILTINS: list[str] = [
 ]
 
 ZOYA_SNIPPETS: list[dict[str, str]] = [
-    {
-        "label": "fn",
-        "insert": "fn $1($2) {\n    $3\n}",
-        "detail": "Function declaration",
-    },
+    {"label": "fn", "insert": "fn $1($2) {\n    $3\n}", "detail": "Function declaration"},
     {"label": "if", "insert": "if ($1) {\n    $2\n}", "detail": "If statement"},
     {
         "label": "ifelse",
@@ -79,25 +77,13 @@ ZOYA_SNIPPETS: list[dict[str, str]] = [
     },
     {"label": "while", "insert": "while ($1) {\n    $2\n}", "detail": "While loop"},
     {"label": "for", "insert": "for ($1; $2; $3) {\n    $4\n}", "detail": "For loop"},
-    {
-        "label": "foreach",
-        "insert": "for $1 in $2 {\n    $3\n}",
-        "detail": "For-each loop",
-    },
+    {"label": "foreach", "insert": "for $1 in $2 {\n    $3\n}", "detail": "For-each loop"},
     {"label": "loop", "insert": "loop $1 {\n    $2\n}", "detail": "Loop statement"},
     {"label": "fnmain", "insert": "fn main() {\n    $1\n}", "detail": "Main function"},
     {"label": "class", "insert": "class $1 {\n    $2\n}", "detail": "Class definition"},
-    {
-        "label": "interface",
-        "insert": "interface $1 {\n    $2\n}",
-        "detail": "Interface definition",
-    },
+    {"label": "interface", "insert": "interface $1 {\n    $2\n}", "detail": "Interface definition"},
     {"label": "enum", "insert": "enum $1 {\n    $2\n}", "detail": "Enum definition"},
-    {
-        "label": "match",
-        "insert": "match $1 {\n    $2 => $3\n}",
-        "detail": "Match expression",
-    },
+    {"label": "match", "insert": "match $1 {\n    $2 => $3\n}", "detail": "Match expression"},
     {
         "label": "switch",
         "insert": "switch ($1) {\n    case $2 {\n        $3\n    }\n    default {\n        $4\n    }\n}",
@@ -110,11 +96,7 @@ ZOYA_SNIPPETS: list[dict[str, str]] = [
     },
     {"label": "import", "insert": 'import "$1"', "detail": "Import statement"},
     {"label": "print", "insert": "print($1)", "detail": "Print statement"},
-    {
-        "label": "let",
-        "insert": "let $1 = $2",
-        "detail": "Variable declaration (mutable)",
-    },
+    {"label": "let", "insert": "let $1 = $2", "detail": "Variable declaration (mutable)"},
     {"label": "const", "insert": "const $1 = $2", "detail": "Constant declaration"},
 ]
 
@@ -139,15 +121,7 @@ LIST_METHODS: list[str] = [
     "length",
     "copy",
 ]
-DICT_METHODS: list[str] = [
-    "keys",
-    "values",
-    "items",
-    "contains",
-    "get",
-    "copy",
-    "clear",
-]
+DICT_METHODS: list[str] = ["keys", "values", "items", "contains", "get", "copy", "clear"]
 
 
 @dataclass
@@ -171,11 +145,7 @@ class CompletionItem:
 
 class CompletionEngine:
     def __init__(self, provider: LLMProvider | None = None):
-        self._provider = provider or MockProvider(
-            responses={
-                "complete": "suggestion",
-            }
-        )
+        self._provider = provider or MockProvider(responses={"complete": "suggestion"})
 
     def get_completions(self, context: CompletionContext) -> list[CompletionItem]:
         results: list[CompletionItem] = []
@@ -186,9 +156,7 @@ class CompletionEngine:
 
         stripped = context.prefix.rstrip()
         if stripped and stripped[-1] == ".":
-            results.extend(
-                self._get_dot_completions(context.source, context.line, context.col)
-            )
+            results.extend(self._get_dot_completions(context.source, context.line, context.col))
             return results
 
         results.extend(self._get_keyword_completions(prefix))
@@ -206,8 +174,7 @@ class CompletionEngine:
             results = [
                 r
                 for r in results
-                if r.label.startswith(prefix)
-                or r.label.lower().startswith(prefix.lower())
+                if r.label.startswith(prefix) or r.label.lower().startswith(prefix.lower())
             ]
 
         seen: set[str] = set()
@@ -224,21 +191,13 @@ class CompletionEngine:
         for kw in ZOYA_KEYWORDS:
             if not prefix or kw.startswith(prefix):
                 results.append(
-                    CompletionItem(
-                        label=kw,
-                        kind="keyword",
-                        detail="Zoya keyword",
-                        insert_text=kw,
-                    )
+                    CompletionItem(label=kw, kind="keyword", detail="Zoya keyword", insert_text=kw)
                 )
         for b in ZOYA_BUILTINS:
             if not prefix or b.startswith(prefix):
                 results.append(
                     CompletionItem(
-                        label=b,
-                        kind="function",
-                        detail="Built-in function",
-                        insert_text=b,
+                        label=b, kind="function", detail="Built-in function", insert_text=b
                     )
                 )
         return results
@@ -257,25 +216,18 @@ class CompletionEngine:
                 )
         return results
 
-    def _get_scope_completions(
-        self, source: str, scope: list[str]
-    ) -> list[CompletionItem]:
+    def _get_scope_completions(self, source: str, scope: list[str]) -> list[CompletionItem]:
         variables = self._parse_source_variables(source)
         results: list[CompletionItem] = []
         for name, kind in variables.items():
             results.append(
                 CompletionItem(
-                    label=name,
-                    kind=kind,
-                    detail="Defined in current scope",
-                    insert_text=name,
+                    label=name, kind=kind, detail="Defined in current scope", insert_text=name
                 )
             )
         return results
 
-    def _get_dot_completions(
-        self, source: str, line: int, col: int
-    ) -> list[CompletionItem]:
+    def _get_dot_completions(self, source: str, line: int, col: int) -> list[CompletionItem]:
         results: list[CompletionItem] = []
         lines = source.splitlines()
         if line - 1 >= len(lines):
@@ -381,34 +333,22 @@ class CompletionEngine:
     def _parse_source_variables(self, source: str) -> dict[str, str]:
         variables: dict[str, str] = {}
 
-        let_matches = re.finditer(
-            r"(?:^|\n)\s*(let|const)\s+(\w+)\s*=\s*([^;\n]+)",
-            source,
-        )
+        let_matches = re.finditer(r"(?:^|\n)\s*(let|const)\s+(\w+)\s*=\s*([^;\n]+)", source)
         for m in let_matches:
             name = m.group(2)
             val = m.group(3).strip()
             var_type = self._infer_type(val)
             variables[name] = var_type
 
-        fn_matches = re.finditer(
-            r"(?:^|\n)\s*fn\s+(\w+)\s*\(([^)]*)\)",
-            source,
-        )
+        fn_matches = re.finditer(r"(?:^|\n)\s*fn\s+(\w+)\s*\(([^)]*)\)", source)
         for m in fn_matches:
             variables[m.group(1)] = "function"
 
-        class_matches = re.finditer(
-            r"(?:^|\n)\s*class\s+(\w+)",
-            source,
-        )
+        class_matches = re.finditer(r"(?:^|\n)\s*class\s+(\w+)", source)
         for m in class_matches:
             variables[m.group(1)] = "class"
 
-        param_matches = re.finditer(
-            r"fn\s+\w+\s*\(([^)]*)\)",
-            source,
-        )
+        param_matches = re.finditer(r"fn\s+\w+\s*\(([^)]*)\)", source)
         for m in param_matches:
             params_str = m.group(1)
             if params_str.strip():
@@ -417,17 +357,11 @@ class CompletionEngine:
                     if param:
                         variables[param] = "variable"
 
-        for_loop_matches = re.finditer(
-            r"for\s+(\w+)\s+in\s+",
-            source,
-        )
+        for_loop_matches = re.finditer(r"for\s+(\w+)\s+in\s+", source)
         for m in for_loop_matches:
             variables[m.group(1)] = "variable"
 
-        catch_matches = re.finditer(
-            r"catch\s+\((\w+)\)",
-            source,
-        )
+        catch_matches = re.finditer(r"catch\s+\((\w+)\)", source)
         for m in catch_matches:
             variables[m.group(1)] = "variable"
 
