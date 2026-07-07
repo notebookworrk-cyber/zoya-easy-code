@@ -1,12 +1,12 @@
+"""Cloud database service for managing distributed data storage and queries."""
+
 import copy
 import secrets
 import time
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-FieldType = Literal[
-    "string", "number", "boolean", "date", "object", "array", "reference"
-]
+FieldType = Literal["string", "number", "boolean", "date", "object", "array", "reference"]
 QueryOperator = Literal[
     "==", "!=", ">", "<", ">=", "<=", "in", "contains", "startsWith", "endsWith"
 ]
@@ -92,29 +92,13 @@ def _matches_filter(doc: StoredDocument, filter: QueryFilter) -> bool:
     elif filter.operator == "!=":
         return value != fv
     elif filter.operator == ">":
-        return (
-            isinstance(value, (int, float))
-            and isinstance(fv, (int, float))
-            and value > fv
-        )
+        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value > fv
     elif filter.operator == "<":
-        return (
-            isinstance(value, (int, float))
-            and isinstance(fv, (int, float))
-            and value < fv
-        )
+        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value < fv
     elif filter.operator == ">=":
-        return (
-            isinstance(value, (int, float))
-            and isinstance(fv, (int, float))
-            and value >= fv
-        )
+        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value >= fv
     elif filter.operator == "<=":
-        return (
-            isinstance(value, (int, float))
-            and isinstance(fv, (int, float))
-            and value <= fv
-        )
+        return isinstance(value, (int, float)) and isinstance(fv, (int, float)) and value <= fv
     elif filter.operator == "in":
         return isinstance(fv, list) and value in fv
     elif filter.operator == "contains":
@@ -158,9 +142,7 @@ class DatabaseService:
         col = self._collections[collection]
         doc_id = secrets.token_hex(8)
         now = time.time()
-        doc = StoredDocument(
-            id=doc_id, data=copy.deepcopy(data), created_at=now, updated_at=now
-        )
+        doc = StoredDocument(id=doc_id, data=copy.deepcopy(data), created_at=now, updated_at=now)
         col[doc_id] = doc
         return {"id": doc_id, **data, "created_at": now}
 
@@ -197,9 +179,7 @@ class DatabaseService:
         else:
             col.pop(id, None)
 
-    def query(
-        self, collection: str, options: QueryOptions | None = None
-    ) -> QueryResult:
+    def query(self, collection: str, options: QueryOptions | None = None) -> QueryResult:
         self._ensure_collection(collection)
         col = self._collections[collection]
         items = list(col.values())
@@ -216,7 +196,7 @@ class DatabaseService:
                 items.sort(
                     key=lambda i, f=order.field, d=order.direction: (
                         i.data.get(f) if i.data.get(f) is not None else ""
-                    ),
+                    )
                 )
                 if order.direction == "desc":
                     items.reverse()
@@ -228,11 +208,7 @@ class DatabaseService:
 
         data = [{"id": doc.id, **copy.deepcopy(doc.data)} for doc in sliced]
         return QueryResult(
-            data=data,
-            total=total,
-            offset=offset,
-            limit=limit,
-            has_more=(offset + limit < total),
+            data=data, total=total, offset=offset, limit=limit, has_more=(offset + limit < total)
         )
 
     def find_by_ids(self, collection: str, ids: list[str]) -> list[dict[str, Any]]:
@@ -249,9 +225,7 @@ class DatabaseService:
         result = self.query(collection, QueryOptions(filters=[filter], limit=1))
         return result.data[0] if result.data else None
 
-    def batch_create(
-        self, collection: str, items: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def batch_create(self, collection: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [self.create(collection, item) for item in items]
 
     def batch_delete(self, collection: str, ids: list[str]) -> int:
@@ -276,9 +250,7 @@ class DatabaseService:
 
     def create_collection(self, schema: CollectionSchema) -> None:
         if schema.name in self._schemas:
-            raise DatabaseError(
-                f"Collection already exists: {schema.name}", "ALREADY_EXISTS"
-            )
+            raise DatabaseError(f"Collection already exists: {schema.name}", "ALREADY_EXISTS")
         self._schemas[schema.name] = schema
         if schema.name not in self._collections:
             self._collections[schema.name] = {}
@@ -302,18 +274,12 @@ class DatabaseService:
 
     def commit_transaction(self, transaction_id: str) -> None:
         if transaction_id not in self._active_transactions:
-            raise DatabaseError(
-                f"Transaction not found: {transaction_id}",
-                "TRANSACTION_NOT_FOUND",
-            )
+            raise DatabaseError(f"Transaction not found: {transaction_id}", "TRANSACTION_NOT_FOUND")
         self._active_transactions.pop(transaction_id, None)
 
     def rollback_transaction(self, transaction_id: str) -> None:
         snapshot = self._active_transactions.get(transaction_id)
         if not snapshot:
-            raise DatabaseError(
-                f"Transaction not found: {transaction_id}",
-                "TRANSACTION_NOT_FOUND",
-            )
+            raise DatabaseError(f"Transaction not found: {transaction_id}", "TRANSACTION_NOT_FOUND")
         self._collections = snapshot
         self._active_transactions.pop(transaction_id, None)
