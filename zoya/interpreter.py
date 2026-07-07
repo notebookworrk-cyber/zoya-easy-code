@@ -416,7 +416,7 @@ class Interpreter:
                     return m
                 if node.attr in obj._fields:
                     return obj._fields[node.attr]
-                raise RuntimeError_(
+                raise ZoyaAttributeError(
                     f"'{obj.klass.name}' has no attribute '{node.attr}'",
                     line=line,
                     col=col,
@@ -433,7 +433,7 @@ class Interpreter:
                     )
                 if node.attr in parent.methods:
                     return parent.methods[node.attr]
-                raise RuntimeError_(
+                raise ZoyaAttributeError(
                     f"super: '{parent.name}' has no attribute '{node.attr}'",
                     line=line,
                     col=col,
@@ -468,7 +468,7 @@ class Interpreter:
                 return obj[int(index)]
             if isinstance(obj, dict):
                 return obj[index]
-            raise RuntimeError_(
+            raise ZoyaIndexError(
                 f"Cannot index {type(obj).__name__}", line=line, col=col, file=self.file
             )
 
@@ -744,7 +744,7 @@ class Interpreter:
                 if callable(field):
                     return field(*args)
                 return field
-            raise RuntimeError_(
+            raise ZoyaAttributeError(
                 f"'{obj.klass.name}' has no method '{method}'",
                 line=mc.line,
                 col=mc.col,
@@ -760,7 +760,7 @@ class Interpreter:
             if method in parent.methods:
                 func = parent.methods[method]
                 return self._call_function_internal(func, obj._instance, mc.args)
-            raise RuntimeError_(
+            raise ZoyaAttributeError(
                 f"super: '{parent.name}' has no method '{method}'",
                 line=mc.line,
                 col=mc.col,
@@ -782,7 +782,7 @@ class Interpreter:
                 return fn(*args)
             return fn
 
-        raise RuntimeError_(
+        raise ZoyaAttributeError(
             f"'{type(obj).__name__}' has no method '{method}'",
             line=mc.line,
             col=mc.col,
