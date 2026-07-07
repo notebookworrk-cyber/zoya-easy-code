@@ -51,8 +51,12 @@ from .errors import (
     ContinueException,
     ReturnException,
     RuntimeError_,
+    ZoyaAttributeError,
+    ZoyaIndexError,
+    ZoyaNameError,
     ZoyaRuntimeError,
     ZoyaTypeError,
+    ZoyaZeroDivisionError,
 )
 
 
@@ -197,7 +201,7 @@ class Interpreter:
             name = node.name
             if self.current_env.has(name):
                 return self.current_env.get(name)
-            raise RuntimeError_(f"'{name}' is not defined", line=line, col=col, file=self.file)
+            raise ZoyaNameError(name=name, line=line, col=col, file=self.file)
 
         if isinstance(node, Assign):
             val = self._eval(node.expr)
