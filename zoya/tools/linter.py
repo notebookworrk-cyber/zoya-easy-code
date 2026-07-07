@@ -1,3 +1,5 @@
+"""Static analysis linter for detecting issues in Zoya code."""
+
 from __future__ import annotations
 
 from zoya.ast import (
