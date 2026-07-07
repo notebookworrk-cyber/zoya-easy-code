@@ -1,3 +1,5 @@
+"""Cloud leaderboard service for ranking and scoring in multiplayer games."""
+
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -82,11 +84,7 @@ class LeaderboardService:
         self._submission_counts: dict[str, dict[str, int]] = {}
 
     def _compute_score(
-        self,
-        leaderboard_id: str,
-        user_id: str,
-        new_score: float,
-        strategy: UpdateStrategy,
+        self, leaderboard_id: str, user_id: str, new_score: float, strategy: UpdateStrategy
     ) -> float:
         current = self._scores.get(leaderboard_id, {}).get(user_id)
         if current is None:
@@ -136,9 +134,7 @@ class LeaderboardService:
         metadata: dict[str, Any] | None = None,
     ) -> LeaderboardEntry:
         if leaderboard_id not in self._definitions:
-            raise LeaderboardError(
-                f"Leaderboard '{leaderboard_id}' not found", code="NOT_FOUND"
-            )
+            raise LeaderboardError(f"Leaderboard '{leaderboard_id}' not found", code="NOT_FOUND")
 
         definition = self._definitions[leaderboard_id]
         now = time.time()
@@ -153,9 +149,7 @@ class LeaderboardService:
             self._submission_counts[leaderboard_id][user_id] = 0
         self._submission_counts[leaderboard_id][user_id] += 1
 
-        new_score = self._compute_score(
-            leaderboard_id, user_id, score, definition.update_strategy
-        )
+        new_score = self._compute_score(leaderboard_id, user_id, score, definition.update_strategy)
         self._scores[leaderboard_id][user_id] = new_score
         self._timestamps[leaderboard_id][user_id] = now
 
@@ -204,9 +198,7 @@ class LeaderboardService:
                 return entries[start:end]
         return []
 
-    def get_friends_leaderboard(
-        self, leaderboard_id: str, user_id: str
-    ) -> list[LeaderboardEntry]:
+    def get_friends_leaderboard(self, leaderboard_id: str, user_id: str) -> list[LeaderboardEntry]:
         _mock_friends: dict[str, list[str]] = {
             "user_alice": ["user_bob", "user_charlie"],
             "user_bob": ["user_alice", "user_diana"],
@@ -226,9 +218,7 @@ class LeaderboardService:
 
     def create_leaderboard(self, definition: LeaderboardDefinition) -> None:
         if definition.id in self._definitions:
-            raise LeaderboardError(
-                f"Leaderboard '{definition.id}' already exists", code="CONFLICT"
-            )
+            raise LeaderboardError(f"Leaderboard '{definition.id}' already exists", code="CONFLICT")
         self._definitions[definition.id] = definition
         self._scores[definition.id] = {}
         self._metadata[definition.id] = {}
