@@ -1,3 +1,5 @@
+"""Cloud storage service for file upload, download, and asset management."""
+
 import builtins
 import mimetypes
 import os
@@ -86,11 +88,7 @@ class StorageService:
         return name
 
     def upload(
-        self,
-        data: bytes,
-        path: str,
-        options: UploadOptions | None = None,
-        bucket: str = "default",
+        self, data: bytes, path: str, options: UploadOptions | None = None, bucket: str = "default"
     ) -> UploadResult:
         self._get_bucket_or_raise(bucket)
         options = options or UploadOptions()
@@ -191,10 +189,7 @@ class StorageService:
         return obj
 
     def list(
-        self,
-        prefix: str | None = None,
-        recursive: bool = False,
-        bucket: str = "default",
+        self, prefix: str | None = None, recursive: bool = False, bucket: str = "default"
     ) -> list[StorageObject]:
         self._get_bucket_or_raise(bucket)
         results: list[StorageObject] = []
@@ -214,9 +209,7 @@ class StorageService:
         dest_normalized = _normalize_path(dest)
         obj = self._buckets[bucket].get(src_normalized)
         if obj is None:
-            raise StorageError(
-                f"Source not found: {src_normalized}", "OBJECT_NOT_FOUND"
-            )
+            raise StorageError(f"Source not found: {src_normalized}", "OBJECT_NOT_FOUND")
         data = self._bucket_data[bucket][src_normalized]
         now = time.time()
         new_obj = StorageObject(
@@ -237,12 +230,7 @@ class StorageService:
         self.delete(source, bucket)
         return url
 
-    def get_signed_url(
-        self,
-        path: str,
-        expires_in: int = 3600,
-        bucket: str = "default",
-    ) -> str:
+    def get_signed_url(self, path: str, expires_in: int = 3600, bucket: str = "default") -> str:
         self._get_bucket_or_raise(bucket)
         normalized = _normalize_path(path)
         if normalized not in self._buckets[bucket]:
