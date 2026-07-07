@@ -38,8 +38,7 @@ def extract_comments(source: str, line_num: int) -> str:
         elif stripped.startswith("#"):
             comments.insert(0, stripped[1:].strip())
         elif stripped == "":
-            i -= 1
-            continue
+            break
         else:
             break
         i -= 1

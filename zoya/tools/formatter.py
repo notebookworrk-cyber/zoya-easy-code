@@ -54,10 +54,7 @@ _OP_STR = {
     "IN": " in ",
 }
 
-_UNARY_STR = {
-    "MINUS": "-",
-    "NOT": "not ",
-}
+_UNARY_STR = {"MINUS": "-", "NOT": "not "}
 
 
 def format_source(source: str) -> str:
@@ -107,15 +104,16 @@ def _format_expr(node: ASTNode) -> str:
         parts = []
         parts.append(_format_expr(node.start) if node.start else "")
         parts.append(_format_expr(node.stop) if node.stop else "")
-        parts.append(_format_expr(node.step) if node.step else "")
+        if node.step:
+            parts.append(_format_expr(node.step))
+        while parts and not parts[-1]:
+            parts.pop()
         return f"{_format_expr(node.obj)}[{':'.join(parts)}]"
     if isinstance(node, List_):
         elems = ", ".join(_format_expr(e) for e in node.elements)
         return f"[{elems}]"
     if isinstance(node, Dict_):
-        pairs = ", ".join(
-            f"{_format_expr(k)}: {_format_expr(v)}" for k, v in node.pairs
-        )
+        pairs = ", ".join(f"{_format_expr(k)}: {_format_expr(v)}" for k, v in node.pairs)
         return f"{{{pairs}}}"
     if isinstance(node, InterpolatedString):
         return _format_interp_string(node)
@@ -180,12 +178,8 @@ def _format_stmt(node: ASTNode, indent: int = 0) -> str:
                 and len(else_block.statements) == 1
                 and isinstance(else_block.statements[0], If)
             ):
-                lines[-1] += (
-                    " else if " + _format_expr(else_block.statements[0].cond) + " {"
-                )
-                lines.append(
-                    _format_block_body(else_block.statements[0].body, indent + 1)
-                )
+                lines[-1] += " else if " + _format_expr(else_block.statements[0].cond) + " {"
+                lines.append(_format_block_body(else_block.statements[0].body, indent + 1))
                 lines.append(prefix + "}")
             else:
                 lines.append(prefix + "else {")
@@ -265,10 +259,7 @@ def _format_block_body(node: ASTNode, indent: int) -> str:
 
 def _escape_string(value: str) -> str:
     escaped = (
-        value.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("\n", "\\n")
-        .replace("\t", "\\t")
+        value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t")
     )
     return f'"{escaped}"'
 

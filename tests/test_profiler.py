@@ -28,7 +28,7 @@ class TestProfileSource:
         assert result["total_time"] >= 0
 
     def test_error_does_not_crash(self) -> None:
-        result = profile_source("x = \n")
+        result = profile_source("x = unknown_var + 1\n")
         assert "total_time" in result
 
     def test_empty_source(self) -> None:
