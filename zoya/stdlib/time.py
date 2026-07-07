@@ -1,3 +1,5 @@
+"""Zoya stdlib time module."""
+
 from __future__ import annotations
 
 import time as _time
