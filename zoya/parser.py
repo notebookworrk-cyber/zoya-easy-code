@@ -530,6 +530,14 @@ class Parser:
             self.consume("IN")
             right = self.parse_term()
             left = BinOp(op="NOT_IN", left=left, right=right, line=tok.line, col=tok.col)
+        if self.peek().kind == "IS":
+            tok = self.consume()
+            op = "IS"
+            if self.peek().kind == "NOT":
+                self.consume()
+                op = "IS_NOT"
+            right = self.parse_term()
+            left = BinOp(op=op, left=left, right=right, line=tok.line, col=tok.col)
         return left
 
     def parse_term(self) -> ASTNode:

@@ -272,6 +272,10 @@ class Interpreter:
                 return left in right if hasattr(right, "__contains__") else False
             if op == "NOT_IN":
                 return left not in right if hasattr(right, "__contains__") else True
+            if op == "IS":
+                return left is right
+            if op == "IS_NOT":
+                return left is not right
             raise RuntimeError_(f"Unknown operator: {op}", line=line, col=col, file=self.file)
 
         if isinstance(node, UnaryOp):

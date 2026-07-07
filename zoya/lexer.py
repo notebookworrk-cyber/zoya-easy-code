@@ -60,6 +60,7 @@ TOKEN_SPEC: list[tuple[str, str]] = [
     ("NOT", r"\bnot\b"),
     ("TRUE", r"\btrue\b"),
     ("FALSE", r"\bfalse\b"),
+    ("IS", r"\bis\b"),
     ("IN", r"\bin\b"),
     ("POW", r"\*\*"),
     ("EQ", r"=="),
@@ -131,6 +132,7 @@ KEYWORD_TOKENS: dict[str, str] = {
     "not": "NOT",
     "true": "TRUE",
     "false": "FALSE",
+    "is": "IS",
     "in": "IN",
 }
 
