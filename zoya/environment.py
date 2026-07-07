@@ -6,6 +6,8 @@ from typing import Any
 
 
 class Environment:
+    """Manages variable scoping with parent-child chain semantics."""
+
     def __init__(self, parent: Environment | None = None) -> None:
         self._vars: dict[str, Any] = {}
         self.parent = parent
