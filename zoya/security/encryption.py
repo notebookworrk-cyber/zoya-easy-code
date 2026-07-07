@@ -1,3 +1,5 @@
+"""Encryption utilities providing AES cipher, hashing, and key generation."""
+
 import base64
 import hashlib
 import hmac as _hmac
@@ -16,9 +18,7 @@ class AESCipher:
         keystream = b""
         counter = 0
         while len(keystream) < length:
-            block = hashlib.sha256(
-                key.encode("utf-8") + iv + struct.pack(">I", counter)
-            ).digest()
+            block = hashlib.sha256(key.encode("utf-8") + iv + struct.pack(">I", counter)).digest()
             keystream += block
             counter += 1
         return keystream[:length]
@@ -38,8 +38,7 @@ class AESCipher:
             block = data[i : i + cls.BLOCK_SIZE]
             xored = bytes(a ^ b for a, b in zip(block, prev, strict=False))
             enc_block = bytes(
-                a ^ b
-                for a, b in zip(xored, keystream[i : i + cls.BLOCK_SIZE], strict=False)
+                a ^ b for a, b in zip(xored, keystream[i : i + cls.BLOCK_SIZE], strict=False)
             )
             ciphertext += enc_block
             prev = enc_block
@@ -59,8 +58,7 @@ class AESCipher:
         for i in range(0, len(data), cls.BLOCK_SIZE):
             block = data[i : i + cls.BLOCK_SIZE]
             xored = bytes(
-                a ^ b
-                for a, b in zip(block, keystream[i : i + cls.BLOCK_SIZE], strict=False)
+                a ^ b for a, b in zip(block, keystream[i : i + cls.BLOCK_SIZE], strict=False)
             )
             dec_block = bytes(a ^ b for a, b in zip(xored, prev, strict=False))
             plaintext += dec_block
@@ -94,14 +92,10 @@ class Hasher:
 
     @staticmethod
     def hmac(key: str, data: str) -> str:
-        return _hmac.new(
-            key.encode("utf-8"), data.encode("utf-8"), hashlib.sha256
-        ).hexdigest()
+        return _hmac.new(key.encode("utf-8"), data.encode("utf-8"), hashlib.sha256).hexdigest()
 
     @staticmethod
-    def pbkdf2(
-        password: str, salt: str = None, iterations: int = 100000
-    ) -> tuple[str, str]:
+    def pbkdf2(password: str, salt: str = None, iterations: int = 100000) -> tuple[str, str]:
         if salt is None:
             salt = base64.b64encode(os.urandom(16)).decode("ascii")
         key = hashlib.pbkdf2_hmac(
@@ -110,9 +104,7 @@ class Hasher:
         return (key.hex(), salt)
 
     @staticmethod
-    def verify_pbkdf2(
-        password: str, hash: str, salt: str, iterations: int = 100000
-    ) -> bool:
+    def verify_pbkdf2(password: str, hash: str, salt: str, iterations: int = 100000) -> bool:
         key = hashlib.pbkdf2_hmac(
             "sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations
         )
