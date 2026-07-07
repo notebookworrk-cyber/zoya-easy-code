@@ -1,3 +1,5 @@
+"""Multiplayer networking service for real-time game sessions and matchmaking."""
+
 import copy
 import secrets
 import time
@@ -142,25 +144,19 @@ class MultiplayerService:
         )
 
     def cancel_matchmaking(self) -> None:
-        self._matchmaking_queue[:] = [
-            u for u in self._matchmaking_queue if u != "user_alice"
-        ]
+        self._matchmaking_queue[:] = [u for u in self._matchmaking_queue if u != "user_alice"]
         self._matchmaking_users.discard("user_alice")
 
     def get_match(self, match_id: str) -> Match:
         match = self._matches.get(match_id)
         if match is None:
-            raise MultiplayerError(
-                f"Match '{match_id}' not found", code="MATCH_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Match '{match_id}' not found", code="MATCH_NOT_FOUND")
         return copy.deepcopy(match)
 
     def leave_match(self, match_id: str) -> None:
         match = self._matches.get(match_id)
         if match is None:
-            raise MultiplayerError(
-                f"Match '{match_id}' not found", code="MATCH_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Match '{match_id}' not found", code="MATCH_NOT_FOUND")
         match.status = MatchStatus.CANCELLED
         match.ended_at = time.time()
         for uid in match.players:
@@ -168,29 +164,20 @@ class MultiplayerService:
 
     def create_lobby(self, name: str, config: MatchConfig) -> Lobby:
         lobby_id = secrets.token_hex(8)
-        lobby = Lobby(
-            id=lobby_id,
-            name=name,
-            config=config,
-            host_user_id="user_alice",
-        )
+        lobby = Lobby(id=lobby_id, name=name, config=config, host_user_id="user_alice")
         self._lobbies[lobby_id] = lobby
         return lobby
 
     def join_lobby(self, lobby_id: str) -> Lobby:
         lobby = self._lobbies.get(lobby_id)
         if lobby is None:
-            raise MultiplayerError(
-                f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND")
         if lobby.status != LobbyStatus.OPEN:
             raise MultiplayerError("Lobby is not open", code="LOBBY_CLOSED")
 
         party_id = self._player_parties.get("user_alice")
         player = LobbyPlayer(
-            user_id="user_alice",
-            username=_get_username("user_alice"),
-            party_id=party_id,
+            user_id="user_alice", username=_get_username("user_alice"), party_id=party_id
         )
         lobby.players.append(player)
         self._player_lobby["user_alice"] = lobby_id
@@ -199,18 +186,14 @@ class MultiplayerService:
     def leave_lobby(self, lobby_id: str) -> None:
         lobby = self._lobbies.get(lobby_id)
         if lobby is None:
-            raise MultiplayerError(
-                f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND")
         lobby.players = [p for p in lobby.players if p.user_id != "user_alice"]
         self._player_lobby.pop("user_alice", None)
 
     def get_lobby(self, lobby_id: str) -> Lobby:
         lobby = self._lobbies.get(lobby_id)
         if lobby is None:
-            raise MultiplayerError(
-                f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND")
         return copy.deepcopy(lobby)
 
     def list_lobbies(self) -> list[Lobby]:
@@ -219,9 +202,7 @@ class MultiplayerService:
     def set_ready(self, lobby_id: str, ready: bool) -> None:
         lobby = self._lobbies.get(lobby_id)
         if lobby is None:
-            raise MultiplayerError(
-                f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND")
         for player in lobby.players:
             if player.user_id == "user_alice":
                 player.ready = ready
@@ -231,9 +212,7 @@ class MultiplayerService:
     def start_match(self, lobby_id: str) -> Match:
         lobby = self._lobbies.get(lobby_id)
         if lobby is None:
-            raise MultiplayerError(
-                f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND"
-            )
+            raise MultiplayerError(f"Lobby '{lobby_id}' not found", code="LOBBY_NOT_FOUND")
         if lobby.host_user_id != "user_alice":
             raise MultiplayerError("Only the host can start a match", code="NOT_HOST")
 
@@ -241,8 +220,7 @@ class MultiplayerService:
         min_players = lobby.config.min_players if lobby.config else 2
         if ready_count < min_players:
             raise MultiplayerError(
-                f"Not enough ready players ({ready_count}/{min_players})",
-                code="NOT_ENOUGH_PLAYERS",
+                f"Not enough ready players ({ready_count}/{min_players})", code="NOT_ENOUGH_PLAYERS"
             )
 
         match = Match(
