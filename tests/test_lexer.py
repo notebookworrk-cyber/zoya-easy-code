@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from zoya.errors import LexError
 from zoya.lexer import Token, tokenize
 
 
@@ -189,14 +192,13 @@ def test_multi_comment_skipped():
 
 
 def test_mismatch_token():
-    tokens = tokenize("@")
-    assert len(tokens) == 2
-    assert tokens[0].kind == "MISMATCH"
-    assert tokens[0].value == "@"
+    from zoya.errors import LexError
 
-    tokens = tokenize("`")
-    assert tokens[0].kind == "MISMATCH"
-    assert tokens[0].value == "`"
+    with pytest.raises(LexError):
+        tokenize("@")
+
+    with pytest.raises(LexError):
+        tokenize("`")
 
 
 def test_multi_line_program():
@@ -238,16 +240,7 @@ def test_list_literal():
     source = "[1, 2, 3]"
     tokens = tokenize(source)
     kinds = [t.kind for t in tokens if t.kind != "SKIP"]
-    assert kinds == [
-        "LBRACKET",
-        "NUMBER",
-        "COMMA",
-        "NUMBER",
-        "COMMA",
-        "NUMBER",
-        "RBRACKET",
-        "EOF",
-    ]
+    assert kinds == ["LBRACKET", "NUMBER", "COMMA", "NUMBER", "COMMA", "NUMBER", "RBRACKET", "EOF"]
 
 
 def test_dict_literal():
@@ -376,11 +369,10 @@ def test_multi_comment_with_newlines():
 
 
 def test_mismatch_dollar():
-    tokens = tokenize("$invalid")
-    assert tokens[0].kind == "MISMATCH"
-    assert tokens[0].value == "$"
+    with pytest.raises(LexError):
+        tokenize("$invalid")
 
 
 def test_mismatch_backslash():
-    tokens = tokenize("\\invalid")
-    assert tokens[0].kind == "MISMATCH"
+    with pytest.raises(LexError):
+        tokenize("\\invalid")

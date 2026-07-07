@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .errors import LexError
+
 
 @dataclass
 class Token:
@@ -87,9 +89,8 @@ TOKEN_SPEC: list[tuple[str, str]] = [
     ("MISMATCH", r"."),
 ]
 
-TOKEN_RE = re.compile(
-    "|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC)
-)
+
+TOKEN_RE = re.compile("|".join(f"(?P<{name}>{pattern})" for name, pattern in TOKEN_SPEC))
 
 KEYWORD_TOKENS: dict[str, str] = {
     "fn": "FN",
@@ -168,6 +169,8 @@ def tokenize(source: str, file: str = "") -> list[Token]:
             tokens.append(Token(kind, value, line, col))
             col += len(value)
         else:
+            if kind == "MISMATCH":
+                raise LexError(f"Unexpected character: {value!r}", line, col)
             tokens.append(Token(kind, value, line, col))
             col += len(value)
 
