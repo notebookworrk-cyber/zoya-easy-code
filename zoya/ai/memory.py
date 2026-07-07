@@ -1,3 +1,5 @@
+"""Memory management for AI agents with persistent storage and retrieval."""
+
 import json
 import math
 import time
@@ -45,9 +47,7 @@ class ConversationMemory:
         self._history.clear()
 
     def count_tokens(self) -> int:
-        total_chars = sum(
-            len(item["content"]) + len(item["role"]) for item in self._history
-        )
+        total_chars = sum(len(item["content"]) + len(item["role"]) for item in self._history)
         return math.ceil(total_chars / 4)
 
     def summarize(self, max_tokens: int = 1000) -> None:
@@ -56,9 +56,7 @@ class ConversationMemory:
         target = self._max_tokens if self._max_tokens > 0 else max_tokens
         while self.count_tokens() > target and len(self._history) > 1:
             oldest = self._history.pop(0)
-            char_limit = (
-                self._max_tokens * 4 if self._max_tokens > 0 else max_tokens * 4
-            )
+            char_limit = self._max_tokens * 4 if self._max_tokens > 0 else max_tokens * 4
             summary_content = oldest["content"][:char_limit]
             if len(oldest["content"]) > char_limit:
                 summary_content += "..."
@@ -161,10 +159,7 @@ class AgentMemory:
                 "history": self.conversation.get_history(),
                 "max_tokens": self.conversation._max_tokens,
             },
-            "knowledge": {
-                "data": self.knowledge._data,
-                "metadata": self.knowledge._metadata,
-            },
+            "knowledge": {"data": self.knowledge._data, "metadata": self.knowledge._metadata},
         }
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(serialized, f, indent=2, ensure_ascii=False, default=str)
@@ -173,9 +168,7 @@ class AgentMemory:
         with open(filepath, encoding="utf-8") as f:
             serialized = json.load(f)
         conv_data = serialized.get("conversation", {})
-        self.conversation = ConversationMemory(
-            max_tokens=conv_data.get("max_tokens", 0)
-        )
+        self.conversation = ConversationMemory(max_tokens=conv_data.get("max_tokens", 0))
         for item in conv_data.get("history", []):
             self.conversation._history.append(
                 {
