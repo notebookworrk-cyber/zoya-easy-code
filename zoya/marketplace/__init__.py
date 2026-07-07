@@ -1,3 +1,5 @@
+"""Marketplace package for publishing and discovering Zoya extensions."""
+
 __version__ = "0.1.0"
 
 import re
@@ -160,10 +162,7 @@ class MarketplaceRegistry:
         query_lower = query.lower()
         results: list[PackageInfo] = []
         for pkg in self._packages.values():
-            if (
-                query_lower in pkg.name.lower()
-                or query_lower in pkg.description.lower()
-            ):
+            if query_lower in pkg.name.lower() or query_lower in pkg.description.lower():
                 if tags is None or any(t in pkg.tags for t in tags):
                     results.append(pkg)
         return results
@@ -172,31 +171,23 @@ class MarketplaceRegistry:
         return [pkg for pkg in self._packages.values() if tag in pkg.tags]
 
     def list_popular(self, limit: int = 10) -> list[PackageInfo]:
-        sorted_pkgs = sorted(
-            self._packages.values(), key=lambda p: p.downloads, reverse=True
-        )
+        sorted_pkgs = sorted(self._packages.values(), key=lambda p: p.downloads, reverse=True)
         return sorted_pkgs[:limit]
 
     def list_recent(self, limit: int = 10) -> list[PackageInfo]:
-        sorted_pkgs = sorted(
-            self._packages.values(), key=lambda p: p.created_at, reverse=True
-        )
+        sorted_pkgs = sorted(self._packages.values(), key=lambda p: p.created_at, reverse=True)
         return sorted_pkgs[:limit]
 
     def install(self, name: str, version: str = "latest") -> dict[str, str]:
         if name not in self._packages:
             raise PackageError(f"Package '{name}' not found")
         if name in self._deprecated:
-            raise PackageError(
-                f"Package '{name}' is deprecated: {self._deprecated[name]}"
-            )
+            raise PackageError(f"Package '{name}' is deprecated: {self._deprecated[name]}")
         versions = self._versions.get(name, {})
         if not versions:
             raise PackageError(f"No versions published for '{name}'")
         if version == "latest":
-            selected = max(
-                versions.keys(), key=lambda v: [int(x) for x in v.split(".")]
-            )
+            selected = max(versions.keys(), key=lambda v: [int(x) for x in v.split(".")])
         elif version in versions:
             selected = version
         else:
@@ -235,15 +226,9 @@ class MarketplaceRegistry:
         pkg = self._packages.get(name)
         if pkg is None:
             return {}
-        tree: dict[str, Any] = {
-            "name": pkg.name,
-            "version": pkg.version,
-            "dependencies": [],
-        }
+        tree: dict[str, Any] = {"name": pkg.name, "version": pkg.version, "dependencies": []}
         for dep in pkg.dependencies:
-            dep_name = (
-                dep.split(">")[0].split("<")[0].split("=")[0].split("@")[0].strip()
-            )
+            dep_name = dep.split(">")[0].split("<")[0].split("=")[0].split("@")[0].strip()
             tree["dependencies"].append(self.get_dependency_tree(dep_name))
         return tree
 
@@ -253,9 +238,7 @@ class MarketplaceRegistry:
         for name, pkg in self._packages.items():
             versions = self._versions.get(name, {})
             if versions:
-                latest = max(
-                    versions.keys(), key=lambda v: [int(x) for x in v.split(".")]
-                )
+                latest = max(versions.keys(), key=lambda v: [int(x) for x in v.split(".")])
                 if resolver.compare_versions(latest, pkg.version) > 0:
                     updates.append((name, pkg.version, latest))
         return updates
