@@ -1,3 +1,5 @@
+"""Real-time communication service for WebSocket connections and events."""
+
 import contextlib
 import threading
 import time
@@ -103,11 +105,7 @@ class RealtimeService:
                 self._presence_callbacks[channel] = []
             self._channel_subscribers[channel].append(callback)
 
-    def unsubscribe(
-        self,
-        channel: str,
-        callback: Callback | None = None,
-    ):
+    def unsubscribe(self, channel: str, callback: Callback | None = None):
         with self._lock:
             if channel not in self._channel_subscribers:
                 return
@@ -115,9 +113,7 @@ class RealtimeService:
                 self._channel_subscribers[channel] = []
             else:
                 self._channel_subscribers[channel] = [
-                    cb
-                    for cb in self._channel_subscribers[channel]
-                    if cb is not callback
+                    cb for cb in self._channel_subscribers[channel] if cb is not callback
                 ]
             if not self._channel_subscribers[channel]:
                 del self._channel_subscribers[channel]
@@ -128,10 +124,7 @@ class RealtimeService:
         if not self._connected:
             raise RealtimeError("Cannot publish: not connected", "NOT_CONNECTED")
         event = RealtimeEvent(
-            type=RealtimeEventType.MESSAGE,
-            channel=channel,
-            data=data,
-            timestamp=time.time(),
+            type=RealtimeEventType.MESSAGE, channel=channel, data=data, timestamp=time.time()
         )
         self._dispatch(event)
 
@@ -143,16 +136,10 @@ class RealtimeService:
         username: str = "anonymous",
     ):
         if not self._connected:
-            raise RealtimeError(
-                "Cannot update presence: not connected", "NOT_CONNECTED"
-            )
+            raise RealtimeError("Cannot update presence: not connected", "NOT_CONNECTED")
         now = time.time()
         info = PresenceInfo(
-            user_id=user_id,
-            username=username,
-            status=status,
-            last_seen=now,
-            metadata=metadata,
+            user_id=user_id, username=username, status=status, last_seen=now, metadata=metadata
         )
         with self._lock:
             for channel in self._channel_subscribers:
@@ -192,11 +179,7 @@ class RealtimeService:
         with self._lock:
             for name, subs in self._channel_subscribers.items():
                 results.append(
-                    RealtimeChannelInfo(
-                        name=name,
-                        subscribers=len(subs),
-                        ephemeral=False,
-                    )
+                    RealtimeChannelInfo(name=name, subscribers=len(subs), ephemeral=False)
                 )
         return results
 
