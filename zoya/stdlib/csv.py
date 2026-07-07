@@ -1,3 +1,5 @@
+"""Zoya stdlib CSV module."""
+
 from __future__ import annotations
 
 import csv as _csv
@@ -42,11 +44,6 @@ def load_module(interpreter: Any) -> Any:
         except Exception as e:
             return f"Error: {e}"
 
-    funcs = {
-        "read": read,
-        "write": write,
-        "parse": parse,
-        "format": format,
-    }
+    funcs = {"read": read, "write": write, "parse": parse, "format": format}
 
     return ZoyaModule("csv", funcs)
