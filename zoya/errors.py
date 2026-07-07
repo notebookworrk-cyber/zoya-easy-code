@@ -1,3 +1,5 @@
+"""Error types and exception handling for the Zoya language."""
+
 from __future__ import annotations
 
 
