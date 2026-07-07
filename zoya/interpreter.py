@@ -252,6 +252,10 @@ class Interpreter:
                 if isinstance(left, (int, float)) and isinstance(right, (int, float)):
                     return left / right
                 raise RuntimeError_("Division requires numbers", line=line, col=col, file=self.file)
+            if op == "FLOORDIV":
+                if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                    return left // right
+                raise RuntimeError_("Division requires numbers", line=line, col=col, file=self.file)
             if op == "GT":
                 return left > right
             if op == "LT":

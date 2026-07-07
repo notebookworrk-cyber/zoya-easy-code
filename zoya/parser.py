@@ -60,10 +60,7 @@ class Parser:
         tok = self.peek()
         if kind is not None and tok.kind != kind:
             raise ParseError(
-                f"Expected '{kind}', got '{tok.kind}'",
-                line=tok.line,
-                col=tok.col,
-                file=self.file,
+                f"Expected '{kind}', got '{tok.kind}'", line=tok.line, col=tok.col, file=self.file
             )
         self.pos += 1
         return tok
@@ -92,10 +89,7 @@ class Parser:
         if kind == "EOF":
             return None
         if kind == "FN":
-            if (
-                self.pos + 1 < len(self.tokens)
-                and self.tokens[self.pos + 1].kind == "IDENT"
-            ):
+            if self.pos + 1 < len(self.tokens) and self.tokens[self.pos + 1].kind == "IDENT":
                 return self.parse_fn_def()
             return self.parse_assign_or_expr()
         if kind == "RETURN":
@@ -217,9 +211,7 @@ class Parser:
             iterable = self.parse_expr()
             self.skip_newlines()
             body = self.parse_block()
-            return ForEach(
-                var=var, iterable=iterable, body=body, line=tok.line, col=tok.col
-            )
+            return ForEach(var=var, iterable=iterable, body=body, line=tok.line, col=tok.col)
 
         init: ASTNode | None = None
         if not self.check("SEMICOLON"):
@@ -236,9 +228,7 @@ class Parser:
             update = self.parse_assign_or_expr_semicolon()
 
         body = self.parse_block()
-        return ForLoop(
-            init=init, cond=cond, update=update, body=body, line=tok.line, col=tok.col
-        )
+        return ForLoop(init=init, cond=cond, update=update, body=body, line=tok.line, col=tok.col)
 
     def parse_foreach(self) -> ForEach:
         tok = self.consume("FOREACH")
@@ -247,9 +237,7 @@ class Parser:
         iterable = self.parse_expr()
         self.skip_newlines()
         body = self.parse_block()
-        return ForEach(
-            var=var, iterable=iterable, body=body, line=tok.line, col=tok.col
-        )
+        return ForEach(var=var, iterable=iterable, body=body, line=tok.line, col=tok.col)
 
     def parse_assign_or_expr_semicolon(self) -> ASTNode:
         expr = self.parse_expr()
@@ -302,13 +290,7 @@ class Parser:
                     file=self.file,
                 )
         self.consume("RBRACE")
-        return Switch(
-            expr=expr,
-            cases=cases,
-            default_body=default_body,
-            line=tok.line,
-            col=tok.col,
-        )
+        return Switch(expr=expr, cases=cases, default_body=default_body, line=tok.line, col=tok.col)
 
     def parse_try(self) -> Try:
         tok = self.consume("TRY")
@@ -327,20 +309,14 @@ class Parser:
                     var = self.consume("IDENT").value
                 self.skip_newlines()
                 catch_body = self.parse_block()
-                catches.append(
-                    Catch(var=var, body=catch_body, line=tok.line, col=tok.col)
-                )
+                catches.append(Catch(var=var, body=catch_body, line=tok.line, col=tok.col))
             elif self.check("FINALLY"):
                 self.consume("FINALLY")
                 self.skip_newlines()
                 final_body = self.parse_block()
                 break
         return Try(
-            try_body=try_body,
-            catches=catches,
-            final_body=final_body,
-            line=tok.line,
-            col=tok.col,
+            try_body=try_body, catches=catches, final_body=final_body, line=tok.line, col=tok.col
         )
 
     def parse_throw(self) -> Throw:
@@ -373,9 +349,7 @@ class Parser:
                     arms.append(arm)
         self.skip_newlines()
         self.consume("RBRACE")
-        return Match(
-            expr=expr, arms=arms, else_arm=else_arm, line=tok.line, col=tok.col
-        )
+        return Match(expr=expr, arms=arms, else_arm=else_arm, line=tok.line, col=tok.col)
 
     def _parse_match_item(self) -> tuple[ASTNode | None, ASTNode]:
         if self.check("DEFAULT"):
@@ -401,9 +375,7 @@ class Parser:
                 variants.append(self.consume("IDENT").value)
         self.consume("RBRACE")
         self.expect_newline()
-        return EnumDef(
-            name=name_tok.value, variants=variants, line=tok.line, col=tok.col
-        )
+        return EnumDef(name=name_tok.value, variants=variants, line=tok.line, col=tok.col)
 
     def parse_class(self) -> ClassDef:
         tok = self.consume("CLASS")
@@ -418,9 +390,7 @@ class Parser:
         self.skip_newlines()
         body = self.parse_block()
         self.expect_newline()
-        return ClassDef(
-            name=name_tok.value, parent=parent, body=body, line=tok.line, col=tok.col
-        )
+        return ClassDef(name=name_tok.value, parent=parent, body=body, line=tok.line, col=tok.col)
 
     def parse_interface(self) -> InterfaceDef:
         tok = self.consume("INTERFACE")
@@ -445,9 +415,7 @@ class Parser:
                 break
         self.consume("RBRACE")
         self.expect_newline()
-        return InterfaceDef(
-            name=name_tok.value, methods=methods, line=tok.line, col=tok.col
-        )
+        return InterfaceDef(name=name_tok.value, methods=methods, line=tok.line, col=tok.col)
 
     def parse_break(self) -> Break:
         tok = self.consume("BREAK")
@@ -556,9 +524,7 @@ class Parser:
         while self.peek().kind in ("EQ", "NE", "GT", "LT", "GTE", "LTE", "IN"):
             tok = self.consume()
             right = self.parse_term()
-            left = BinOp(
-                op=tok.kind, left=left, right=right, line=tok.line, col=tok.col
-            )
+            left = BinOp(op=tok.kind, left=left, right=right, line=tok.line, col=tok.col)
         return left
 
     def parse_term(self) -> ASTNode:
@@ -572,12 +538,10 @@ class Parser:
 
     def parse_factor(self) -> ASTNode:
         left = self.parse_power()
-        while self.peek().kind in ("MUL", "DIV", "MOD"):
+        while self.peek().kind in ("MUL", "DIV", "MOD", "FLOORDIV"):
             tok = self.consume()
             right = self.parse_power()
-            left = BinOp(
-                op=tok.kind, left=left, right=right, line=tok.line, col=tok.col
-            )
+            left = BinOp(op=tok.kind, left=left, right=right, line=tok.line, col=tok.col)
         return left
 
     def parse_power(self) -> ASTNode:
@@ -614,9 +578,7 @@ class Parser:
                     name = self.consume("IDENT").value
                     self.consume("ASSIGN")
                     val = self.parse_expr()
-                    args.append(
-                        NamedArg(name=name, value=val, line=tok.line, col=tok.col)
-                    )
+                    args.append(NamedArg(name=name, value=val, line=tok.line, col=tok.col))
                 else:
                     args.append(self.parse_expr())
         return args
@@ -637,11 +599,7 @@ class Parser:
                     method_args: list[ASTNode] = self._parse_call_args()
                     self.consume("RPAREN")
                     expr = MethodCall(
-                        obj=expr,
-                        method=attr,
-                        args=method_args,
-                        line=expr.line,
-                        col=expr.col,
+                        obj=expr, method=attr, args=method_args, line=expr.line, col=expr.col
                     )
                 else:
                     expr = GetAttr(obj=expr, attr=attr, line=expr.line, col=expr.col)
@@ -659,12 +617,7 @@ class Parser:
                             step = self.parse_expr()
                     self.consume("RBRACKET")
                     expr = Slice(
-                        obj=expr,
-                        start=start,
-                        stop=stop,
-                        step=step,
-                        line=expr.line,
-                        col=expr.col,
+                        obj=expr, start=start, stop=stop, step=step, line=expr.line, col=expr.col
                     )
                 else:
                     index = self.parse_expr()
@@ -686,9 +639,7 @@ class Parser:
                         )
                     else:
                         self.consume("RBRACKET")
-                        expr = Index(
-                            obj=expr, index=index, line=expr.line, col=expr.col
-                        )
+                        expr = Index(obj=expr, index=index, line=expr.line, col=expr.col)
             else:
                 break
         return expr
@@ -698,9 +649,7 @@ class Parser:
 
         if tok.kind == "NUMBER":
             self.consume()
-            value: int | float = (
-                float(tok.value) if "." in tok.value else int(tok.value)
-            )
+            value: int | float = float(tok.value) if "." in tok.value else int(tok.value)
             return Number(value=value, line=tok.line, col=tok.col)
         if tok.kind == "STRING":
             self.consume()
@@ -737,9 +686,9 @@ class Parser:
                                 format_spec = expr_text[idx + 1 :]
                                 expr_text = expr_text[:idx]
                                 break
-                    expr_tokens = __import__(
-                        "zoya.lexer", fromlist=["tokenize"]
-                    ).tokenize(expr_text)
+                    expr_tokens = __import__("zoya.lexer", fromlist=["tokenize"]).tokenize(
+                        expr_text
+                    )
                     expr_ast = Parser(expr_tokens).parse()
                     if expr_ast.statements:
                         parts.append(expr_ast.statements[0])
@@ -881,9 +830,7 @@ class Parser:
             self.skip_newlines()
             body = self.parse_block()
 
-        return Lambda(
-            params=params, body=body, defaults=defaults, line=tok.line, col=tok.col
-        )
+        return Lambda(params=params, body=body, defaults=defaults, line=tok.line, col=tok.col)
 
     def skip_newlines(self) -> None:
         while self.check("NEWLINE"):

@@ -67,6 +67,7 @@ TOKEN_SPEC: list[tuple[str, str]] = [
     ("PLUS", r"\+"),
     ("MINUS", r"-"),
     ("MUL", r"\*"),
+    ("FLOORDIV", r"//"),
     ("DIV", r"/"),
     ("MOD", r"%"),
     ("GTE", r">="),
