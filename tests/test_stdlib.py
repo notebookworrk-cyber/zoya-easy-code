@@ -342,3 +342,56 @@ class TestIOModule:
     def test_format(self):
         result = _run('import "io" as io\nio.format("Hello %s", "Zoya")\n')
         assert result == "Hello Zoya"
+
+class TestBuiltinFunctions:
+    def test_hex(self):
+        result = _run('hex(255)\n')
+        assert result == "0xff"
+
+    def test_bin(self):
+        result = _run('bin(8)\n')
+        assert result == "0b1000"
+
+    def test_sum(self):
+        result = _run('sum([1, 2, 3, 4])\n')
+        assert result == 10
+
+    def test_abs(self):
+        result = _run('abs(-42)\n')
+        assert result == 42
+
+    def test_round(self):
+        result = _run('round(3.14159, 2)\n')
+        assert result == 3.14
+
+    def test_min_max(self):
+        result = _run('min(5, 2, 8)\n')
+        assert result == 2
+        result = _run('max(5, 2, 8)\n')
+        assert result == 8
+
+    def test_type(self):
+        result = _run('type(42)\n')
+        assert result == "int"
+        result = _run('type("hello")\n')
+        assert result == "str"
+        result = _run('type([1, 2])\n')
+        assert result == "list"
+
+    def test_bool(self):
+        result = _run('bool(0)\n')
+        assert result is False
+        result = _run('bool(1)\n')
+        assert result is True
+        result = _run('bool("")\n')
+        assert result is False
+        result = _run('bool("hello")\n')
+        assert result is True
+
+    def test_int_float_str(self):
+        result = _run('int("42")\n')
+        assert result == 42
+        result = _run('float("3.14")\n')
+        assert result == 3.14
+        result = _run('str(123)\n')
+        assert result == "123"
