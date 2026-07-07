@@ -1,3 +1,5 @@
+"""Input validation and sanitization utilities for secure data handling."""
+
 import ipaddress
 import json as _json
 import re
@@ -55,9 +57,7 @@ class Validator:
 
     _hex_color_re = re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
     _hex_string_re = re.compile(r"^[0-9a-fA-F]+$")
-    _base64_re = re.compile(
-        r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
-    )
+    _base64_re = re.compile(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
 
     @staticmethod
     def email(email: str) -> bool:
@@ -77,12 +77,7 @@ class Validator:
                 return False
             if not allow_local:
                 hostname = parsed.hostname or ""
-                if hostname in (
-                    "localhost",
-                    "127.0.0.1",
-                    "::1",
-                    "0.0.0.0",
-                ):
+                if hostname in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
                     return False
                 if hostname.endswith(".local") or hostname.endswith(".internal"):
                     return False
@@ -140,9 +135,7 @@ class Validator:
         has_upper = bool(re.search(r"[A-Z]", password))
         has_lower = bool(re.search(r"[a-z]", password))
         has_digit = bool(re.search(r"\d", password))
-        has_special = bool(
-            re.search(r"[!@#$%^&*(),.?\":{}|<>_~`\-+=\[\]\\;'/]", password)
-        )
+        has_special = bool(re.search(r"[!@#$%^&*(),.?\":{}|<>_~`\-+=\[\]\\;'/]", password))
         min_length = len(password) >= 8
         score = sum([has_upper, has_lower, has_digit, has_special, min_length])
         feedback = []
@@ -301,12 +294,7 @@ class Sanitizer:
         if not isinstance(input, str):
             return ""
         input = input.strip()
-        dangerous_schemes = (
-            "javascript:",
-            "vbscript:",
-            "data:",
-            "file:",
-        )
+        dangerous_schemes = ("javascript:", "vbscript:", "data:", "file:")
         for scheme in dangerous_schemes:
             if input.lower().startswith(scheme):
                 return ""
