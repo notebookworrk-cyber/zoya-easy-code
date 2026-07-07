@@ -10,24 +10,36 @@ from zoya.ast import (
     Boolean,
     Break,
     Call,
+    Catch,
+    ClassDef,
     Continue,
     Dict_,
+    EnumDef,
+    ForEach,
+    ForLoop,
     Function,
     GetAttr,
+    InterfaceDef,
     Ident,
     If,
     Import,
     Index,
     Input,
     InterpolatedString,
+    Lambda,
     List_,
     Loop,
+    Match,
     MethodCall,
+    NamedArg,
     Number,
     Print,
     Return,
     Slice,
     String,
+    Switch,
+    Throw,
+    Try,
     UnaryOp,
     While,
 )
@@ -245,7 +257,56 @@ def _check_unused_vars(ast: ASTNode, issues: list[dict]) -> None:
                         walk(part[0])
                     else:
                         walk(part)
-        elif isinstance(node, (Import, Number, String, Boolean, Break, Continue)):
+        elif isinstance(node, ForEach):
+            definitions.append((node.var, node.line, node.col))
+            walk(node.iterable)
+            walk(node.body)
+        elif isinstance(node, ForLoop):
+            if node.init:
+                walk(node.init)
+            if node.cond:
+                walk(node.cond)
+            if node.update:
+                walk(node.update)
+            walk(node.body)
+        elif isinstance(node, Switch):
+            walk(node.expr)
+            for case_expr, case_body in node.cases:
+                walk(case_expr)
+                walk(case_body)
+            if node.default_body:
+                walk(node.default_body)
+        elif isinstance(node, Try):
+            walk(node.try_body)
+            for c in node.catches:
+                if c.var:
+                    definitions.append((c.var, c.line, c.col))
+                if c.body:
+                    walk(c.body)
+            if node.final_body:
+                walk(node.final_body)
+        elif isinstance(node, Throw):
+            walk(node.expr)
+        elif isinstance(node, Match):
+            walk(node.expr)
+            for pattern, body in node.arms:
+                walk(pattern)
+                walk(body)
+            if node.else_arm:
+                walk(node.else_arm)
+        elif isinstance(node, ClassDef):
+            if node.body:
+                walk(node.body)
+        elif isinstance(node, Lambda):
+            for p in node.params:
+                definitions.append((p, node.line, node.col))
+            walk(node.body)
+        elif isinstance(node, NamedArg):
+            definitions.append((node.name, node.line, node.col))
+            walk(node.value)
+        elif isinstance(
+            node, (Import, Number, String, Boolean, Break, Continue, Catch, EnumDef, InterfaceDef)
+        ):
             pass
 
     walk(ast)
