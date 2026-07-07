@@ -1,3 +1,5 @@
+"""Performance profiler for measuring and analyzing Zoya code execution."""
+
 from __future__ import annotations
 
 import contextlib
