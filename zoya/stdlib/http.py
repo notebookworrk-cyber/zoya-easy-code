@@ -1,3 +1,5 @@
+"""Zoya stdlib HTTP module."""
+
 from __future__ import annotations
 
 import contextlib
@@ -25,25 +27,17 @@ def load_module(interpreter: Any) -> Any:
             req = Request(url, data=data_bytes, headers=full_headers, method=method)
             with urlopen(req, timeout=30) as response:
                 body = response.read().decode("utf-8")
-                return {
-                    "status": response.status,
-                    "headers": dict(response.headers),
-                    "body": body,
-                }
+                return {"status": response.status, "headers": dict(response.headers), "body": body}
         except Exception as e:
             return {"status": 0, "headers": {}, "body": f"Error: {e}"}
 
     def get(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
         return _request("GET", url, headers=headers)
 
-    def post(
-        url: str, data: str = "", headers: dict[str, str] | None = None
-    ) -> dict[str, Any]:
+    def post(url: str, data: str = "", headers: dict[str, str] | None = None) -> dict[str, Any]:
         return _request("POST", url, data, headers)
 
-    def put(
-        url: str, data: str = "", headers: dict[str, str] | None = None
-    ) -> dict[str, Any]:
+    def put(url: str, data: str = "", headers: dict[str, str] | None = None) -> dict[str, Any]:
         return _request("PUT", url, data, headers)
 
     def delete(url: str, headers: dict[str, str] | None = None) -> dict[str, Any]:
@@ -60,12 +54,6 @@ def load_module(interpreter: Any) -> Any:
                 result["body"] = _json.loads(result["body"])
         return result
 
-    funcs = {
-        "get": get,
-        "post": post,
-        "put": put,
-        "delete": delete,
-        "json": json,
-    }
+    funcs = {"get": get, "post": post, "put": put, "delete": delete, "json": json}
 
     return ZoyaModule("http", funcs)
