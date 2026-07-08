@@ -7,6 +7,7 @@ from zoya.ast import (
     AssignAttr,
     AssignIndex,
     ASTNode,
+    AugAssign,
     BinOp,
     Block,
     Boolean,
@@ -155,7 +156,10 @@ def _check_unused_vars(ast: ASTNode, issues: list[dict]) -> None:
     references: set[str] = set()
 
     def walk(node: ASTNode, in_def: bool = False) -> None:
-        if isinstance(node, Assign):
+        if isinstance(node, AugAssign):
+            definitions.append((node.name, node.line, node.col))
+            walk(node.expr)
+        elif isinstance(node, Assign):
             definitions.append((node.name, node.line, node.col))
             walk(node.expr)
         elif isinstance(node, Function):

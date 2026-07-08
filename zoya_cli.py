@@ -275,6 +275,13 @@ def cmd_cloud(args: argparse.Namespace) -> None:
         print("  Unknown cloud action. Use: db, auth")
 
 
+def cmd_studio(args: argparse.Namespace) -> None:
+    """Launch Zoya Studio."""
+    from zoya_studio.core.app import main as studio_main
+
+    studio_main(args.path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="zoya-cli",
@@ -288,11 +295,17 @@ def main() -> None:
               zoya-cli security hash "my password"
               zoya-cli game run snake
               zoya-cli init my-project
+              zoya studio
         """),
     )
     parser.add_argument("--version", action="store_true", help="Show version")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # studio
+    studio_parser = subparsers.add_parser("studio", help="Launch Zoya Studio IDE")
+    studio_parser.add_argument("path", nargs="?", default=None, help="Project path to open")
+    studio_parser.set_defaults(func=cmd_studio)
 
     # web
     web_parser = subparsers.add_parser("web", help="Start a web server")

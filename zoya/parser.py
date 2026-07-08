@@ -7,6 +7,7 @@ from .ast import (
     AssignAttr,
     AssignIndex,
     ASTNode,
+    AugAssign,
     BinOp,
     Block,
     Boolean,
@@ -454,6 +455,36 @@ class Parser:
         return Block(statements)
 
     def parse_assign_or_expr(self) -> ASTNode:
+        _AUG_ASSIGN_TOKENS = {
+            "PLUS_ASSIGN",
+            "MINUS_ASSIGN",
+            "MUL_ASSIGN",
+            "DIV_ASSIGN",
+            "MOD_ASSIGN",
+            "POW_ASSIGN",
+        }
+        _AUG_OP_MAP = {
+            "PLUS_ASSIGN": "PLUS",
+            "MINUS_ASSIGN": "MINUS",
+            "MUL_ASSIGN": "MUL",
+            "DIV_ASSIGN": "DIV",
+            "MOD_ASSIGN": "MOD",
+            "POW_ASSIGN": "POW",
+        }
+
+        if (
+            self.check("IDENT")
+            and self.pos + 1 < len(self.tokens)
+            and self.tokens[self.pos + 1].kind in _AUG_ASSIGN_TOKENS
+        ):
+            tok = self.consume("IDENT")
+            op_token = self.consume()
+            expr = self.parse_expr()
+            self.expect_newline()
+            return AugAssign(
+                name=tok.value, op=_AUG_OP_MAP[op_token.kind], expr=expr, line=tok.line, col=tok.col
+            )
+
         if (
             self.check("IDENT")
             and self.pos + 1 < len(self.tokens)
@@ -466,6 +497,18 @@ class Parser:
             return Assign(name=tok.value, expr=expr, line=tok.line, col=tok.col)
 
         expr = self.parse_expr()
+        if isinstance(expr, Ident) and self.peek().kind in _AUG_ASSIGN_TOKENS:
+            op_token = self.consume()
+            value = self.parse_expr()
+            self.expect_newline()
+            return AugAssign(
+                name=expr.name,
+                op=_AUG_OP_MAP[op_token.kind],
+                expr=value,
+                line=expr.line,
+                col=expr.col,
+            )
+
         if isinstance(expr, Ident) and self.check("ASSIGN"):
             self.consume("ASSIGN")
             value = self.parse_expr()

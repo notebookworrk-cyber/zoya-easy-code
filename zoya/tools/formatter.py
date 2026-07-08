@@ -7,6 +7,7 @@ from zoya.ast import (
     AssignAttr,
     AssignIndex,
     ASTNode,
+    AugAssign,
     BinOp,
     Block,
     Boolean,
@@ -129,6 +130,17 @@ def _format_expr(node: ASTNode) -> str:
         if node.prompt:
             return f"input {_format_expr(node.prompt)}"
         return "input"
+    if isinstance(node, AugAssign):
+        _AUG_OP_STR = {
+            "PLUS": " += ",
+            "MINUS": " -= ",
+            "MUL": " *= ",
+            "DIV": " /= ",
+            "MOD": " %= ",
+            "POW": " **= ",
+        }
+        op_str = _AUG_OP_STR.get(node.op, f" {node.op}= ")
+        return f"{node.name}{op_str}{_format_expr(node.expr)}"
     if isinstance(node, Assign):
         return f"{node.name} = {_format_expr(node.expr)}"
     if isinstance(node, AssignIndex):
@@ -156,7 +168,9 @@ def _format_expr(node: ASTNode) -> str:
 def _format_stmt(node: ASTNode, indent: int = 0) -> str:
     prefix = "    " * indent
 
-    if isinstance(node, (Assign, AssignIndex, AssignAttr, Break, Continue, Pass, Import)):
+    if isinstance(
+        node, (Assign, AssignIndex, AssignAttr, AugAssign, Break, Continue, Pass, Import)
+    ):
         return prefix + _format_expr(node) + "\n"
 
     if isinstance(node, Print):

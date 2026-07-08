@@ -17,7 +17,37 @@ pip install -e .
 ```bash
 zoya hello.zoya    # Run a script
 zoya --repl        # Interactive REPL
+zoya studio        # Launch Zoya Studio (AI-powered terminal IDE)
 ```
+
+## 🎨 Zoya Studio
+
+Zoya Studio is a complete AI-powered terminal IDE for Zoya development. Launch it with:
+
+```bash
+zoya studio
+# or
+zoya-studio
+# or
+python -m zoya_studio
+```
+
+Features:
+- **Full-screen TUI** with Textual
+- **Left sidebar**: Projects, Files, Git, Search
+- **Center panel**: Editor, Terminal, Build, Debug, Tests, Logs
+- **Right sidebar**: AI Workspace (Chat, Memory, Tasks, Docs, Errors)
+- **Bottom bar**: Universal command/chat input
+- **Multi-provider AI**: OpenAI, Anthropic, Gemini, Ollama, LM Studio, OpenRouter, Custom
+- **Project memory**: Auto-loaded per project
+- **Git integration**: Status, commit, push, pull, branches
+- **Package manager**: Install/update/remove packages
+- **Templates**: 8 project templates
+- **Plugins**: Extensible plugin system
+- **Themes**: 5 built-in themes
+- **Security**: Encrypted API key storage
+
+See [docs/ZOYA_STUDIO.md](docs/ZOYA_STUDIO.md) for full documentation.
 
 ```python
 from zoya.web import create_app

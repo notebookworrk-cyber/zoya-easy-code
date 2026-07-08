@@ -17,22 +17,43 @@ authors = [
 dependencies = [
     "textual>=8.0.0",
     "uvicorn>=0.20.0",
+    "typer>=0.12.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
 games = ["pygame-ce>=2.5.0"]
-ai = ["openai>=1.0.0", "anthropic>=0.30.0"]
-all = ["pygame-ce>=2.5.0", "openai>=1.0.0", "anthropic>=0.30.0"]
+ai = ["openai>=1.0.0", "anthropic>=0.30.0", "google-generativeai>=0.3.0"]
+all = ["pygame-ce>=2.5.0", "openai>=1.0.0", "anthropic>=0.30.0", "google-generativeai>=0.3.0"]
+crypto = ["cryptography>=42.0.0"]
+studio = ["typer>=0.12.0", "rich>=13.0.0", "cryptography>=42.0.0"]
+full = ["pygame-ce>=2.5.0", "openai>=1.0.0", "anthropic>=0.30.0", "google-generativeai>=0.3.0", "typer>=0.12.0", "rich>=13.0.0", "cryptography>=42.0.0"]
 
 [project.scripts]
 zoya3 = "zoya_tui:main"
+zoya = "zoya_cli:entrypoint"
+zoya-studio = "zoya_studio.core.app:main"
+zoya-studio-cli = "zoya_studio.core.app:main"
 
 [project.urls]
 Homepage = "https://github.com/notebookworrk-cyber/zoya-easy-code"
 Source = "https://github.com/notebookworrk-cyber/zoya-easy-code"
 
 [tool.setuptools.packages.find]
-include = ["zoya*"]
+include = ["zoya*", "zoya_studio*"]
 
 [tool.setuptools]
 py-modules = ["zoya_tui", "zoya_cli"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

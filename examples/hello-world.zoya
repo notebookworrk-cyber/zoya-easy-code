@@ -1,0 +1,11 @@
+# Hello World - Zoya Studio example
+# Open this in Zoya Studio to see the editor in action
+
+fn greet(name):
+    return "Hello, " + name + "!"
+
+fn main():
+    print greet("Zoya Studio")
+    print "Welcome to the AI-powered terminal IDE!"
+
+main()
